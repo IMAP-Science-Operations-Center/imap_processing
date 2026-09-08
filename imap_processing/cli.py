@@ -1261,7 +1261,7 @@ class Idex(ProcessInstrument):
                 )
             l2a_dataset = load_cdf(sci_files[0])
             hk_dataset = load_cdf(hk_files[0])
-            datasets = idex_l2b(l2a_dataset, hk_dataset)
+            datasets = idex_l2b(l2a_dataset, hk_dataset, self.start_date)
 
         else:
             raise NotImplementedError(

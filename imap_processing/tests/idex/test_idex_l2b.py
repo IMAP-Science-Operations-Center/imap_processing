@@ -26,7 +26,12 @@ from imap_processing.idex.idex_l2b import (
     get_science_acquisition_on_time,
     idex_l2b,
 )
-from imap_processing.spice.time import TTJ2000_EPOCH
+from imap_processing.spice.time import (
+    TTJ2000_EPOCH,
+    et_to_datetime64,
+    str_yyyymmdd_to_ttj2000ns,
+    ttj2000ns_to_et,
+)
 
 INT_FILLVAL = np.iinfo(np.int64).min
 
@@ -55,7 +60,13 @@ def l2b_and_l2c_datasets(l2a_dataset: xr.Dataset, test_l1b_msg) -> list[xr.Datas
     combined_msg_dataset = xr.concat(
         [test_l1b_msg.copy(), l1b_msg_dataset2], dim="epoch"
     )
-    datasets = idex_l2b(combined_l2a_dataset, combined_msg_dataset)
+    # "20250101" is a real IDEX 10-day window start date (per
+    # idex_10_day_CDF_names.csv, spanning through "20250110"), which contains the
+    # test message data's actual dates (~2025-01-08/09). The L2A test data's dates
+    # are unrelated (they're real 2023 packet data used only for the counts
+    # computation) since epoch/epoch_delta_plus/epoch_delta_minus no longer depend
+    # on L2A's epoch values at all.
+    datasets = idex_l2b(combined_l2a_dataset, combined_msg_dataset, "20250101")
     return datasets
 
 
@@ -265,8 +276,16 @@ def test_get_science_acquisition_on_time(test_l1b_msg: xr.Dataset):
     test_l1b_msg = test_l1b_msg.isel(epoch=np.isin(test_l1b_msg.science_on, [0, 1]))
     msg_time = test_l1b_msg.epoch.data
     msg_event = test_l1b_msg.science_on.data
-    on_seconds, total_seconds = get_science_acquisition_on_time(msg_time, msg_event)
-    # The test data spans 1 day, so the total tracked time should be one day, with
+    # Use a window that spans exactly the day the test data falls on.
+    first_day = str(
+        et_to_datetime64(ttj2000ns_to_et(msg_time.min())).astype("datetime64[D]")
+    ).replace("-", "")
+    window_start = str_yyyymmdd_to_ttj2000ns(first_day)
+    window_end = window_start + NANOSECONDS_IN_DAY
+    on_seconds, total_seconds = get_science_acquisition_on_time(
+        msg_time, msg_event, window_start, window_end
+    )
+    # The window spans 1 day, so the total tracked time should be one day, with
     # less than 1% uptime for the science acquisition.
     assert total_seconds == pytest.approx(SECONDS_IN_DAY)
     assert (on_seconds / total_seconds) * 100 < 1
@@ -278,15 +297,43 @@ def test_get_science_acquisition_on_time(test_l1b_msg: xr.Dataset):
     # Now spanning 2 days.
     msg_time = combined_ds.epoch.data
     msg_event = combined_ds.science_on.data
-    on_seconds, total_seconds = get_science_acquisition_on_time(msg_time, msg_event)
+    window_end = window_start + 2 * NANOSECONDS_IN_DAY
+    on_seconds, total_seconds = get_science_acquisition_on_time(
+        msg_time, msg_event, window_start, window_end
+    )
     assert total_seconds == pytest.approx(2 * SECONDS_IN_DAY)
     assert (on_seconds / total_seconds) * 100 < 1
 
 
+def test_get_science_acquisition_on_time_extends_state_to_window_bounds():
+    """Test that a state persists all the way to the window's real edges.
+
+    An on/off state must be tracked through the actual window boundaries, not just
+    between the first and last message event -- otherwise a window with no further
+    transitions after (or before) its message events would be undercounted.
+    """
+    window_start = str_yyyymmdd_to_ttj2000ns("20250101")
+    window_end = str_yyyymmdd_to_ttj2000ns("20250106")  # 5-day window
+    # A single "on" event, 1 day into the window, with no further transitions.
+    msg_time = np.array([window_start + NANOSECONDS_IN_DAY])
+    msg_values = np.array([1])
+
+    on_seconds, total_seconds = get_science_acquisition_on_time(
+        msg_time, msg_values, window_start, window_end
+    )
+
+    assert total_seconds == pytest.approx(5 * SECONDS_IN_DAY)
+    # The "on" state should be extended through to window_end (4 remaining days),
+    # not just to the end of the event's own day.
+    assert on_seconds == pytest.approx(4 * SECONDS_IN_DAY)
+
+
 def test_get_science_acquisition_on_time_no_acquisition(caplog):
     """Test the function returns zeros when there is no science acquisition."""
+    window_start = str_yyyymmdd_to_ttj2000ns("20250101")
+    window_end = str_yyyymmdd_to_ttj2000ns("20250110")
     on_seconds, total_seconds = get_science_acquisition_on_time(
-        np.array([]), np.array([])
+        np.array([]), np.array([]), window_start, window_end
     )
     assert on_seconds == 0.0
     assert total_seconds == 0.0
@@ -349,7 +396,7 @@ def test_compute_counts_by_charge_and_mass():
         }
     )
 
-    counts_by_charge, counts_by_mass, charge_map, mass_map, window_epoch = (
+    counts_by_charge, counts_by_mass, charge_map, mass_map = (
         compute_counts_by_charge_and_mass(l2a_dataset)
     )
 
@@ -380,13 +427,6 @@ def test_compute_counts_by_charge_and_mass():
     np.testing.assert_array_equal(charge_map, expected_map_array)
     np.testing.assert_array_equal(mass_map, expected_map_array)
 
-    # The window epoch is the center of the accumulation period: the midpoint
-    # between the first and last input epochs.
-    epoch_data = l2a_dataset["epoch"].data
-    np.testing.assert_allclose(
-        window_epoch, [(epoch_data.min() + epoch_data.max()) / 2]
-    )
-
 
 def test_compute_counts_by_charge_and_mass_out_of_bounds():
     """Test the compute_counts_by_charge_and_mass function.
@@ -412,7 +452,7 @@ def test_compute_counts_by_charge_and_mass_out_of_bounds():
         }
     )
 
-    counts_by_charge, counts_by_mass, charge_map, mass_map, window_epoch = (
+    counts_by_charge, counts_by_mass, charge_map, mass_map = (
         compute_counts_by_charge_and_mass(l2a_dataset)
     )
 

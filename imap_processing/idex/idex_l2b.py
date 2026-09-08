@@ -18,14 +18,12 @@ Examples
     l1b_data = idex_l1b(l1a_data, "sci-10days")
 
     l1a_data = idex_l2a(l1b_data)
-    l2b_and_l2c_datasets = idex_l2b(l2a_data, msg_data_l1b)
+    l2b_and_l2c_datasets = idex_l2b(l2a_data, msg_data_l1b, "20231218")
     write_cdf(l2b_and_l2c_datasets[0])
     write_cdf(l2b_and_l2c_datasets[1])
 """
 
-import collections
 import logging
-from collections import defaultdict
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -39,8 +37,12 @@ from imap_processing.idex.idex_constants import (
     IDEX_EVENT_REFERENCE_FRAME,
     IDEX_SPACING_DEG,
 )
-from imap_processing.idex.idex_utils import get_idex_attrs
-from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
+from imap_processing.idex.idex_utils import get_10_day_window_end_date, get_idex_attrs
+from imap_processing.spice.time import (
+    et_to_datetime64,
+    str_yyyymmdd_to_ttj2000ns,
+    ttj2000ns_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +87,9 @@ LAT_BINS_EDGES = SKY_GRID.el_bin_edges
 IDEX_INT_FILLVAL = np.iinfo(np.int64).min
 
 
-def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Dataset]:
+def idex_l2b(
+    l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset, start_date: str
+) -> list[xr.Dataset]:
     """
     Will process IDEX l2a data to create l2b and l2c data products.
 
@@ -101,6 +105,12 @@ def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Datas
         IDEX L2a dataset to process, spanning a single 10-day window.
     msg_data_l1b : xarray.Dataset
         IDEX L1B event message dataset, spanning a single 10-day window.
+    start_date : str
+        Start date (``YYYYMMDD``) of the IDEX accumulation window being processed,
+        as defined in the IDEX 10-day window schedule (see
+        ``get_10_day_window_end_date``). Used to derive the epoch, epoch_delta_plus,
+        and epoch_delta_minus of the output datasets, and the true boundaries of the
+        window over which science acquisition on-time is tracked.
 
     Returns
     -------
@@ -116,15 +126,19 @@ def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Datas
     # create the attribute manager for this data level
     idex_l2b_attrs = get_idex_attrs("l2b")
     idex_l2c_attrs = get_idex_attrs("l2c")
+
+    # IDEX epoch is the nominal start of the window
+    # (per the IDEX 10-day window schedule), epoch_delta_plus
+    # os the nominal window duration, and epoch_delta_minus is fixed
+    # at zero. See the epoch VAR_NOTES for the CDF-facing description of this choice.
+    end_date = get_10_day_window_end_date(start_date)
+    window_start = str_yyyymmdd_to_ttj2000ns(start_date)
+    window_end = str_yyyymmdd_to_ttj2000ns(end_date)
+    window_epoch = np.array([window_start])
+    window_epoch_delta_plus = np.array([window_end - window_start])
+    window_epoch_delta_minus: np.ndarray = np.zeros(1, dtype=np.int64)
+
     msg_ds = msg_data_l1b.sortby("epoch").drop_duplicates("epoch")
-    (
-        counts_by_charge,
-        counts_by_mass,
-        counts_by_charge_map,
-        counts_by_mass_map,
-        window_epoch,
-    ) = compute_counts_by_charge_and_mass(l2a_dataset)
-    counts, counts_map = compute_counts_agnostic(l2a_dataset)
     # Filter the message dataset to only include science acquisition on/off events.
     # (ignore fill vals)
     science_on_msg_ds = msg_ds.isel(epoch=np.isin(msg_ds.science_on, [0, 1]))
@@ -132,8 +146,18 @@ def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Datas
     msg_values = science_on_msg_ds["science_on"].data
 
     # Get the number of seconds science acquisition was on, and the total number of
-    # seconds tracked, over the whole 10-day window.
-    on_seconds, total_seconds = get_science_acquisition_on_time(msg_time, msg_values)
+    # seconds tracked, over the whole [window_start, window_end) window.
+    on_seconds, total_seconds = get_science_acquisition_on_time(
+        msg_time, msg_values, window_start, window_end
+    )
+
+    (
+        counts_by_charge,
+        counts_by_mass,
+        counts_by_charge_map,
+        counts_by_mass_map,
+    ) = compute_counts_by_charge_and_mass(l2a_dataset)
+    counts, counts_map = compute_counts_agnostic(l2a_dataset)
     (
         rate_by_charge,
         rate_by_mass,
@@ -165,6 +189,22 @@ def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Datas
         attrs=idex_l2b_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     common_vars = {
+        "epoch_delta_plus": xr.DataArray(
+            name="epoch_delta_plus",
+            data=window_epoch_delta_plus,
+            dims="epoch",
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "epoch_delta_plus", check_schema=False
+            ),
+        ),
+        "epoch_delta_minus": xr.DataArray(
+            name="epoch_delta_minus",
+            data=window_epoch_delta_minus,
+            dims="epoch",
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "epoch_delta_minus", check_schema=False
+            ),
+        ),
         "on_off_times": xr.DataArray(
             name="on_off_times",
             data=msg_time,
@@ -420,7 +460,7 @@ def idex_l2b(l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset) -> list[xr.Datas
 
 def compute_counts_by_charge_and_mass(
     l2a_dataset: xr.Dataset,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the dust counts by charge and mass by spin phase or lon and lat.
 
@@ -435,10 +475,9 @@ def compute_counts_by_charge_and_mass(
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-        Two 3D arrays containing counts by charge or mass, and by spin phase, Two 4D
-        arrays containing counts by charge or mass, and by lon and lat, and a 1D array
-        containing the center epoch of the window.
+    tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        Two 3D arrays containing counts by charge or mass, and by spin phase, and two
+        4D arrays containing counts by charge or mass, and by lon and lat.
     """
     dust_hit_indices = _get_dust_hit_indices(l2a_dataset)
     mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[dust_hit_indices]
@@ -473,18 +512,12 @@ def compute_counts_by_charge_and_mass(
         np.column_stack([charge_vals, longitude, latitude]),
         bins=[CHARGE_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
     )[0]
-    # Per ISTP convention, the epoch for the window record is the center of the
-    # accumulation period: the midpoint between the first and last event epochs in the
-    # window.
-    epoch_data = l2a_dataset["epoch"].data
-    window_epoch = np.array([(epoch_data.min() + epoch_data.max()) / 2])
 
     return (
         counts_by_charge[np.newaxis, ...],
         counts_by_mass[np.newaxis, ...],
         counts_by_charge_map[np.newaxis, ...],
         counts_by_mass_map[np.newaxis, ...],
-        window_epoch,
     )
 
 
@@ -689,10 +722,21 @@ def bin_spin_phases(spin_phases: xr.DataArray) -> np.ndarray:
 
 
 def get_science_acquisition_on_time(
-    msg_time: NDArray, msg_values: NDArray
+    msg_time: NDArray,
+    msg_values: NDArray,
+    window_start: np.int64,
+    window_end: np.int64,
 ) -> tuple[float, float]:
     """
     Calculate the science acquisition on-time over the whole window.
+
+    The on/off state is tracked across the full ``[window_start, window_end)``
+    span, not just between the first and last message events: the state
+    implied by each event is extended forward until the next event, and the
+    last known state is extended through to ``window_end`` (rather than
+    stopping at the last event), so a window with no further transitions after
+    its last event -- or no events at all near the start or end of the window
+    -- is not undercounted.
 
     Parameters
     ----------
@@ -700,12 +744,16 @@ def get_science_acquisition_on_time(
         Array of timestamps for science acquisition start and stop events.
     msg_values : np.ndarray
         Array of values indicating if the event is a start (1) or stop (0).
+    window_start : numpy.int64
+        Start of the accumulation window (TT2000 nanoseconds since J2000).
+    window_end : numpy.int64
+        End of the accumulation window (TT2000 nanoseconds since J2000).
 
     Returns
     -------
     tuple[float, float]
         The number of seconds science acquisition was on, and the total number of
-        seconds tracked by the science acquisition on/off events.
+        seconds tracked, over the ``[window_start, window_end)`` window.
     """
     if len(msg_time) == 0:
         logger.warning(
@@ -713,50 +761,28 @@ def get_science_acquisition_on_time(
             "variables will be set to -1."
         )
         return 0.0, 0.0
-    # Track total and 'on' durations per day. Splitting by calendar day (rather than
-    # summing the whole window at once) lets a gap with no events still count as "off"
-    # for every day it spans, rather than being skipped entirely.
-    daily_totals: collections.defaultdict = defaultdict(timedelta)
-    daily_on: collections.defaultdict = defaultdict(timedelta)
-    # Convert epoch event times to datetime
+    # Convert event and window boundary times to datetime.
     dates = et_to_datetime64(ttj2000ns_to_et(msg_time)).astype(datetime)
-    # Simulate an event at the start of the first day.
-    start_of_first_day = dates[0].replace(hour=0, minute=0, second=0, microsecond=0)
-    # Assume that the state at the start of the day is the opposite of what the first
-    # state is.
+    window_start_dt = et_to_datetime64(ttj2000ns_to_et(window_start)).astype(datetime)
+    window_end_dt = et_to_datetime64(ttj2000ns_to_et(window_end)).astype(datetime)
+    # TODO pass in the previous l1b msg packet.
+    # Simulate an event at the start of the window. Assume that the state at the
+    # start of the window is the opposite of what the first real event is.
     state_at_start = 0 if msg_values[0] == 1 else 1
-    dates = np.insert(dates, 0, start_of_first_day)
+    dates = np.insert(dates, 0, window_start_dt)
     msg_values = np.insert(msg_values, 0, state_at_start)
+
+    total_duration = timedelta()
+    on_duration = timedelta()
     for i in range(len(dates)):
         start = dates[i]
         state = msg_values[i]
-        if i == len(dates) - 1:
-            # If this is the last event, set the "end" value the end of the day.
-            end = (start + timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-        else:
-            # Otherwise, use the next event time as the end time.
-            end = dates[i + 1]
+        # Every state holds until the next event, except the last one, which holds
+        # through the end of the window.
+        end = dates[i + 1] if i < len(dates) - 1 else window_end_dt
+        duration = end - start
+        total_duration += duration
+        if state == 1:
+            on_duration += duration
 
-        # Split time span by day boundaries
-        current = start
-        while current < end:
-            next_day = (current + timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            segment_end = min(end, next_day)
-            duration = segment_end - current
-            doy = current.timetuple().tm_yday
-            daily_totals[doy] += duration
-            # If the state is 1, add to the 'on' duration for that day
-            if state == 1:
-                daily_on[doy] += duration
-            current = segment_end
-
-    # Sum the daily on/total durations across the whole window into a single uptime
-    # measurement for the window.
-    total_seconds = sum((v.total_seconds() for v in daily_totals.values()), 0.0)
-    on_seconds = sum((v.total_seconds() for v in daily_on.values()), 0.0)
-
-    return on_seconds, total_seconds
+    return on_duration.total_seconds(), total_duration.total_seconds()
