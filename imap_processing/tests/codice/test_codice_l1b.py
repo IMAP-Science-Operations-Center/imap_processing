@@ -134,7 +134,6 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     )
 
 
-@pytest.mark.xfail(reason="Need to revisit in future PR")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
@@ -147,7 +146,10 @@ def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
         / f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}"
         f"_{VALIDATION_FILE_VERSION}.cdf"
     )
-    l1a_file_path = write_cdf(process_l1a(dependency=ProcessingInputCollection())[0])
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(dependency=ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
+    l1a_file_path = write_cdf(l1a_ds)
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
     for variable in val_data.data_vars:
@@ -160,7 +162,8 @@ def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
 
     cdf_file = write_cdf(processed_data)
     assert (
-        cdf_file.name == f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_v999.cdf"
+        cdf_file.name == f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_"
+        f"v001.0001.cdf"
     )
 
 

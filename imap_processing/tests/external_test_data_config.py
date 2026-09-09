@@ -73,8 +73,8 @@ EXTERNAL_TEST_DATA = [
     (f"imap_codice_l1b_lo-sw-priority_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     (f"imap_codice_l1b_lo-sw-species_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf", "codice/data/l1b_validation"),
     # L2 LUT input data
-    ("imap_codice_l2-hi-omni-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
-    ("imap_codice_l2-hi-sectored-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-omni-efficiency_20251212_v004.csv", "codice/data/l2_lut/"),
+    ("imap_codice_l2-hi-sectored-efficiency_20251212_v004.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-hi-ialirt-efficiency_20251212_v003.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-gfactor_20251212_v003.csv", "codice/data/l2_lut/"),
     ("imap_codice_l2-lo-efficiency_20251008_v003.csv", "codice/data/l2_lut/"),

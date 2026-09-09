@@ -476,7 +476,6 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     assert_epoch_delta_cdf_metadata(cdf_file)
 
 
-@pytest.mark.xfail(reason="Need to revisit in future PR")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     """Tests hi-sectored."""
@@ -496,6 +495,7 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     val_data = load_cdf(val_path)
 
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
+    processed_data = filter_day_boundary_data(processed_data, VALIDATION_FILE_DATE)
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
             processed_data[variable].values,

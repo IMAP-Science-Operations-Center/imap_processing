@@ -10,7 +10,7 @@ TEST_DATA_L0_PATH = TEST_DATA_PATH / "l0_data"
 TEST_L0_FILE = TEST_DATA_L0_PATH / "imap_codice_l0_raw_20241110_v001.pkts"
 
 VALIDATION_FILE_DATE = "20260204"
-VALIDATION_FILE_VERSION = "v026"
+VALIDATION_FILE_VERSION = "v029"
 
 IALIRT_VALIDATION_FILE_DATE = "20250814"
 IALIRT_VALIDATION_FILE_VERSION = "v015"
@@ -228,12 +228,12 @@ def codice_lut_path():
         elif descriptor == "l2-hi-omni-efficiency":
             return [
                 TEST_DATA_PATH
-                / "l2_lut/imap_codice_l2-hi-omni-efficiency_20251212_v003.csv"
+                / "l2_lut/imap_codice_l2-hi-omni-efficiency_20251212_v004.csv"
             ]
         elif descriptor == "l2-hi-sectored-efficiency":
             return [
                 TEST_DATA_PATH
-                / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251212_v003.csv"
+                / "l2_lut/imap_codice_l2-hi-sectored-efficiency_20251212_v004.csv"
             ]
         elif descriptor == "l2-lo-efficiency":
             return [

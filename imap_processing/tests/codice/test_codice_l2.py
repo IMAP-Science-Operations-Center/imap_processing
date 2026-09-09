@@ -511,10 +511,6 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
             assert var_attrs["FILLVAL"] == np.uint8(255)
 
 
-@pytest.mark.skip(
-    reason="Awaiting updated L2 lo-direct-events validation data reflecting the "
-    "apd_id-based elevation angle and negative-TOF masking fixes."
-)
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
@@ -576,11 +572,6 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     l2_val_data = load_cdf(l2_val_data)
 
     for variable in l2_val_data.data_vars:
-        if variable in ["spin_angle", "spin_sector"]:
-            # TODO remove this block when joey fixes spin_angle and spin_sector
-            #  calculation. Currently they are not setting spin sector and spin angles
-            #  to NaNs for invalid positions.
-            continue  # skip spin_angle
         if variable in ["rgfo_half_spin", "rgfo_spin_sector", "rgfo_esa_step"]:
             # Skips variables that are not needed for direct events
             continue
