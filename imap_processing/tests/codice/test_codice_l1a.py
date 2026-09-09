@@ -496,6 +496,7 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
 
     processed_data = process_l1a(dependency=ProcessingInputCollection())[0]
     processed_data = filter_day_boundary_data(processed_data, VALIDATION_FILE_DATE)
+
     for variable in val_data.data_vars:
         np.testing.assert_allclose(
             processed_data[variable].values,
