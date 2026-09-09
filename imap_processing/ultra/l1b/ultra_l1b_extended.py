@@ -945,7 +945,7 @@ def get_spin_start_indices(
     # The time window spans from the first spin start to the end of the last spin.
     first_spin_start = spin_start_sec[0]
     # Define the end of the last spin as start time + max duration (15s)
-    last_spin_end = spin_start_sec[-1] + 15.0
+    last_spin_end = spin_start_sec[-1] + 15.0  # TODO use actual duration
     missing_aux_data_mask = (de_event_met < first_spin_start) | (
         de_event_met > last_spin_end
     )
@@ -954,8 +954,8 @@ def get_spin_start_indices(
             "Coarse MET time contains events outside aux_dataset time range "
             f"({first_spin_start} - {last_spin_end}). "
             f"Found min={de_event_met.min()}, max={de_event_met.max()}. "
-            f"Found {np.sum(missing_aux_data_mask)} events not covered by aux data. "
-            f" Trying to fill missing data using universal spin table."
+            f"Throwing away {np.sum(missing_aux_data_mask)} events not covered "
+            f"by aux data. "
         )
     # Find the spin_start_sec that started directly before each event.
     start_inds = (
