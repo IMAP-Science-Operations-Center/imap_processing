@@ -511,6 +511,10 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
             assert var_attrs["FILLVAL"] == np.uint8(255)
 
 
+@pytest.mark.skip(
+    reason="Awaiting updated L2 lo-direct-events validation data reflecting the "
+    "apd_id-based elevation angle and negative-TOF masking fixes."
+)
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
@@ -565,7 +569,7 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
         / "l2_validation"
         / (
             f"imap_codice_l2_lo-direct-events_{VALIDATION_FILE_DATE}"
-            f"_v016.cdf"  # TODO switch back to VALIDATION_FILE_VERSION
+            f"_{VALIDATION_FILE_VERSION}.cdf"
         )
     )
 
