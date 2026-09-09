@@ -78,13 +78,13 @@ num_events:
   FIELDNAM: Number of Events
   FILLVAL: *uint16_fillval
   FORMAT: I5
+  LABLAXIS: Number of Events
   LABL_PTR_1: priority_label
   SCALETYP: linear
   UNITS: " "
   VALIDMAX: 10000
   VALIDMIN: 0
   VAR_TYPE: data
-  LABLAXIS: Number of Events
 
 data_quality:
   CATDESC: Data Quality Flag per Priority (0=good, 1=suspect)
