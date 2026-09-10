@@ -395,7 +395,7 @@ def test_l1b_msg_processing(decom_test_data_msg: xr.Dataset):
     msg_ds.messages[4] = EventMessage.PULSER_OFF.value
     new_epoch = msg_ds.epoch.values.copy()
     new_epoch[3] = new_epoch[2]
-    new_epoch[4] = new_epoch[2]
+    new_epoch[4] = new_epoch[2] + 4_000_000_000  # Four seconds in ns
     # Set an on and an off outside of 5 seconds
     msg_ds.messages[20] = EventMessage.PULSER_ON.value
     msg_ds.messages[22] = EventMessage.PULSER_OFF.value
