@@ -189,7 +189,7 @@ def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset | None:
     # within 5 seconds.
     for on in pulser_on_events:
         on_epoch = epochs[on]
-        within_5s = (epochs >= on_epoch) & (epochs <= on_epoch + 5 * NS_TO_S)
+        within_5s = (epochs >= on_epoch) & (epochs <= on_epoch + 5 / NS_TO_S)
         off = np.where(within_5s & (l1a_messages == EventMessage.PULSER_OFF.value))[0]
         if off.size:
             # If an on was followed by an off, set the values.
