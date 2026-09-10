@@ -498,6 +498,37 @@ def test_position_angle_offset_average(
         assert l2.position_angle_offset_average == pytest.approx(42.5)
 
 
+# ── bad_time_flag_occurrences tests ──────────────────────────────────────────
+
+
+def test_bad_time_flag_occurrences(
+    l1b_dataset_full,
+    pipeline_settings,
+    mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
+):
+    """Per-flag count of lowered (0 = bad) flags over all L1B blocks, including
+    blocks excluded from good_data.
+
+    Block 0 stays all-good; block 1 lowers is_pps_missing (col 0) and
+    is_spin_period_missing (col 3), excluding it from good_data - but its zeros
+    must still be counted.
+    """
+    flags = np.ones((2, 17), dtype=float)
+    flags[1, [0, 3]] = 0.0
+    ds = l1b_dataset_full.copy()
+    ds["flags"] = xr.DataArray(flags, dims=["epoch", "flag_index"])
+
+    with patch.object(HistogramL2, "get_calibration_factor", return_value=1.0):
+        l2 = HistogramL2(ds, pipeline_settings, mock_calibration_dataset)
+
+    expected = np.zeros((1, 17), dtype=np.uint16)
+    expected[0, [0, 3]] = 1
+    assert np.array_equal(l2.bad_time_flag_occurrences, expected)
+    # Block 1 was excluded from good_data, yet its zeros are still counted.
+    assert l2.number_of_good_l1b_inputs == 1
+
+
 # ── spin_axis_orientation_average tests ──────────────────────────────────────
 
 

@@ -915,10 +915,10 @@ class HistogramL1B:
         pipeline_settings : PipelineSettings
             Pipeline settings for processing thresholds and flags.
         daily_total_counts_average : numpy.double
-            Mean of total histogram counts across all L1A blocks for the day,
+            Mean of total histogram counts across daytime L1A blocks for the day,
             used for the is_beyond_daily_statistical_error flag.
         daily_total_counts_std_dev : numpy.double
-            Standard deviation of total histogram counts across all L1A blocks
+            Standard deviation of total histogram counts across daytime L1A blocks
             for the day, used for the is_beyond_daily_statistical_error flag.
         """
         # self.histogram_flag_array = np.zeros((2,))

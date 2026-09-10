@@ -328,6 +328,54 @@ def test_get_threshold():
         assert threshold == exp
 
 
+def _spin_offset_settings(times, values):
+    """Build PipelineSettings from a spin-offset correction time/value table."""
+    return PipelineSettings(
+        xr.Dataset(
+            {
+                "spin_offset_correction_times": (["t"], times),
+                "spin_offset_correction_values": (["t"], values),
+            }
+        )
+    )
+
+
+def test_get_spin_offset_correction():
+    """Asof lookup: a value takes effect from its timestamp forward, and times
+    before the first entry fall back to the earliest value.
+    """
+    settings = _spin_offset_settings(
+        ["2025-11-12T00:00:00", "2026-07-08T15:50:00"], [1.047, 2.347]
+    )
+
+    def lookup(time):
+        return settings.get_spin_offset_correction(np.datetime64(time))
+
+    assert lookup("2025-01-01T00:00:00") == pytest.approx(1.047)  # before first entry
+    assert lookup("2026-07-08T15:49:59") == pytest.approx(1.047)  # 1 s before switch
+    assert lookup("2026-07-08T15:50:00") == pytest.approx(2.347)  # switch is inclusive
+
+
+def test_get_spin_offset_correction_sorts_by_time():
+    """Out-of-order ancillary entries are sorted on construction."""
+    settings = _spin_offset_settings(
+        ["2026-07-08T15:50:00", "2025-11-12T00:00:00"], [2.347, 1.047]
+    )
+    assert settings.get_spin_offset_correction(
+        np.datetime64("2026-01-01T00:00:00")
+    ) == pytest.approx(1.047)
+
+
+def test_get_spin_offset_correction_fallbacks():
+    """Legacy scalar applies at all times; a missing table defaults to 0.0."""
+    legacy = PipelineSettings(xr.Dataset({"spin_offset_correction": 1.5}))
+    assert legacy.get_spin_offset_correction(
+        np.datetime64("2026-01-01T00:00:00")
+    ) == pytest.approx(1.5)
+    empty = PipelineSettings(xr.Dataset())
+    assert empty.get_spin_offset_correction(np.datetime64("2026-01-01T00:00:00")) == 0.0
+
+
 @patch("imap_processing.glows.l1b.glows_l1b_data.geometry.imap_state")
 @patch("imap_processing.glows.l1b.glows_l1b_data.get_instrument_spin_phase")
 @patch("imap_processing.glows.l1b.glows_l1b_data.get_spin_data")
