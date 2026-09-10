@@ -376,6 +376,55 @@ def test_get_spin_offset_correction_fallbacks():
     assert empty.get_spin_offset_correction(np.datetime64("2026-01-01T00:00:00")) == 0.0
 
 
+def _mock_histogram_for_flags(number_of_events):
+    """Minimal HistogramL1B-like object exposing what compute_flags reads."""
+
+    class MockHistogram:
+        flags_set_onboard = 0
+        is_generated_on_ground = 1
+        filter_temperature_std_dev = 0.0
+        hv_voltage_std_dev = 0.0
+        spin_period_std_dev = 0.0
+        pulse_length_std_dev = 0.0
+        deserialize_flags = staticmethod(HistogramL1B.deserialize_flags)
+
+    hist = MockHistogram()
+    hist.number_of_events = number_of_events
+    return hist
+
+
+@pytest.mark.parametrize(
+    ("number_of_events", "n_sigma", "avg", "std", "expected"),
+    [
+        (100, 3.0, 100.0, 10.0, 1),  # inside the band -> good
+        (200, 3.0, 100.0, 10.0, 0),  # outside the band -> bad
+        (200, -1.0, 100.0, 10.0, 1),  # negative threshold disables the check
+        (200, 3.0, np.nan, np.nan, 1),  # no daytime reference disables the check
+    ],
+)
+def test_compute_flags_is_beyond_daily_statistical_error(
+    number_of_events, n_sigma, avg, std, expected
+):
+    """is_beyond_daily_statistical_error (flag 11) is bad (0) only for a block
+    outside the n-sigma band; a negative threshold or a missing (NaN) daytime
+    reference disables the check (good).
+    """
+    thresholds = {
+        "n_sigma_threshold_lower": n_sigma,
+        "n_sigma_threshold_upper": n_sigma,
+        "std_dev_threshold__celsius_deg": 1.0,
+        "std_dev_threshold__volt": 1.0,
+        "std_dev_threshold__sec": 1.0,
+        "std_dev_threshold__usec": 1.0,
+    }
+    settings = PipelineSettings(
+        xr.Dataset({k: xr.DataArray(v) for k, v in thresholds.items()})
+    )
+    hist = _mock_histogram_for_flags(number_of_events)
+    flags = HistogramL1B.compute_flags(hist, settings, np.double(avg), np.double(std))
+    assert flags[11] == expected
+
+
 @patch("imap_processing.glows.l1b.glows_l1b_data.geometry.imap_state")
 @patch("imap_processing.glows.l1b.glows_l1b_data.get_instrument_spin_phase")
 @patch("imap_processing.glows.l1b.glows_l1b_data.get_spin_data")

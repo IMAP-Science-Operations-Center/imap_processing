@@ -355,6 +355,52 @@ def test_process_histogram(
     return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
 )
 @patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_process_histogram_daily_reference_excludes_night(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
+):
+    """The daily total-counts reference excludes night blocks.
+
+    Daytime blocks share one count, so the reference std is 0 and the band is a
+    single point. A night block with a different count falls outside it (flag 0)
+    only because it was excluded from -- not averaged into -- the reference.
+    """
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
+    onboard = np.zeros(20)
+    n_events = np.full(20, 100.0)
+    onboard[[0, 1]] = 64.0  # flags_set_onboard bit 6 (is_night)
+    n_events[[0, 1]] = 500.0
+    hist_dataset["flags_set_onboard"][:] = onboard
+    hist_dataset["number_of_events"][:] = n_events
+
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+    output = process_histogram(
+        hist_dataset,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
+    )
+    flag_idx = [f.name for f in dataclasses.fields(HistogramL1B)].index("flags")
+    flags = output[flag_idx].values  # (epoch, 17); column 11 = is_beyond_daily
+    assert flags[5, 11] == 1  # a daytime block sits inside the daytime band
+    assert flags[0, 11] == 0  # a night block is excluded, so its count is outside
+
+
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
 def test_bins_from_histogram_not_nbins(
     mock_spice_function,
     mock_flag_uv_and_excluded,
