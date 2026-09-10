@@ -1173,7 +1173,7 @@ class Hit(ProcessInstrument):
 class Idex(ProcessInstrument):
     """Process IDEX."""
 
-    def do_processing(
+    def do_processing(  # noqa: PLR0912
         self, dependencies: ProcessingInputCollection
     ) -> list[xr.Dataset]:
         """
@@ -1246,24 +1246,28 @@ class Idex(ProcessInstrument):
                     f"Unexpected dependencies found for IDEX L2B:"
                     f"{dependency_list}. Expected three or four dependencies."
                 )
+            # L2A and L2B are both processed on the same 10-day cadence, so there
+            # should be exactly one L2A science file matching this job's start date.
             sci_files = dependencies.get_file_paths(
                 source="idex", descriptor="sci-10days"
             )
-            sci_dependencies = [load_cdf(f) for f in sci_files]
-            # sort science files by the first epoch value
-            sci_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
             hk_files = dependencies.get_file_paths(
                 source="idex", descriptor="msg-10days"
             )
-            # Remove duplicate housekeeping files
-            hk_dependencies = [load_cdf(dep) for dep in list(set(hk_files))]
-            # sort housekeeping files by the first epoch value
-            hk_dependencies.sort(key=lambda ds: ds["epoch"].values[0])
-            datasets = idex_l2b(sci_dependencies, hk_dependencies)
+            if not sci_files or not hk_files:
+                raise ValueError(
+                    "No L2A science file or L1B msg-10day file found for "
+                    "IDEX L2B processing"
+                )
+            l2a_dataset = load_cdf(sci_files[0])
+            hk_dataset = load_cdf(hk_files[0])
+            datasets = idex_l2b(l2a_dataset, hk_dataset, self.start_date)
+
         else:
             raise NotImplementedError(
                 f"Unrecognized data level for {type(self).__name__}:  {self.data_level}"
             )
+
         return datasets
 
 

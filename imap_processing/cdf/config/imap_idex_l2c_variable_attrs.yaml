@@ -104,7 +104,7 @@ rectangular_lat_pixel:
 
 rate_by_charge_map:
   <<: *base_charge_map
-  CATDESC: Count rate in s^-1 by impact charge, longitude, and latitude.
+  CATDESC: Count rate by impact charge, longitude, and latitude over the 10-day window.
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
   FIELDNAM: Rate by Charge Map
   FILLVAL: *double_fillval
@@ -128,7 +128,7 @@ counts_by_mass_map:
 
 rate_by_mass_map:
   <<: *base_mass_map
-  CATDESC: Count rate in s^-1 by mass, longitude, and latitude.
+  CATDESC: Count rate by mass, longitude, and latitude over the 10-day window.
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
   FIELDNAM: Rate by Mass Map
   FILLVAL: *double_fillval
@@ -136,7 +136,7 @@ rate_by_mass_map:
 
 counts_map:
   <<: *base_agnostic_map
-  CATDESC: Count of dust impacts by longitude and latitude.
+  CATDESC: Count of dust impacts by longitude and latitude over the 10-day window.
   DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
   FIELDNAM: Counts Map
   FORMAT: I8
@@ -144,7 +144,7 @@ counts_map:
 
 rate_map:
   <<: *base_agnostic_map
-  CATDESC: Dust impact count rate by longitude and latitude.
+  CATDESC: Dust impact count rate by longitude and latitude over the 10-day window.
   DICT_KEY: SPASE>SupportQuantity:CountRate,Qualifier:Array
   FIELDNAM: Rate Map
   FILLVAL: *double_fillval

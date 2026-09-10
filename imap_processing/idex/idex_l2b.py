@@ -17,15 +17,15 @@ Examples
     msg_data_l1b = idex_l1b(msg_data_l1a, "msg-10days")
     l1b_data = idex_l1b(l1a_data, "sci-10days")
 
+    example_10_day_window_start_date = "20250101"
     l1a_data = idex_l2a(l1b_data)
-    l2b_and_l2c_datasets = idex_l2b(l2a_data, [msg_data_l1b])
+    l2b_and_l2c_datasets = idex_l2b(l2a_data,
+    msg_data_l1b, example_10_day_window_start_date)
     write_cdf(l2b_and_l2c_datasets[0])
     write_cdf(l2b_and_l2c_datasets[1])
 """
 
-import collections
 import logging
-from collections import defaultdict
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -38,10 +38,13 @@ from imap_processing.idex.idex_constants import (
     FG_TO_KG,
     IDEX_EVENT_REFERENCE_FRAME,
     IDEX_SPACING_DEG,
-    SECONDS_IN_DAY,
 )
-from imap_processing.idex.idex_utils import get_idex_attrs
-from imap_processing.spice.time import epoch_to_doy, et_to_datetime64, ttj2000ns_to_et
+from imap_processing.idex.idex_utils import get_10_day_window_end_date, get_idex_attrs
+from imap_processing.spice.time import (
+    et_to_datetime64,
+    str_yyyymmdd_to_ttj2000ns,
+    ttj2000ns_to_et,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ IDEX_INT_FILLVAL = np.iinfo(np.int64).min
 
 
 def idex_l2b(
-    l2a_datasets: list[xr.Dataset], msg_data_l1b: list[xr.Dataset]
+    l2a_dataset: xr.Dataset, msg_data_l1b: xr.Dataset, start_date: str
 ) -> list[xr.Dataset]:
     """
     Will process IDEX l2a data to create l2b and l2c data products.
@@ -95,12 +98,21 @@ def idex_l2b(
     IDEX L2B processing creates L2b and L2c at the same time because L2c needs no
     additional dependencies and is a natural extension of L2b processing.
 
+    L2A and L2B are both processed on the same IDEX 10-day cadence, so a single L2A
+    dataset (spanning one 10-day window) maps 1:1 to a single L2B/L2C output.
+
     Parameters
     ----------
-    l2a_datasets : list[xarray.Dataset]
-        IDEX L2a datasets to process.
-    msg_data_l1b : list[xarray.Dataset]
-        List of IDEX L1B event message datasets.
+    l2a_dataset : xarray.Dataset
+        IDEX L2a dataset to process, spanning a single 10-day window.
+    msg_data_l1b : xarray.Dataset
+        IDEX L1B event message dataset, spanning a single 10-day window.
+    start_date : str
+        Start date (``YYYYMMDD``) of the IDEX accumulation window being processed,
+        as defined in the IDEX 10-day window schedule (see
+        ``get_10_day_window_end_date``). Used to derive the epoch, epoch_delta_plus,
+        and epoch_delta_minus of the output datasets, and the true boundaries of the
+        window over which science acquisition on-time is tracked.
 
     Returns
     -------
@@ -109,40 +121,45 @@ def idex_l2b(
         metadata.
     """
     logger.info(
-        "Running IDEX L2B and L2C processing on L2a datasets. NOTE: L2C datasets are "
+        "Running IDEX L2B and L2C processing on L2a dataset. NOTE: L2C datasets are "
         "processed at the same time as L2B datasets because L2C needs no additional "
         "dependencies."
     )
     # create the attribute manager for this data level
     idex_l2b_attrs = get_idex_attrs("l2b")
     idex_l2c_attrs = get_idex_attrs("l2c")
-    msg_ds = (
-        xr.concat(msg_data_l1b, dim="epoch").sortby("epoch").drop_duplicates("epoch")
-    )
-    # Concat all the l2a datasets together
-    l2a_dataset = xr.concat(l2a_datasets, dim="epoch")
-    epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
-    # Use dict.fromkeys to preserve order while getting unique DOYs. We want to make
-    # sure the order of DOYs stays the same in case we are dealing with data that
-    # spans over the new year. E.g., we want 365 to come before 1 if we have data from
-    # Dec and Jan.
-    epoch_doy_unique = np.array(list(dict.fromkeys(epoch_doy)))
-    (
-        counts_by_charge,
-        counts_by_mass,
-        counts_by_charge_map,
-        counts_by_mass_map,
-        daily_epoch,
-    ) = compute_counts_by_charge_and_mass(l2a_dataset, epoch_doy_unique)
-    counts, counts_map = compute_counts_agnostic(l2a_dataset, epoch_doy_unique)
+
+    # IDEX epoch is the nominal start of the window
+    # (per the IDEX 10-day window schedule), epoch_delta_plus
+    # is the nominal window duration, and epoch_delta_minus is fixed
+    # at zero. See the epoch VAR_NOTES for the CDF-facing description of this choice.
+    end_date = get_10_day_window_end_date(start_date)
+    window_start = str_yyyymmdd_to_ttj2000ns(start_date)
+    window_end = str_yyyymmdd_to_ttj2000ns(end_date)
+    window_epoch = np.array([window_start])
+    window_epoch_delta_plus = np.array([window_end - window_start])
+    window_epoch_delta_minus: np.ndarray = np.zeros(1, dtype=np.int64)
+
+    msg_ds = msg_data_l1b.sortby("epoch").drop_duplicates("epoch")
     # Filter the message dataset to only include science acquisition on/off events.
     # (ignore fill vals)
     science_on_msg_ds = msg_ds.isel(epoch=np.isin(msg_ds.science_on, [0, 1]))
     msg_time = science_on_msg_ds["epoch"].data
     msg_values = science_on_msg_ds["science_on"].data
 
-    # Get science acquisition percentage for each day
-    daily_on_percentage = get_science_acquisition_on_percentage(msg_time, msg_values)
+    # Get the number of seconds science acquisition was on, and the total number of
+    # seconds tracked, over the whole [window_start, window_end) window.
+    on_seconds, total_seconds = get_science_acquisition_on_time(
+        msg_time, msg_values, window_start, window_end
+    )
+
+    (
+        counts_by_charge,
+        counts_by_mass,
+        counts_by_charge_map,
+        counts_by_mass_map,
+    ) = compute_counts_by_charge_and_mass(l2a_dataset)
+    counts, counts_map = compute_counts_agnostic(l2a_dataset)
     (
         rate_by_charge,
         rate_by_mass,
@@ -154,11 +171,11 @@ def idex_l2b(
         counts_by_mass,
         counts_by_charge_map,
         counts_by_mass_map,
-        epoch_doy_unique,
-        daily_on_percentage,
+        on_seconds,
+        total_seconds,
     )
     rate, rate_map = compute_rates_agnostic(
-        counts, counts_map, epoch_doy_unique, daily_on_percentage
+        counts, counts_map, on_seconds, total_seconds
     )
     # Create l2b Dataset
     charge_bin_means = np.sqrt(CHARGE_BIN_EDGES[:-1] * CHARGE_BIN_EDGES[1:])
@@ -169,11 +186,27 @@ def idex_l2b(
     # Define xarrays that are shared between l2b and l2c
     epoch = xr.DataArray(
         name="epoch",
-        data=daily_epoch,
+        data=window_epoch,
         dims="epoch",
         attrs=idex_l2b_attrs.get_variable_attributes("epoch", check_schema=False),
     )
     common_vars = {
+        "epoch_delta_plus": xr.DataArray(
+            name="epoch_delta_plus",
+            data=window_epoch_delta_plus,
+            dims="epoch",
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "epoch_delta_plus", check_schema=False
+            ),
+        ),
+        "epoch_delta_minus": xr.DataArray(
+            name="epoch_delta_minus",
+            data=window_epoch_delta_minus,
+            dims="epoch",
+            attrs=idex_l2b_attrs.get_variable_attributes(
+                "epoch_delta_minus", check_schema=False
+            ),
+        ),
         "on_off_times": xr.DataArray(
             name="on_off_times",
             data=msg_time,
@@ -189,12 +222,6 @@ def idex_l2b(
             attrs=idex_l2b_attrs.get_variable_attributes(
                 "on_off_events", check_schema=False
             ),
-        ),
-        "impact_day_of_year": xr.DataArray(
-            name="impact_day_of_year",
-            data=epoch_doy_unique,
-            dims="epoch",
-            attrs=idex_l2b_attrs.get_variable_attributes("impact_day_of_year"),
         ),
         "charge_labels": xr.DataArray(
             name="impact_charge_labels",
@@ -434,221 +461,164 @@ def idex_l2b(
 
 
 def compute_counts_by_charge_and_mass(
-    l2a_dataset: xr.Dataset, epoch_doy_unique: np.ndarray
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    l2a_dataset: xr.Dataset,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Compute the dust counts by charge and mass by spin phase or lon and lat per day.
+    Compute the dust counts by charge and mass by spin phase or lon and lat.
+
+    Counts are aggregated across the entire input dataset (expected to span a single
+    IDEX 10-day window) into a single record. Only events flagged as dust hits
+    (``dust_hit_flag`` == 1) are included.
 
     Parameters
     ----------
     l2a_dataset : xarray.Dataset
         Combined IDEX L2a datasets.
-    epoch_doy_unique : np.ndarray
-        Unique days of year corresponding to the epochs in the dataset.
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-        Two 3D arrays containing counts by charge or mass, and by spin phase for each
-        dataset, Two 4D arrays containing counts by charge or mass, and by lon and lat
-        for each dataset, and a 1D array of daily epoch values.
+    tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        Two 3D arrays containing counts by charge or mass, and by spin phase, and two
+        4D arrays containing counts by charge or mass, and by lon and lat.
     """
-    # Initialize lists to hold counts.
-    counts_by_charge = []
-    counts_by_mass = []
-    counts_by_charge_map = []
-    counts_by_mass_map = []
-    daily_epoch: np.ndarray = np.zeros(len(epoch_doy_unique), dtype=np.float64)
-    epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
-    for i in range(len(epoch_doy_unique)):
-        doy = epoch_doy_unique[i]
-        # Get the indices for the current day
-        current_day_indices = np.flatnonzero(epoch_doy == doy)
-        # Set the epoch for the current day to be the mean epoch of the day.
-        daily_epoch[i] = np.mean(l2a_dataset["epoch"].data[current_day_indices])
-        current_day_indices = _get_dust_hit_indices(l2a_dataset, epoch_doy, int(doy))
-        mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[
-            current_day_indices
-        ]
-        charge_vals = l2a_dataset["target_low_impact_charge"].data[current_day_indices]
-        spin_phase_angles = l2a_dataset["spin_phase"].data[current_day_indices]
-        # Make sure longitude values are in the range [0, 360)
-        longitude = np.mod(l2a_dataset["longitude"].data[current_day_indices], 360)
-        latitude = l2a_dataset["latitude"].data[current_day_indices]
-        # Convert units
-        mass_vals = FG_TO_KG * np.atleast_1d(mass_vals)
-        # Bin spin phases
-        binned_spin_phase = bin_spin_phases(spin_phase_angles)
-        # Clip arrays to ensure that the values are within the valid range of bins.
-        # Latitude should be binned with the right edge included. 90 is a valid latitude
-        latitude = np.clip(latitude, -90, 90)
-        mass_vals = np.clip(mass_vals, MASS_BIN_EDGES[0], MASS_BIN_EDGES[-1])
-        charge_vals = np.clip(charge_vals, CHARGE_BIN_EDGES[0], CHARGE_BIN_EDGES[-1])
+    dust_hit_indices = _get_dust_hit_indices(l2a_dataset)
+    mass_vals = l2a_dataset["target_low_dust_mass_estimate"].data[dust_hit_indices]
+    charge_vals = l2a_dataset["target_low_impact_charge"].data[dust_hit_indices]
+    spin_phase_angles = l2a_dataset["spin_phase"].data[dust_hit_indices]
+    # Make sure longitude values are in the range [0, 360)
+    longitude = np.mod(l2a_dataset["longitude"].data[dust_hit_indices], 360)
+    latitude = l2a_dataset["latitude"].data[dust_hit_indices]
+    # Convert units
+    mass_vals = FG_TO_KG * np.atleast_1d(mass_vals)
+    # Bin spin phases
+    binned_spin_phase = bin_spin_phases(spin_phase_angles)
+    # Clip arrays to ensure that the values are within the valid range of bins.
+    # Latitude should be binned with the right edge included. 90 is a valid latitude
+    latitude = np.clip(latitude, -90, 90)
+    mass_vals = np.clip(mass_vals, MASS_BIN_EDGES[0], MASS_BIN_EDGES[-1])
+    charge_vals = np.clip(charge_vals, CHARGE_BIN_EDGES[0], CHARGE_BIN_EDGES[-1])
 
-        counts_by_mass.append(
-            np.histogramdd(
-                np.column_stack([mass_vals, binned_spin_phase]),
-                bins=[MASS_BIN_EDGES, np.arange(SPIN_PHASE_BIN_EDGES.size)],
-            )[0]
-        )
-        counts_by_charge.append(
-            np.histogramdd(
-                np.column_stack([charge_vals, binned_spin_phase]),
-                bins=[CHARGE_BIN_EDGES, np.arange(SPIN_PHASE_BIN_EDGES.size)],
-            )[0]
-        )
-        counts_by_mass_map.append(
-            np.histogramdd(
-                np.column_stack([mass_vals, longitude, latitude]),
-                bins=[MASS_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
-            )[0]
-        )
-        counts_by_charge_map.append(
-            np.histogramdd(
-                np.column_stack([charge_vals, longitude, latitude]),
-                bins=[CHARGE_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
-            )[0]
-        )
+    counts_by_mass = np.histogramdd(
+        np.column_stack([mass_vals, binned_spin_phase]),
+        bins=[MASS_BIN_EDGES, np.arange(SPIN_PHASE_BIN_EDGES.size)],
+    )[0]
+    counts_by_charge = np.histogramdd(
+        np.column_stack([charge_vals, binned_spin_phase]),
+        bins=[CHARGE_BIN_EDGES, np.arange(SPIN_PHASE_BIN_EDGES.size)],
+    )[0]
+    counts_by_mass_map = np.histogramdd(
+        np.column_stack([mass_vals, longitude, latitude]),
+        bins=[MASS_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
+    )[0]
+    counts_by_charge_map = np.histogramdd(
+        np.column_stack([charge_vals, longitude, latitude]),
+        bins=[CHARGE_BIN_EDGES, LON_BINS_EDGES, LAT_BINS_EDGES],
+    )[0]
 
     return (
-        np.stack(counts_by_charge),
-        np.stack(counts_by_mass),
-        np.stack(counts_by_charge_map),
-        np.stack(counts_by_mass_map),
-        daily_epoch,
+        counts_by_charge[np.newaxis, ...],
+        counts_by_mass[np.newaxis, ...],
+        counts_by_charge_map[np.newaxis, ...],
+        counts_by_mass_map[np.newaxis, ...],
     )
 
 
 def compute_counts_agnostic(
-    l2a_dataset: xr.Dataset, epoch_doy_unique: np.ndarray
+    l2a_dataset: xr.Dataset,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Compute daily dust counts without mass or charge binning.
+    Compute dust counts without mass or charge binning.
+
+    Counts are aggregated across the entire input dataset (expected to span a single
+    IDEX 10-day window) into a single record. Only events flagged as dust hits
+    (``dust_hit_flag`` == 1) are included.
 
     Parameters
     ----------
     l2a_dataset : xarray.Dataset
         Combined IDEX L2A dataset.
-    epoch_doy_unique : np.ndarray
-        Unique days of year corresponding to the epochs in the dataset.
 
     Returns
     -------
     tuple[np.ndarray, np.ndarray]
-        Counts by spin phase and counts by longitude and latitude, respectively.
+        Counts by spin phase and counts by longitude and latitude, respectively, each
+        with a single window record.
     """
-    counts = []
-    counts_map = []
-    epoch_doy = epoch_to_doy(l2a_dataset["epoch"].data)
-    for doy in epoch_doy_unique:
-        indices = _get_dust_hit_indices(l2a_dataset, epoch_doy, int(doy))
-        spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
-        counts.append(np.histogram(spin, bins=np.arange(SPIN_PHASE_BIN_EDGES.size))[0])
-        longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
-        latitude = l2a_dataset["latitude"].data[indices]
-        valid_geometry = np.isfinite(longitude) & np.isfinite(latitude)
-        counts_map.append(
-            np.histogram2d(
-                longitude[valid_geometry],
-                np.clip(latitude[valid_geometry], -90, 90),
-                bins=[LON_BINS_EDGES, LAT_BINS_EDGES],
-            )[0]
-        )
-    return np.asarray(counts, dtype=np.int64), np.asarray(counts_map, dtype=np.int64)
+    indices = _get_dust_hit_indices(l2a_dataset)
+    spin = bin_spin_phases(l2a_dataset["spin_phase"].data[indices])
+    counts = np.histogram(spin, bins=np.arange(SPIN_PHASE_BIN_EDGES.size))[0]
+    longitude = np.mod(l2a_dataset["longitude"].data[indices], 360)
+    latitude = l2a_dataset["latitude"].data[indices]
+    valid_geometry = np.isfinite(longitude) & np.isfinite(latitude)
+    counts_map = np.histogram2d(
+        longitude[valid_geometry],
+        np.clip(latitude[valid_geometry], -90, 90),
+        bins=[LON_BINS_EDGES, LAT_BINS_EDGES],
+    )[0]
+    return (
+        counts[np.newaxis, ...].astype(np.int64),
+        counts_map[np.newaxis, ...].astype(np.int64),
+    )
 
 
-def _get_dust_hit_indices(
-    l2a_dataset: xr.Dataset, epoch_doy: np.ndarray, doy: int
-) -> np.ndarray:
+def _get_dust_hit_indices(l2a_dataset: xr.Dataset) -> np.ndarray:
     """
-    Return the indices of dust hits occurring on the requested day.
+    Return the indices of dust hits in the dataset.
 
     Parameters
     ----------
     l2a_dataset : xarray.Dataset
         Combined IDEX L2A dataset.
-    epoch_doy : np.ndarray
-        Day of year corresponding to each epoch in ``l2a_dataset``.
-    doy : int
-        Day of year to select.
 
     Returns
     -------
     np.ndarray
-        Indices of dust-hit events occurring on ``doy``.
+        Indices of dust-hit events.
     """
-    current_day_indices = np.flatnonzero(epoch_doy == doy)
     if "dust_hit_flag" not in l2a_dataset:
         return np.array([], dtype=int)
 
-    dust_hit = np.asarray(l2a_dataset["dust_hit_flag"].data[current_day_indices]) == 1
-    return current_day_indices[dust_hit]
-
-
-def compute_rates(
-    counts: np.ndarray, epoch_doy_percent_on: np.ndarray, non_zero_inds: np.ndarray
-) -> np.ndarray:
-    """
-    Compute the count rates given the percent uptime of IDEX.
-
-    Parameters
-    ----------
-    counts : np.ndarray
-        Count values for the dust events.
-    epoch_doy_percent_on : np.ndarray
-        Percentage of time science acquisition was on for each day of the year.
-    non_zero_inds : np.ndarray
-        Indices of the days with non-zero science acquisition percentage.
-
-    Returns
-    -------
-    np.ndarray
-        Count rates.
-    """
-    while len(epoch_doy_percent_on.shape) < len(counts.shape):
-        epoch_doy_percent_on = np.expand_dims(epoch_doy_percent_on, axis=-1)
-
-    return counts[non_zero_inds] / (
-        0.01 * epoch_doy_percent_on[non_zero_inds] * SECONDS_IN_DAY
-    )
+    return np.flatnonzero(np.asarray(l2a_dataset["dust_hit_flag"].data) == 1)
 
 
 def compute_rates_agnostic(
     counts: np.ndarray,
     counts_map: np.ndarray,
-    epoch_doy: np.ndarray,
-    daily_on_percentage: dict,
+    on_seconds: float,
+    total_seconds: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Compute daily count rates without mass or charge binning.
+    Compute count rates without mass or charge binning.
 
     Parameters
     ----------
     counts : np.ndarray
-        Daily agnostic counts by spin phase.
+        Agnostic counts by spin phase for the window.
     counts_map : np.ndarray
-        Daily agnostic counts by longitude and latitude.
-    epoch_doy : np.ndarray
-        Unique days of year corresponding to the count records.
-    daily_on_percentage : dict
-        Percentage of time science acquisition was on for each day of year.
+        Agnostic counts by longitude and latitude for the window.
+    on_seconds : float
+        Number of seconds science acquisition was on during the window.
+    total_seconds : float
+        Total number of seconds tracked by the science acquisition on/off events
+        during the window.
 
     Returns
     -------
     tuple[np.ndarray, np.ndarray]
-        Daily rates by spin phase and daily rates by longitude and latitude,
-        respectively.
+        Rates by spin phase and rates by longitude and latitude, respectively.
     """
-    epoch_doy_percent_on = np.array(
-        [daily_on_percentage.get(doy, -1) for doy in epoch_doy]
-    )
-    non_zero_inds = np.where(epoch_doy_percent_on > 0)[0]
     rate = np.full(counts.shape, np.nan)
     rate_map = np.full(counts_map.shape, np.nan)
-    rate[non_zero_inds] = compute_rates(counts, epoch_doy_percent_on, non_zero_inds)
-    rate_map[non_zero_inds] = compute_rates(
-        counts_map, epoch_doy_percent_on, non_zero_inds
-    )
+
+    if total_seconds <= 0 or on_seconds <= 0:
+        logger.warning(
+            "Missing or zero science acquisition uptime for this window. Agnostic "
+            "rate variables will be set to NaN."
+        )
+        return rate, rate_map
+
+    rate = counts / on_seconds
+    rate_map = counts_map / on_seconds
     return rate, rate_map
 
 
@@ -657,74 +627,63 @@ def compute_rates_by_charge_and_mass(
     counts_by_mass: np.ndarray,
     counts_by_charge_map: np.ndarray,
     counts_by_mass_map: np.ndarray,
-    epoch_doy: np.ndarray,
-    daily_on_percentage: dict,
+    on_seconds: float,
+    total_seconds: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Compute the dust event counts rates by charge and mass by spin phase for each day.
+    Compute the dust event count rates by charge and mass by spin phase.
 
     Parameters
     ----------
     counts_by_charge : np.ndarray
-        3D array containing counts by charge and spin phase for each dataset.
+        3D array containing counts by charge and spin phase for the window.
     counts_by_mass : np.ndarray
-        3D array containing counts by mass and lon and lat for each dataset.
+        3D array containing counts by mass and spin phase for the window.
     counts_by_charge_map : np.ndarray
-        4D array containing counts by charge and lon and lat for each dataset.
+        4D array containing counts by charge and lon and lat for the window.
     counts_by_mass_map : np.ndarray
-        4D array containing counts by mass and spin phase for each dataset.
-    epoch_doy : np.ndarray
-        Unique days of year corresponding to the epochs in the dataset.
-    daily_on_percentage : dict
-        Percentage of time science acquisition was on for each doy.
+        4D array containing counts by mass and lon and lat for the window.
+    on_seconds : float
+        Number of seconds science acquisition was on during the window.
+    total_seconds : float
+        Total number of seconds tracked by the science acquisition on/off events
+        during the window.
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray, np.ndarray]
-        Two 3D arrays containing counts rates by charge or mass, and by spin phase for
-        each dataset and the quality flags for each epoch.
+    tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        Two 3D arrays containing count rates by charge or mass, and by spin phase, two
+        4D arrays containing count rates by charge or mass, and by lon and lat, and the
+        quality flag for the window's single epoch record.
     """
     # Initialize arrays to hold rates.
     rate_by_charge = np.full(counts_by_charge.shape, -1.0)
     rate_by_mass = np.full(counts_by_mass.shape, -1.0)
     rate_by_charge_map = np.full(counts_by_charge_map.shape, -1.0)
     rate_by_mass_map = np.full(counts_by_mass_map.shape, -1.0)
-    # Initialize an array to hold quality flags for each epoch. A quality flag of 0
-    # indicates that there was no science acquisition data for that epoch, and the rate
-    # is not valid. A quality flag of 1 indicates that the rate is valid.
-    rate_quality_flags = np.ones(epoch_doy.shape, dtype=np.uint8)
+    # A quality flag of 0 indicates that there was no science acquisition uptime data
+    # for the window, and the rate is not valid. A quality flag of 1 indicates that the
+    # rate is valid.
+    rate_quality_flags: np.ndarray = np.zeros(1, dtype=np.uint8)
 
-    # Get percentages in order of epoch_doy. Log any missing days.
-    epoch_doy_percent_on = np.array(
-        [daily_on_percentage.get(doy, -1) for doy in epoch_doy]
-    )
-
-    invalid_uptime_inds = np.where(epoch_doy_percent_on <= 0)[0]
-    rate_quality_flags[invalid_uptime_inds] = 0
-
-    missing_doy_uptimes_inds = np.where(epoch_doy_percent_on == -1)[0]
-    if np.any(missing_doy_uptimes_inds):
+    if total_seconds <= 0 or on_seconds <= 0:
         logger.warning(
-            f"Missing science acquisition uptime percentages for day(s) of"
-            f" year: {epoch_doy[missing_doy_uptimes_inds]}."
+            "Missing or zero science acquisition uptime for this window. Rate "
+            "variables will be set to -1."
         )
-    # Compute rates
-    # Create a boolean mask for DOYs that have a non-zero percentage of science
-    # acquisition time.
-    non_zero_inds = np.where(epoch_doy_percent_on > 0)[0]
-    # Compute rates only for days with non-zero science acquisition percentage
-    rate_by_charge[non_zero_inds] = compute_rates(
-        counts_by_charge, epoch_doy_percent_on, non_zero_inds
-    )
-    rate_by_mass[non_zero_inds] = compute_rates(
-        counts_by_mass, epoch_doy_percent_on, non_zero_inds
-    )
-    rate_by_charge_map[non_zero_inds] = compute_rates(
-        counts_by_charge_map, epoch_doy_percent_on, non_zero_inds
-    )
-    rate_by_mass_map[non_zero_inds] = compute_rates(
-        counts_by_mass_map, epoch_doy_percent_on, non_zero_inds
-    )
+        return (
+            rate_by_charge,
+            rate_by_mass,
+            rate_by_charge_map,
+            rate_by_mass_map,
+            rate_quality_flags,
+        )
+
+    rate_by_charge = counts_by_charge / on_seconds
+    rate_by_mass = counts_by_mass / on_seconds
+    rate_by_charge_map = counts_by_charge_map / on_seconds
+    rate_by_mass_map = counts_by_mass_map / on_seconds
+    rate_quality_flags[:] = 1
 
     return (
         rate_by_charge,
@@ -764,11 +723,22 @@ def bin_spin_phases(spin_phases: xr.DataArray) -> np.ndarray:
     return np.asarray(bin_indices)
 
 
-def get_science_acquisition_on_percentage(
-    msg_time: NDArray, msg_values: NDArray
-) -> dict:
+def get_science_acquisition_on_time(
+    msg_time: NDArray,
+    msg_values: NDArray,
+    window_start: np.int64,
+    window_end: np.int64,
+) -> tuple[float, float]:
     """
-    Calculate the percentage of time science acquisition was occurring for each day.
+    Calculate the science acquisition on-time over the whole window.
+
+    The on/off state is tracked across the full ``[window_start, window_end)``
+    span, not just between the first and last message events: the state
+    implied by each event is extended forward until the next event, and the
+    last known state is extended through to ``window_end`` (rather than
+    stopping at the last event), so a window with no further transitions after
+    its last event -- or no events at all near the start or end of the window
+    -- is not undercounted.
 
     Parameters
     ----------
@@ -776,64 +746,46 @@ def get_science_acquisition_on_percentage(
         Array of timestamps for science acquisition start and stop events.
     msg_values : np.ndarray
         Array of values indicating if the event is a start (1) or stop (0).
+    window_start : numpy.int64
+        Start of the accumulation window (TT2000 nanoseconds since J2000).
+    window_end : numpy.int64
+        End of the accumulation window (TT2000 nanoseconds since J2000).
 
     Returns
     -------
-    dict
-        Percentages of time the instrument was in science acquisition mode for each day
-         of year.
+    tuple[float, float]
+        The number of seconds science acquisition was on, and the total number of
+        seconds tracked, over the ``[window_start, window_end)`` window.
     """
     if len(msg_time) == 0:
         logger.warning(
-            "No science acquisition events found in event dataset. Returning empty "
-            "uptime percentages. All rate variables will be set to -1."
+            "No science acquisition events found in event dataset. The by-charge "
+            "and by-mass rate variables will be set to -1, and the agnostic rate "
+            "variables will be set to NaN."
         )
-        return {}
-    # Track total and 'on' durations per day
-    daily_totals: collections.defaultdict = defaultdict(timedelta)
-    daily_on: collections.defaultdict = defaultdict(timedelta)
-    # Convert epoch event times to datetime
+        return 0.0, 0.0
+    # Convert event and window boundary times to datetime.
     dates = et_to_datetime64(ttj2000ns_to_et(msg_time)).astype(datetime)
-    # Simulate an event at the start of the first day.
-    start_of_first_day = dates[0].replace(hour=0, minute=0, second=0, microsecond=0)
-    # Assume that the state at the start of the day is the opposite of what the first
-    # state is.
+    window_start_dt = et_to_datetime64(ttj2000ns_to_et(window_start)).astype(datetime)
+    window_end_dt = et_to_datetime64(ttj2000ns_to_et(window_end)).astype(datetime)
+    # TODO pass in the previous l1b msg packet.
+    # Simulate an event at the start of the window. Assume that the state at the
+    # start of the window is the opposite of what the first real event is.
     state_at_start = 0 if msg_values[0] == 1 else 1
-    dates = np.insert(dates, 0, start_of_first_day)
+    dates = np.insert(dates, 0, window_start_dt)
     msg_values = np.insert(msg_values, 0, state_at_start)
+
+    total_duration = timedelta()
+    on_duration = timedelta()
     for i in range(len(dates)):
         start = dates[i]
         state = msg_values[i]
-        if i == len(dates) - 1:
-            # If this is the last event, set the "end" value the end of the day.
-            end = (start + timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-        else:
-            # Otherwise, use the next event time as the end time.
-            end = dates[i + 1]
+        # Every state holds until the next event, except the last one, which holds
+        # through the end of the window.
+        end = dates[i + 1] if i < len(dates) - 1 else window_end_dt
+        duration = end - start
+        total_duration += duration
+        if state == 1:
+            on_duration += duration
 
-        # Split time span by day boundaries
-        current = start
-        while current < end:
-            next_day = (current + timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            segment_end = min(end, next_day)
-            duration = segment_end - current
-            doy = current.timetuple().tm_yday
-            daily_totals[doy] += duration
-            # If the state is 1, add to the 'on' duration for that day
-            if state == 1:
-                daily_on[doy] += duration
-            current = segment_end
-
-    # Calculate the percentage of time science acquisition was on for each day
-    percent_on_times = {}
-    for doy in sorted(daily_totals.keys()):
-        total = daily_totals[doy].total_seconds()
-        on_time = daily_on[doy].total_seconds()
-        pct_on = (on_time / total) * 100 if total > 0 else 0
-        percent_on_times[doy] = pct_on
-
-    return percent_on_times
+    return on_duration.total_seconds(), total_duration.total_seconds()
