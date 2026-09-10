@@ -13,7 +13,6 @@ from numpy.typing import NDArray
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
-from imap_processing.spice.spin import interpolate_spin_data
 from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
@@ -973,7 +972,7 @@ def get_event_times(
     de_event_met: NDArray,
     phase_angle: NDArray,
     spin_ds: xr.Dataset | None = None,
-) -> tuple[NDArray, NDArray]:
+) -> tuple[NDArray, NDArray, NDArray]:
     """
     Get the event times, spin start times.
 
@@ -998,22 +997,42 @@ def get_event_times(
         Event times in et.
     spin_start_times: numpy.ndarray
         Spin start times in et.
+    quality_flags : numpy.ndarray
+        Quality flags. Events with missing aux/spin data are flagged with
+        ``ImapDEOutliersUltraFlags.AUXOUTLIER``.
     """
     # Get or compute spin info
     if spin_ds is None:
         spin_ds = get_spin_info(aux_dataset, de_event_met)
 
     # spin start with subsecond precision
-    spin_start_times = spin_ds.spin_starts + (spin_ds.spin_start_subs / 1000.0)
+    spin_start_times = (spin_ds.spin_starts + (spin_ds.spin_start_subs / 1000.0)).values
 
     # add the fractional spin offset
-    event_times = spin_start_times + (spin_ds.spin_duration / 1000.0) * (
+    event_times = spin_start_times + (spin_ds.spin_duration.values / 1000.0) * (
         phase_angle / 720.0
     )
-    return (
-        ttj2000ns_to_et(met_to_ttj2000ns(event_times)),
-        ttj2000ns_to_et(met_to_ttj2000ns(spin_start_times)),
+
+    # Flag and fill events with missing aux/spin data before doing the
+    # spice time conversion below.
+    missing_mask = np.isnan(event_times) | np.isnan(spin_start_times)
+    quality_flags = np.full(
+        event_times.shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
     )
+    quality_flags[missing_mask] = ImapDEOutliersUltraFlags.AUXOUTLIER.value
+
+    out_event_times = np.full(event_times.shape, FILLVAL_FLOAT32, dtype=np.float64)
+    out_spin_start_times = np.full(
+        spin_start_times.shape, FILLVAL_FLOAT32, dtype=np.float64
+    )
+    out_event_times[~missing_mask] = ttj2000ns_to_et(
+        met_to_ttj2000ns(event_times[~missing_mask])
+    )
+    out_spin_start_times[~missing_mask] = ttj2000ns_to_et(
+        met_to_ttj2000ns(spin_start_times[~missing_mask])
+    )
+
+    return out_event_times, out_spin_start_times, quality_flags
 
 
 def get_spin_info(aux_dataset: xr.Dataset, de_event_met: NDArray) -> xr.Dataset:
@@ -1040,32 +1059,17 @@ def get_spin_info(aux_dataset: xr.Dataset, de_event_met: NDArray) -> xr.Dataset:
     spin_info_per_event = xr.Dataset()
     # Create dict of var name lookups
     var_names = {
-        "spin_number": ("spinnumber", "spin_number"),
-        "spin_duration": ("duration", "spin_period_sec"),
-        "spin_starts": ("timespinstart", "spin_start_sec_sclk"),
-        "spin_start_subs": ("timespinstartsub", "spin_start_subsec_sclk"),
+        "spin_number": "spinnumber",
+        "spin_duration": "duration",
+        "spin_starts": "timespinstart",
+        "spin_start_subs": "timespinstartsub",
     }
-    # If there is not enough aux data covering an event, query the universal
-    # spin table using the start time to fill in the missing data.
-    # This can happen for the first event if the aux data starts after the DE data.
-    spin_data = (
-        interpolate_spin_data(de_event_met[missing_events])
-        if np.any(missing_events)
-        else None
-    )
 
-    for var, (aux_name, ut_name) in var_names.items():
-        init_array = np.zeros_like(de_event_met, dtype=np.float64)
-        if np.any(missing_events) and spin_data is not None:
-            # Get data from universal table for events missing aux data
-            init_array[missing_events] = spin_data[ut_name].values
-            if ut_name == "spin_start_subsec_sclk":
-                # Convert from microseconds to milliseconds to match aux data units
-                init_array[missing_events] /= 1000.0
+    for var, aux_name in var_names.items():
+        init_array = np.full(de_event_met.shape, np.nan, dtype=np.float64)
         # Get data from aux dataset for the rest of the events
         init_array[~missing_events] = aux_dataset[aux_name].values[start_inds]
         spin_info_per_event[var] = (("epoch",), init_array)
-
     return spin_info_per_event
 
 
