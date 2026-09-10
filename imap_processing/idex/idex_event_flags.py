@@ -31,9 +31,16 @@ _SATURATION_FRACTION = 0.95
 _PULSER_THRESHOLD_DN = 1000
 _BASELINE_WINDOW_US = 3.0
 _PEAK_THRESHOLD_SIGMA = 7.0
+_PEAK_PROMINENCE_SIGMA = 5.0
 _MIN_PEAK_WIDTH_US = 0.020
+_SINGLE_PEAK_WIDTH_US = 0.050
 _MIN_PEAK_COUNT = 2
 _MIN_PEAK_DISTANCE_US = 0.030
+_SATURATION_MATCH_WINDOW_US = 0.050
+_TOF_REFERENCE_BASELINES = (511.0, 513.0, 514.0)
+_TOF_REFERENCE_SIGMAS = (2.9652, 1.4826, 2.9652)
+_TRUNCATED_BASELINE_OFFSET_DN = 20.0
+_TRUNCATED_BASELINE_NOISE_DN = 10.0
 
 _TRIGGER_CHANNELS = {
     0: "TOF H",
@@ -194,7 +201,7 @@ def _has_dust_hit(
     tof_low: np.ndarray,
     time_high_sample_rate: np.ndarray,
 ) -> bool:
-    """Return whether TOF High contains two qualifying peaks.
+    """Return whether any TOF gain contains a dust-like peak pattern.
 
     Parameters
     ----------
@@ -206,10 +213,9 @@ def _has_dust_hit(
     Returns
     -------
     bool
-        Whether at least two peaks meet the sigma and FWHM requirements.
+        Whether at least two peaks meet the sigma and FWHM requirements in
+        one gain, or one peak is at least 50 ns wide.
     """
-    # Candidate peaks are always located on High, then measured at lower gain
-    # when saturation prevents a reliable High-gain FWHM.
     high = _as_1d_array(tof_high)
     mid = _as_1d_array(tof_mid)
     low = _as_1d_array(tof_low)
@@ -219,29 +225,98 @@ def _has_dust_hit(
         return False
     high, mid, low, times = (array[:length] for array in (high, mid, low, times))
 
-    high_corrected, high_sigma = _baseline_corrected(high, times)
-    if not np.isfinite(high_sigma) or high_sigma <= 0.0:
-        return False
-    finite = np.isfinite(high_corrected) & np.isfinite(times)
-    if not np.any(finite):
-        return False
-    dt_us = _sample_spacing_us(times)
-    distance = max(1, round(_MIN_PEAK_DISTANCE_US / dt_us)) if dt_us > 0 else 1
-    search = np.where(finite, high_corrected, -np.inf)
-    peaks, _ = find_peaks(
-        search,
-        height=_PEAK_THRESHOLD_SIGMA * high_sigma,
-        distance=distance,
+    return _has_standard_dust_hit(high, mid, low, times) or _has_truncated_dust_hit(
+        high, mid, low, times
     )
 
-    qualifying_peaks = 0
-    for peak_index in peaks:
-        width_us = _saturation_aware_width(
-            peak_index, high, mid, low, times, high_corrected
+
+def _has_standard_dust_hit(
+    high: np.ndarray, mid: np.ndarray, low: np.ndarray, times: np.ndarray
+) -> bool:
+    """Return whether normal baseline processing finds a dust-like pattern.
+
+    Parameters
+    ----------
+    high, mid, low : numpy.ndarray
+        Raw TOF waveforms in high, medium, and low gain.
+    times : numpy.ndarray
+        High-rate waveform times in microseconds.
+
+    Returns
+    -------
+    bool
+        Whether the standard peak criteria identify a dust-like pattern.
+    """
+    for channel_index, waveform in enumerate((high, mid, low)):
+        corrected, sigma, peaks = _qualifying_peaks(waveform, times)
+        if not np.isfinite(sigma):
+            continue
+        peaks = _collapse_saturated_peaks(peaks, waveform, corrected)
+
+        widths = []
+        direct_widths = []
+        for peak_index in peaks:
+            direct_widths.append(_fwhm(corrected, times, int(peak_index)))
+            if channel_index == 0:
+                width_us = _saturation_aware_width(
+                    peak_index, high, mid, low, times, corrected
+                )
+            else:
+                width_us = direct_widths[-1]
+            if np.isfinite(width_us):
+                widths.append(width_us)
+
+        if sum(width >= _MIN_PEAK_WIDTH_US for width in widths) >= _MIN_PEAK_COUNT:
+            return True
+        if (
+            channel_index == 0
+            and len(direct_widths) == 1
+            and direct_widths[0] >= _SINGLE_PEAK_WIDTH_US
+        ):
+            return True
+
+    return False
+
+
+def _has_truncated_dust_hit(
+    high: np.ndarray, mid: np.ndarray, low: np.ndarray, times: np.ndarray
+) -> bool:
+    """Return whether reference-baseline processing finds two broad peaks.
+
+    Parameters
+    ----------
+    high, mid, low : numpy.ndarray
+        Raw TOF waveforms in high, medium, and low gain.
+    times : numpy.ndarray
+        High-rate waveform times in microseconds.
+
+    Returns
+    -------
+    bool
+        Whether the fallback peak criteria identify two qualifying peaks.
+    """
+    # If the impact begins before the TOF record, the normal baseline window
+    # can contain signal and suppress otherwise valid peaks.  Reprocess only
+    # those channels with the measured noise-capture reference baseline.
+    for channel_index, waveform in enumerate((high, mid, low)):
+        if not _baseline_is_truncated(
+            waveform, times, _TOF_REFERENCE_BASELINES[channel_index]
+        ):
+            continue
+        corrected, sigma, peaks = _reference_qualifying_peaks(
+            waveform,
+            times,
+            _TOF_REFERENCE_BASELINES[channel_index],
+            _TOF_REFERENCE_SIGMAS[channel_index],
         )
-        if np.isfinite(width_us) and width_us >= _MIN_PEAK_WIDTH_US:
-            qualifying_peaks += 1
-    return qualifying_peaks >= _MIN_PEAK_COUNT
+        if not np.isfinite(sigma):
+            continue
+        peaks = _collapse_saturated_peaks(peaks, waveform, corrected)
+        widths = [_fwhm(corrected, times, int(peak_index)) for peak_index in peaks]
+        if sum(width >= _MIN_PEAK_WIDTH_US for width in widths) >= _MIN_PEAK_COUNT:
+            return True
+
+    return False
 
 
 def _as_1d_array(values: np.ndarray) -> np.ndarray:
@@ -293,6 +368,116 @@ def _baseline_corrected(
     return values - baseline, sigma
 
 
+def _qualifying_peaks(
+    values: np.ndarray, times: np.ndarray
+) -> tuple[np.ndarray, float, np.ndarray]:
+    """Return baseline-corrected values and qualifying peaks.
+
+    Parameters
+    ----------
+    values : numpy.ndarray
+        Waveform samples.
+    times : numpy.ndarray
+        Sample times in microseconds.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, float, numpy.ndarray]
+        Baseline-corrected waveform, noise standard deviation, and peak indices.
+    """
+    corrected, sigma = _baseline_corrected(values, times)
+    if not np.isfinite(sigma) or sigma <= 0.0:
+        return corrected, sigma, np.array([], dtype=int)
+    finite = np.isfinite(corrected) & np.isfinite(times)
+    if not np.any(finite):
+        return corrected, sigma, np.array([], dtype=int)
+    dt_us = _sample_spacing_us(times)
+    distance = max(1, round(_MIN_PEAK_DISTANCE_US / dt_us)) if dt_us > 0 else 1
+    search = np.where(finite, corrected, -np.inf)
+    peaks, _ = find_peaks(
+        search,
+        height=_PEAK_THRESHOLD_SIGMA * sigma,
+        prominence=_PEAK_PROMINENCE_SIGMA * sigma,
+        distance=distance,
+    )
+    return corrected, sigma, peaks
+
+
+def _baseline_is_truncated(
+    values: np.ndarray, times: np.ndarray, reference_baseline: float
+) -> bool:
+    """Return whether the initial baseline window is signal-contaminated.
+
+    Parameters
+    ----------
+    values : numpy.ndarray
+        Waveform samples.
+    times : numpy.ndarray
+        Sample times in microseconds.
+    reference_baseline : float
+        Expected TOF baseline in DN.
+
+    Returns
+    -------
+    bool
+        Whether the initial baseline differs substantially from the reference.
+    """
+    finite = np.isfinite(values) & np.isfinite(times)
+    if not np.any(finite):
+        return False
+    first_time = float(times[finite][0])
+    samples = values[finite & (times < first_time + _BASELINE_WINDOW_US)]
+    if samples.size == 0:
+        return False
+    median = float(np.nanmedian(samples))
+    robust_noise = 1.4826 * float(np.nanmedian(np.abs(samples - median)))
+    return bool(
+        abs(median - reference_baseline) > _TRUNCATED_BASELINE_OFFSET_DN
+        or robust_noise > _TRUNCATED_BASELINE_NOISE_DN
+    )
+
+
+def _reference_qualifying_peaks(
+    values: np.ndarray,
+    times: np.ndarray,
+    reference_baseline: float,
+    reference_sigma: float,
+) -> tuple[np.ndarray, float, np.ndarray]:
+    """Find peaks using a reference baseline when the record starts in signal.
+
+    Parameters
+    ----------
+    values : numpy.ndarray
+        Waveform samples.
+    times : numpy.ndarray
+        Sample times in microseconds.
+    reference_baseline : float
+        Expected TOF baseline in DN.
+    reference_sigma : float
+        Expected noise standard deviation in DN.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, float, numpy.ndarray]
+        Reference-baseline-corrected waveform, noise standard deviation, and peak
+        indices.
+    """
+    corrected = values - reference_baseline
+    finite = np.isfinite(corrected) & np.isfinite(times)
+    if not np.any(finite) or not np.isfinite(reference_sigma) or reference_sigma <= 0.0:
+        return corrected, np.nan, np.array([], dtype=int)
+    dt_us = _sample_spacing_us(times)
+    distance = max(1, round(_MIN_PEAK_DISTANCE_US / dt_us)) if dt_us > 0 else 1
+    search = np.where(finite, corrected, -np.inf)
+    peaks, _ = find_peaks(
+        search,
+        height=_PEAK_THRESHOLD_SIGMA * reference_sigma,
+        prominence=_PEAK_PROMINENCE_SIGMA * reference_sigma,
+        distance=distance,
+    )
+    return corrected, reference_sigma, peaks
+
+
 def _sample_spacing_us(times: np.ndarray) -> float:
     """Return the median finite sample spacing in microseconds.
 
@@ -310,6 +495,50 @@ def _sample_spacing_us(times: np.ndarray) -> float:
     if finite_times.size < 2:
         return np.nan
     return float(np.nanmedian(np.abs(np.diff(finite_times))))
+
+
+def _collapse_saturated_peaks(
+    peaks: np.ndarray, values: np.ndarray, corrected: np.ndarray
+) -> np.ndarray:
+    """Keep one candidate peak for each contiguous saturated region.
+
+    Parameters
+    ----------
+    peaks : numpy.ndarray
+        Candidate peak indices.
+    values : numpy.ndarray
+        Raw waveform samples.
+    corrected : numpy.ndarray
+        Baseline-corrected waveform samples.
+
+    Returns
+    -------
+    numpy.ndarray
+        Peak indices with saturated regions collapsed to one candidate each.
+    """
+    if peaks.size < 2:
+        return peaks
+    saturated = values >= _SATURATION_FRACTION * _TOF_MAX_DN
+    retained = []
+    used_regions = set()
+    for peak_value in peaks:
+        peak = int(peak_value)
+        if not saturated[peak]:
+            retained.append(peak)
+            continue
+        left = peak
+        while left > 0 and saturated[left - 1]:
+            left -= 1
+        right = peak
+        while right < values.size - 1 and saturated[right + 1]:
+            right += 1
+        region = (left, right)
+        if region in used_regions:
+            continue
+        used_regions.add(region)
+        region_peaks = [candidate for candidate in peaks if left <= candidate <= right]
+        retained.append(max(region_peaks, key=lambda candidate: corrected[candidate]))
+    return np.asarray(retained, dtype=int)
 
 
 def _saturation_aware_width(
@@ -355,15 +584,19 @@ def _saturation_aware_width(
         return _fwhm(high_corrected, times, peak_index)
 
     for waveform in (mid, low):
-        finite_times = np.isfinite(times)
-        if not np.any(finite_times):
+        corrected, sigma, peaks = _qualifying_peaks(waveform, times)
+        if not np.isfinite(sigma) or peaks.size == 0:
             continue
-        distances = np.where(finite_times, np.abs(times - peak_time), np.inf)
-        index = int(np.argmin(distances))
-        sample = float(waveform[index])
-        if not np.isfinite(sample) or _is_saturated(sample):
+        distances = np.abs(times[peaks] - peak_time)
+        nearest = int(np.argmin(distances))
+        if (
+            not np.isfinite(distances[nearest])
+            or distances[nearest] > _SATURATION_MATCH_WINDOW_US
+        ):
             continue
-        corrected, _ = _baseline_corrected(waveform, times)
+        index = int(peaks[nearest])
+        if _is_saturated(float(waveform[index])):
+            continue
         width = _fwhm(corrected, times, index)
         if np.isfinite(width):
             return width

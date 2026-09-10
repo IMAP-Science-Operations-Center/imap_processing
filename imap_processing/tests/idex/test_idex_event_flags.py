@@ -8,6 +8,8 @@ from imap_processing.idex.idex_event_flags import (
     EVENT_FLAG_NAMES,
     SATURATION_FLAG_NAMES,
     _fwhm,
+    _qualifying_peaks,
+    _reference_qualifying_peaks,
     _saturation_aware_width,
     classify_event_flags,
     classify_saturation_flags,
@@ -125,6 +127,76 @@ def test_dust_hit_requires_two_seven_sigma_peaks_and_is_saturation_aware() -> No
     assert flags["dust_hit_flag"] == 1
 
 
+def test_dust_hit_scans_lower_gain_for_two_peaks() -> None:
+    """Two peaks visible only in Mid still set Dust Hit when High saturates."""
+    times = np.arange(2048, dtype=float) / 260.0
+    baseline = 100.0 + 0.5 * np.sin(np.arange(times.size, dtype=float) / 3.0)
+    narrow = 0.020 / 2.355
+    mid = baseline + sum(
+        20.0 * np.exp(-0.5 * ((times - center) / narrow) ** 2) for center in (5.0, 5.08)
+    )
+    high = np.minimum(baseline + 100.0 * mid, 1023.0)
+    low = baseline.copy()
+
+    flags = classify_event_flags(
+        _telemetry(trigger_id=1 | 4, hg_mode=1), high, mid, low, times
+    )
+
+    assert flags["dust_hit_flag"] == 1
+
+
+def test_dust_hit_accepts_one_broad_peak() -> None:
+    """A single 50 ns peak is accepted as a broad dust-like event."""
+    times = np.arange(2048, dtype=float) / 260.0
+    baseline = 100.0 + 0.5 * np.sin(np.arange(times.size, dtype=float) / 3.0)
+    broad = baseline + 20.0 * np.exp(-0.5 * ((times - 5.0) / (0.050 / 2.355)) ** 2)
+
+    flags = classify_event_flags(
+        _telemetry(trigger_id=1 | 4, hg_mode=1), broad, broad, broad, times
+    )
+
+    assert flags["dust_hit_flag"] == 1
+
+
+def test_dust_hit_uses_reference_baseline_for_truncated_waveform() -> None:
+    """Two peaks are recovered when the initial TOF baseline is contaminated."""
+    times = np.arange(2048, dtype=float) / 260.0
+    baseline = np.full(times.size, 511.0)
+    width = 0.030 / 2.355
+    waveform = baseline + 80.0
+    waveform += sum(
+        200.0 * np.exp(-0.5 * ((times - center) / width) ** 2) for center in (5.0, 5.08)
+    )
+    _, _, normal_peaks = _qualifying_peaks(waveform, times)
+    _, _, fallback_peaks = _reference_qualifying_peaks(waveform, times, 511.0, 2.9652)
+
+    assert normal_peaks.size < 2
+    assert fallback_peaks.size >= 2
+
+    flags = classify_event_flags(
+        _telemetry(trigger_id=1 | 4, hg_mode=1),
+        waveform,
+        waveform - 2.0,
+        waveform - 1.0,
+        times,
+    )
+    assert flags["dust_hit_flag"] == 1
+
+
+def test_peak_detection_rejects_low_prominence_secondary_maxima() -> None:
+    """A small shoulder above 7 sigma is not counted as a separate peak."""
+    times = np.arange(256, dtype=float) / 260.0
+    waveform = 0.5 * np.sin(np.arange(times.size, dtype=float) / 3.0)
+    waveform[90:130] += 6.0
+    waveform[100] += 20.0
+    waveform[104:] += 7.5
+    waveform[108] += 0.5
+
+    _, _, peaks = _qualifying_peaks(waveform, times)
+
+    assert peaks.tolist() == [100]
+
+
 def test_dust_hit_is_not_set_for_non_science_events() -> None:
     """Dust-shaped waveforms cannot turn a non-science event into Dust Hit."""
     flags = classify_event_flags(
@@ -136,16 +208,17 @@ def test_dust_hit_is_not_set_for_non_science_events() -> None:
 
 def test_saturation_aware_width_falls_through_invalid_mid_gain() -> None:
     """A non-finite Mid sample falls through to a usable Low waveform."""
-    times = np.arange(9, dtype=float)
-    low = np.array([0.0, 0.0, 1.0, 3.0, 5.0, 3.0, 1.0, 0.0, 0.0])
+    times = np.arange(2048, dtype=float) / 260.0
+    baseline = 100.0 + 0.5 * np.sin(np.arange(times.size, dtype=float) / 3.0)
+    low = baseline + 20.0 * np.exp(-0.5 * ((times - 5.0) / (0.030 / 2.355)) ** 2)
     high = low.copy()
-    high[4] = 1023.0
-    mid = low.copy()
-    mid[4] = np.nan
+    peak_index = int(np.argmax(low))
+    high[peak_index] = 1023.0
+    mid = np.full_like(low, np.nan)
 
-    width = _saturation_aware_width(4, high, mid, low, times, high - high[0])
+    width = _saturation_aware_width(peak_index, high, mid, low, times, high - high[0])
 
-    assert width == pytest.approx(2.5)
+    assert width == pytest.approx(0.030, rel=0.1)
 
 
 def test_fwhm_rejects_truncated_boundary_peaks() -> None:
