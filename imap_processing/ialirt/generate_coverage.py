@@ -1,6 +1,7 @@
 """Coverage time for each station."""
 
 import logging
+from datetime import time as dt_time
 
 import numpy as np
 
@@ -158,6 +159,17 @@ def generate_coverage(  # noqa: PLR0912
         outage_dict[station_name] = et_to_utc(
             time_range[outage_mask], format_str="ISOC"
         )
+
+    # Mopra: fixed daily allocation (20:45-00:30 UTC), no geometry needed.
+    # Split into two same-day windows to avoid the midnight rollover.
+    mopra_evening = StationProperties(0, 0, 0, 0, dt_time(20, 45), dt_time(23, 59, 59))
+    mopra_morning = StationProperties(0, 0, 0, 0, dt_time(0, 0), dt_time(0, 30))
+    mopra_mask = create_schedule_mask(mopra_evening, time_range) | create_schedule_mask(
+        mopra_morning, time_range
+    )
+    total_visible_mask |= mopra_mask
+    coverage_dict["Mopra"] = et_to_utc(time_range[mopra_mask], format_str="ISOC")
+    outage_dict["Mopra"] = np.array([], dtype="<U23")
 
     # --- DSN Stations ---
     if dsn:
