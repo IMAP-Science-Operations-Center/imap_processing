@@ -2,6 +2,51 @@ int_fillval: &int_fillval -9223372036854775808
 int_maxval: &int_maxval 9223372036854775807
 double_fillval: &double_fillval -1.0E31
 
+# Override the default epoch (defined in imap_constant_attrs.yaml) for L2B/L2C.
+epoch:
+  BIN_LOCATION: 0.0
+  CATDESC: Start time of the accumulation window, number of nanoseconds since J2000 with leap seconds included
+  DELTA_MINUS_VAR: epoch_delta_minus
+  DELTA_PLUS_VAR: epoch_delta_plus
+  VAR_NOTES: >
+    Deviates from the ISTP default of representing the center of the
+    measurement period, because that would not represent the beginning of the
+    accumulation window. IDEX L2B/L2C accumulation windows are also not a
+    fixed duration (they range from about 6 to 10 days, aligned to
+    day-of-year boundaries), so a single symmetric delta could not describe
+    the true window bounds either. Epoch is instead set to the nominal start
+    of the window (per the IDEX 10-day window schedule), with DELTA_PLUS_VAR
+    (epoch_delta_plus) giving the nominal window duration, and DELTA_MINUS_VAR
+    (epoch_delta_minus) fixed at zero.
+
+epoch_delta_plus:
+  CATDESC: Number of nanoseconds from epoch to the end of the accumulation window
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
+  FIELDNAM: Epoch Delta Plus
+  FILLVAL: *int_fillval
+  FORMAT: I19
+  LABLAXIS: Epoch Delta Plus
+  SCALETYP: linear
+  UNITS: ns
+  VALIDMAX: 864000000000000
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+epoch_delta_minus:
+  CATDESC: Number of nanoseconds from epoch to the start of the accumulation window (always zero, since epoch is defined as the window start)
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal,Qualifier:Uncertainty
+  FIELDNAM: Epoch Delta Minus
+  FILLVAL: *int_fillval
+  FORMAT: I19
+  LABLAXIS: Epoch Delta Minus
+  SCALETYP: linear
+  UNITS: ns
+  VALIDMAX: 0
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
 # Label attributes
 mass_labels:
   CATDESC: Labels for Mass
@@ -118,7 +163,7 @@ base_agnostic: &base_agnostic
 
 rate_by_charge:
     <<: *base_charge
-    CATDESC: Count rate in s^-1 by impact charge and spin phase.
+    CATDESC: Count rate by impact charge and spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate by Charge
     FILLVAL: *double_fillval
@@ -126,7 +171,7 @@ rate_by_charge:
 
 rate_by_mass:
     <<: *base_mass
-    CATDESC: Count rate in s^-1 by mass and spin phase.
+    CATDESC: Count rate by mass and spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate by Mass
     FILLVAL: *double_fillval
@@ -150,7 +195,7 @@ counts_by_mass:
 
 counts:
     <<: *base_agnostic
-    CATDESC: Count of dust impacts by spin phase.
+    CATDESC: Count of dust impacts by spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:Counts,Qualifier:Array
     FIELDNAM: Counts
     FORMAT: I8
@@ -158,25 +203,11 @@ counts:
 
 rate:
     <<: *base_agnostic
-    CATDESC: Dust impact count rate by spin phase.
+    CATDESC: Dust impact count rate by spin phase over the 10-day window.
     DICT_KEY: SPASE>Particle>ParticleType:Dust,ParticleQuantity:CountRate,Qualifier:Array
     FIELDNAM: Rate
     FILLVAL: *double_fillval
     UNITS: s^-1
-
-impact_day_of_year:
-    CATDESC: The unique day of the years when dust impacts occurred.
-    DEPEND_0: epoch
-    DICT_KEY: SPASE>Support>SupportQuantity:Temporal
-    DISPLAY_TYPE: time_series
-    FIELDNAM: Impact Day of Year
-    FILLVAL: *int_fillval
-    FORMAT: I3
-    LABLAXIS: Impact DOY
-    UNITS: days
-    VALIDMAX: 366
-    VALIDMIN: 1
-    VAR_TYPE: data
 
 rate_calculation_quality_flags:
   CATDESC: Quality flag for rate calculation (1 = good, 0 = insufficient IDEX uptime data)
