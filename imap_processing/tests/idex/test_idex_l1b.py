@@ -390,13 +390,16 @@ def test_l1b_msg_processing(decom_test_data_msg: xr.Dataset):
         A dataset containing the MSG data produced by the l1a processing.
     """
     msg_ds = decom_test_data_msg.copy()
-    # Set 2 consecutive events to have pulser on and pulser off
+    # Set an on and an off within 5 seconds
     msg_ds.messages[2] = EventMessage.PULSER_ON.value
-    msg_ds.messages[3] = EventMessage.PULSER_OFF.value
-    # Set 2 to have a non-consecutive pulser on and pulser off to check that
-    # non-consecutive events are treated as non-valid pulser on and off events
+    msg_ds.messages[4] = EventMessage.PULSER_OFF.value
+    new_epoch = msg_ds.epoch.values.copy()
+    new_epoch[3] = new_epoch[2]
+    new_epoch[4] = new_epoch[2]
+    # Set an on and an off outside of 5 seconds
     msg_ds.messages[20] = EventMessage.PULSER_ON.value
     msg_ds.messages[22] = EventMessage.PULSER_OFF.value
+    msg_ds = msg_ds.assign_coords(epoch=new_epoch)
     # Process the MSG data with the l1b function
     test_l1b_msg = idex_l1b(msg_ds, "msg-10days")
     expected_vars = [

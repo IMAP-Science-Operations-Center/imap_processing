@@ -28,6 +28,7 @@ from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_constants import (
     DT_BLOCK,
     IDEX_EVENT_REFERENCE_FRAME,
+    NS_TO_S,
     ConversionFactors,
 )
 from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
@@ -179,17 +180,22 @@ def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset | None:
     # Set science_on to 1 when science is on and 0 when it is off. 255 otherwise.
     science_on = np.where(l1a_messages == EventMessage.SCIENCE_ON.value, 1, 255)
     science_on[l1a_messages == EventMessage.SCIENCE_OFF.value] = 0
-    # Find indices where there are consecutive PULSER_ON followed by PULSER_OFF
-    # messages. These are the only cases where we should set pulser_on to 1 and 0.
-    # Compare the messages by shifting the pulser off messages back by one and looking
-    # for matching overlaps.
-    consecutive_pulser_on_off = np.where(
-        (l1a_messages[:-1] == EventMessage.PULSER_ON.value)
-        & (l1a_messages[1:] == EventMessage.PULSER_OFF.value)
-    )[0]
+    # Find indices where PULSER_ON is followed by PULSER_OFF within 5 seconds.
+    # These are the only cases where we should set pulser_on to 1 and 0.
+    pulser_on_events = np.where(l1a_messages == EventMessage.PULSER_ON.value)[0]
     pulser_on = np.full(len(l1a_messages), 255)  # initialize with 255 (unknown)
-    pulser_on[consecutive_pulser_on_off] = 1
-    pulser_on[consecutive_pulser_on_off + 1] = 0
+    epochs = l1a_dataset.epoch.values
+    # Loop through each pulser on event and check if there is a pulser off
+    # within 5 seconds.
+    for on in pulser_on_events:
+        on_epoch = epochs[on]
+        within_5s = (epochs >= on_epoch) & (epochs <= on_epoch + 5 * NS_TO_S)
+        off = np.where(within_5s & (l1a_messages == EventMessage.PULSER_OFF.value))[0]
+        if off.size:
+            # If an on was followed by an off, set the values.
+            pulser_on[on] = 1
+            pulser_on[off[0]] = 0  # Use the first off event after an on.
+
     l1b_dataset["pulser_on"] = xr.DataArray(
         data=pulser_on,
         dims="epoch",
