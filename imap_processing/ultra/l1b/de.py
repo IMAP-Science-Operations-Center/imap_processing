@@ -204,12 +204,13 @@ def calculate_de(
     start_type[valid_indices] = de_dataset["start_type"].data[valid_indices]
     spin_ds = get_spin_info(aux_dataset, de_dataset["shcoarse"].data)
 
-    (event_times[valid_mask], spin_starts[valid_mask]) = get_event_times(
+    (event_times[valid_mask], spin_starts[valid_mask], event_time_qf) = get_event_times(
         aux_dataset,
         de_dataset["shcoarse"].data[valid_mask],
         de_dataset["phase_angle"].data[valid_mask],
         spin_ds.isel(epoch=valid_mask),
     )
+    quality_flags[valid_mask] |= event_time_qf
 
     de_dict["spin"] = spin_ds.spin_number.data
     de_dict["event_times"] = event_times.astype(np.float64)

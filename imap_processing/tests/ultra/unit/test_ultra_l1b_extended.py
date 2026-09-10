@@ -11,6 +11,7 @@ from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
+    FILLVAL_FLOAT32,
     CoinType,
     StartType,
     StopType,
@@ -524,7 +525,7 @@ def test_get_eventtimes(test_fixture, aux_dataset):
     """Tests get_eventtimes function."""
     df_filt, _, _, de_dataset = test_fixture
 
-    event_times, spin_start_times = get_event_times(
+    event_times, spin_start_times, _ = get_event_times(
         aux_dataset,
         de_dataset["shcoarse"].values,
         de_dataset["phase_angle"].values,
@@ -600,13 +601,20 @@ def test_get_event_times_out_of_range(
     # set spin data that DOES cover the range of coarse_times
     use_fake_spin_data_for_time(min_time - 1000, min_time + 10000)
     # This should not raise an error.
-    event_times, spin_starts = get_event_times(
+    event_times, spin_starts, quality_flags = get_event_times(
         aux_dataset,
         coarse_times,
         de_dataset["phase_angle"].values,
     )
     assert event_times.shape == coarse_times.shape
     assert spin_starts.shape == coarse_times.shape
+
+    # The out-of-range event should be filled and flagged, not silently
+    # converted to a bogus (but finite) spice time.
+    assert event_times[0] == FILLVAL_FLOAT32
+    assert spin_starts[0] == FILLVAL_FLOAT32
+    assert quality_flags[0] == ImapDEOutliersUltraFlags.AUXOUTLIER.value
+    assert np.all(quality_flags[1:] == ImapDEOutliersUltraFlags.NONE.value)
 
 
 @pytest.mark.external_test_data
