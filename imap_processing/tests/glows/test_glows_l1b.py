@@ -253,6 +253,8 @@ def test_histogram_mapping(
                 mock_ancillary_exclusions,
                 mock_ancillary_parameters,
                 pipeline_settings,
+                0.0,  # daily_total_counts_average
+                0.0,  # daily_total_counts_std_dev
             )
         ).values()
     )
@@ -319,6 +321,8 @@ def test_process_histogram(
         mock_ancillary_exclusions,
         mock_ancillary_parameters,
         pipeline_settings,
+        0.0,  # daily_total_counts_average
+        0.0,  # daily_total_counts_std_dev
     )
 
     output = process_histogram(
@@ -331,7 +335,9 @@ def test_process_histogram(
 
     # flags[0:10]  = onboard flags (1=good, 0=bad), one per bit of flags_set_onboard
     # flags[10]    = is_generated_on_ground (1=onboard, 0=ground)
-    # flags[11]    = is_beyond_daily_statistical_error (placeholder, always 1)
+    # flags[11]    = is_beyond_daily_statistical_error (1 here: total counts of 0
+    #                matches the daily_total_counts_average/std_dev of 0.0/0.0 passed
+    #                in above, so it's within the n-sigma band)
     # flags[12:16] = std_dev threshold flags
     # flags[16]    = is_beyond_background
     assert test_l1b.flags[6] == 0  # is_night
@@ -630,6 +636,8 @@ def test_hist_spice_output(
                 epoch=mock_pipeline_settings.epoch[0], method="nearest"
             ),
         ),
+        "daily_total_counts_average": 0.0,
+        "daily_total_counts_std_dev": 0.0,
     }
 
     kernels = [

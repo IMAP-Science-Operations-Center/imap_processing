@@ -324,7 +324,17 @@ def mock_pipeline_settings():
             ),
             "sunrise_offset": (["epoch"], [0.0] * len(epoch_range)),
             "sunset_offset": (["epoch"], [0.0] * len(epoch_range)),
-            "spin_offset_correction": (["epoch"], [0.0] * len(epoch_range)),
+            "spin_offset_correction_times": (
+                ["epoch", "spin_offset_correction_times_dim_0"],
+                np.tile(
+                    np.array(["2010-01-01T00:00:00"], dtype="datetime64[s]"),
+                    (len(epoch_range), 1),
+                ),
+            ),
+            "spin_offset_correction_values": (
+                ["epoch", "spin_offset_correction_values_dim_0"],
+                np.tile([0.0], (len(epoch_range), 1)),
+            ),
             "n_sigma_threshold_lower": (["epoch"], [3.0] * len(epoch_range)),
             "n_sigma_threshold_upper": (["epoch"], [3.0] * len(epoch_range)),
             "relative_difference_threshold": (["epoch"], [7.0e-5] * len(epoch_range)),
