@@ -41,7 +41,10 @@ from imap_processing.spice.geometry import (
     instrument_pointing,
     solar_longitude,
 )
-from imap_processing.spice.spin import get_spacecraft_spin_phase, get_spin_angle
+from imap_processing.spice.spin import (
+    get_instrument_spin_phase,
+    get_spin_angle,
+)
 from imap_processing.spice.time import et_to_met, ttj2000ns_to_et
 from imap_processing.utils import convert_raw_to_eu
 
@@ -597,7 +600,9 @@ def get_spice_data(
     # Get (Mission Elapsed Time)
     met = et_to_met(et)
     # Get spacecraft spin phase in degrees
-    spin_phase = get_spacecraft_spin_phase(query_met_times=met)
+    spin_phase = get_instrument_spin_phase(
+        query_met_times=met, instrument=SpiceFrame.IMAP_IDEX
+    )
     imap_spin_phase = get_spin_angle(spin_phase, degrees=True)
     # Get the position and velocity of IMAP in ecliptic frame
     ephemeris = imap_state(et, observer=SpiceBody.SUN)
