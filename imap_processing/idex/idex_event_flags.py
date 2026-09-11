@@ -422,6 +422,43 @@ def _baseline_corrected(
     return values - baseline, sigma
 
 
+def _find_qualifying_peak_indices(
+    corrected: np.ndarray, times: np.ndarray, sigma: float
+) -> np.ndarray:
+    """Find qualifying peaks in a baseline-corrected waveform.
+
+    Parameters
+    ----------
+    corrected : numpy.ndarray
+        Baseline-corrected waveform samples.
+    times : numpy.ndarray
+        Sample times in microseconds.
+    sigma : float
+        Noise standard deviation used to set the peak thresholds.
+
+    Returns
+    -------
+    numpy.ndarray
+        Indices of peaks that satisfy the height, prominence, and separation
+        requirements.
+    """
+    if not np.isfinite(sigma) or sigma <= 0.0:
+        return np.array([], dtype=int)
+    finite = np.isfinite(corrected) & np.isfinite(times)
+    if not np.any(finite):
+        return np.array([], dtype=int)
+    dt_us = _sample_spacing_us(times)
+    distance = max(1, round(_MIN_PEAK_DISTANCE_US / dt_us)) if dt_us > 0 else 1
+    search = np.where(finite, corrected, -np.inf)
+    peaks, _ = find_peaks(
+        search,
+        height=_PEAK_THRESHOLD_SIGMA * sigma,
+        prominence=_PEAK_PROMINENCE_SIGMA * sigma,
+        distance=distance,
+    )
+    return peaks
+
+
 def _qualifying_peaks(
     values: np.ndarray, times: np.ndarray
 ) -> tuple[np.ndarray, float, np.ndarray]:
@@ -440,20 +477,7 @@ def _qualifying_peaks(
         Baseline-corrected waveform, noise standard deviation, and peak indices.
     """
     corrected, sigma = _baseline_corrected(values, times)
-    if not np.isfinite(sigma) or sigma <= 0.0:
-        return corrected, sigma, np.array([], dtype=int)
-    finite = np.isfinite(corrected) & np.isfinite(times)
-    if not np.any(finite):
-        return corrected, sigma, np.array([], dtype=int)
-    dt_us = _sample_spacing_us(times)
-    distance = max(1, round(_MIN_PEAK_DISTANCE_US / dt_us)) if dt_us > 0 else 1
-    search = np.where(finite, corrected, -np.inf)
-    peaks, _ = find_peaks(
-        search,
-        height=_PEAK_THRESHOLD_SIGMA * sigma,
-        prominence=_PEAK_PROMINENCE_SIGMA * sigma,
-        distance=distance,
-    )
+    peaks = _find_qualifying_peak_indices(corrected, times, sigma)
     return corrected, sigma, peaks
 
 
@@ -514,18 +538,13 @@ def _reference_qualifying_peaks(
     """
     corrected = values - reference_baseline
     finite = np.isfinite(corrected) & np.isfinite(times)
-    if not np.any(finite) or not np.isfinite(reference_sigma) or reference_sigma <= 0.0:
-        return corrected, np.nan, np.array([], dtype=int)
-    dt_us = _sample_spacing_us(times)
-    distance = max(1, round(_MIN_PEAK_DISTANCE_US / dt_us)) if dt_us > 0 else 1
-    search = np.where(finite, corrected, -np.inf)
-    peaks, _ = find_peaks(
-        search,
-        height=_PEAK_THRESHOLD_SIGMA * reference_sigma,
-        prominence=_PEAK_PROMINENCE_SIGMA * reference_sigma,
-        distance=distance,
+    sigma = (
+        reference_sigma
+        if np.any(finite) and np.isfinite(reference_sigma) and reference_sigma > 0.0
+        else np.nan
     )
-    return corrected, reference_sigma, peaks
+    peaks = _find_qualifying_peak_indices(corrected, times, sigma)
+    return corrected, sigma, peaks
 
 
 def _sample_spacing_us(times: np.ndarray) -> float:
