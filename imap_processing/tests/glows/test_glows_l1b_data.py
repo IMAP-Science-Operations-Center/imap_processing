@@ -367,11 +367,9 @@ def test_get_spin_offset_correction_sorts_by_time():
 
 
 def test_get_spin_offset_correction_fallbacks():
-    """Legacy scalar applies at all times; a missing table defaults to 0.0."""
-    legacy = PipelineSettings(xr.Dataset({"spin_offset_correction": 1.5}))
-    assert legacy.get_spin_offset_correction(
-        np.datetime64("2026-01-01T00:00:00")
-    ) == pytest.approx(1.5)
+    """The deprecated scalar raises; a missing table defaults to 0.0."""
+    with pytest.raises(ValueError, match="deprecated scalar"):
+        PipelineSettings(xr.Dataset({"spin_offset_correction": 1.5}))
     empty = PipelineSettings(xr.Dataset())
     assert empty.get_spin_offset_correction(np.datetime64("2026-01-01T00:00:00")) == 0.0
 

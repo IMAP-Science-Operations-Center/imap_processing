@@ -177,30 +177,25 @@ class PipelineSettings:  # numpydoc ignore=PR02
             self._spin_offset_correction_times = times[order]
             self._spin_offset_correction_values = values[order]
         elif "spin_offset_correction" in pipeline_dataset.data_vars:
-            # Backwards compatibility: older pipeline-settings files carried a single
-            # constant spin_offset_correction scalar instead of the time-dependent
-            # table. Treat it as a one-entry table effective at all times so those
-            # files still apply their correction rather than silently defaulting to 0.
-            logger.warning(
+            # The deprecated scalar 'spin_offset_correction' format is no longer
+            # supported. With correct dependency resolution an old-format file should
+            # never reach this code, so treat it as an error rather than silently
+            # applying a possibly-wrong correction to the science data.
+            raise ValueError(
                 "GLOWS L1B: pipeline settings use the deprecated scalar "
-                "'spin_offset_correction'; falling back to a constant correction. "
-                "Update the ancillary file to provide "
-                "'spin_offset_correction_times'/'spin_offset_correction_values'."
-            )
-            self._spin_offset_correction_times = np.array(
-                ["1970-01-01T00:00:00"], dtype="datetime64[s]"
-            )
-            self._spin_offset_correction_values = np.array(
-                [float(pipeline_dataset["spin_offset_correction"].item())], dtype=float
+                "'spin_offset_correction', which is no longer supported. Provide the "
+                "time-dependent 'spin_offset_correction_times'/"
+                "'spin_offset_correction_values' table instead, or check that the "
+                "correct pipeline-settings ancillary version is being used."
             )
         else:
-            # Neither the table nor the legacy scalar is present: no correction is
-            # applied (0.0 at all times), but warn since this is unexpected for
-            # production settings files.
+            # No spin-offset correction is configured: no correction is applied
+            # (0.0 at all times), but warn since this is unexpected for production
+            # settings files.
             logger.warning(
                 "GLOWS L1B: pipeline settings contain no spin-offset correction "
-                "('spin_offset_correction_times'/'spin_offset_correction_values' or "
-                "the legacy 'spin_offset_correction'); defaulting the correction to 0."
+                "('spin_offset_correction_times'/'spin_offset_correction_values'); "
+                "defaulting the correction to 0."
             )
             self._spin_offset_correction_times = np.array([], dtype="datetime64[s]")
             self._spin_offset_correction_values = np.array([], dtype=float)
