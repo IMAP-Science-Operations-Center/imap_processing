@@ -145,6 +145,57 @@ def test_dust_hit_scans_lower_gain_for_two_peaks() -> None:
     assert flags["dust_hit_flag"] == 1
 
 
+@pytest.mark.parametrize(
+    ("low_width", "expected_dust_hit"),
+    [(0.010, False), (0.030, True)],
+)
+def test_saturated_mid_peaks_fall_through_to_low_gain(
+    low_width: float, expected_dust_hit: bool
+) -> None:
+    """Saturated Mid peaks use Low width before passing the FWHM threshold."""
+    times = np.arange(2048, dtype=float) / 260.0
+    baseline = 511.0 + 0.5 * np.sin(np.arange(times.size, dtype=float) / 3.0)
+    narrow_peaks = sum(
+        200.0 * np.exp(-0.5 * ((times - center) / (0.010 / 2.355)) ** 2)
+        for center in (5.0, 5.08)
+    )
+    mid = np.minimum(baseline + 10.0 * narrow_peaks, 1023.0)
+    low_peaks = sum(
+        30.0 * np.exp(-0.5 * ((times - center) / (low_width / 2.355)) ** 2)
+        for center in (5.0, 5.08)
+    )
+    low = baseline + low_peaks
+    high = baseline.copy()
+
+    flags = classify_event_flags(
+        _telemetry(trigger_id=1 | 4, hg_mode=1), high, mid, low, times
+    )
+
+    assert flags["dust_hit_flag"] == int(expected_dust_hit)
+
+
+def test_truncated_saturated_mid_peaks_fall_through_to_low_gain() -> None:
+    """The truncated-baseline path also uses Low width for saturated Mid peaks."""
+    times = np.arange(2048, dtype=float) / 260.0
+    baseline = 511.0 + 0.5 * np.sin(np.arange(times.size, dtype=float) / 3.0)
+    narrow_peaks = sum(
+        200.0 * np.exp(-0.5 * ((times - center) / (0.010 / 2.355)) ** 2)
+        for center in (5.0, 5.08)
+    )
+    mid = np.minimum(baseline + 10.0 * narrow_peaks, 1023.0)
+    low = baseline + sum(
+        30.0 * np.exp(-0.5 * ((times - center) / (0.010 / 2.355)) ** 2)
+        for center in (5.0, 5.08)
+    )
+    high = baseline + 80.0
+
+    flags = classify_event_flags(
+        _telemetry(trigger_id=1 | 4, hg_mode=1), high, mid, low, times
+    )
+
+    assert flags["dust_hit_flag"] == 0
+
+
 def test_dust_hit_accepts_one_broad_peak() -> None:
     """A single 50 ns peak is accepted as a broad dust-like event."""
     times = np.arange(2048, dtype=float) / 260.0

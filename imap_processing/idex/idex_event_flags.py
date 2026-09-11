@@ -247,22 +247,38 @@ def _has_standard_dust_hit(
     bool
         Whether the standard peak criteria identify a dust-like pattern.
     """
-    for channel_index, waveform in enumerate((high, mid, low)):
-        corrected, sigma, peaks = _qualifying_peaks(waveform, times)
+    waveforms = (high, mid, low)
+    peak_results = [_qualifying_peaks(waveform, times) for waveform in waveforms]
+    corrected_waveforms: tuple[np.ndarray, np.ndarray, np.ndarray] = (
+        peak_results[0][0],
+        peak_results[1][0],
+        peak_results[2][0],
+    )
+    peak_sets: tuple[np.ndarray, np.ndarray, np.ndarray] = (
+        _collapse_saturated_peaks(peak_results[0][2], high, peak_results[0][0]),
+        _collapse_saturated_peaks(peak_results[1][2], mid, peak_results[1][0]),
+        _collapse_saturated_peaks(peak_results[2][2], low, peak_results[2][0]),
+    )
+
+    for channel_index, (_waveform, peak_result, peaks) in enumerate(
+        zip(waveforms, peak_results, peak_sets, strict=True)
+    ):
+        corrected, sigma, _ = peak_result
         if not np.isfinite(sigma):
             continue
-        peaks = _collapse_saturated_peaks(peaks, waveform, corrected)
 
         widths = []
         direct_widths = []
         for peak_index in peaks:
             direct_widths.append(_fwhm(corrected, times, int(peak_index)))
-            if channel_index == 0:
-                width_us = _saturation_aware_width(
-                    peak_index, high, mid, low, times, corrected
-                )
-            else:
-                width_us = direct_widths[-1]
+            width_us = _gain_aware_width(
+                channel_index,
+                peak_index,
+                waveforms,
+                times,
+                corrected_waveforms,
+                peak_sets,
+            )
             if np.isfinite(width_us):
                 widths.append(width_us)
 
@@ -296,23 +312,58 @@ def _has_truncated_dust_hit(
         Whether the fallback peak criteria identify two qualifying peaks.
     """
     # If the impact begins before the TOF record, the normal baseline window
-    # can contain signal and suppress otherwise valid peaks.  Reprocess only
-    # those channels with the measured noise-capture reference baseline.
-    for channel_index, waveform in enumerate((high, mid, low)):
-        if not _baseline_is_truncated(
-            waveform, times, _TOF_REFERENCE_BASELINES[channel_index]
-        ):
-            continue
-        corrected, sigma, peaks = _reference_qualifying_peaks(
-            waveform,
-            times,
-            _TOF_REFERENCE_BASELINES[channel_index],
-            _TOF_REFERENCE_SIGMAS[channel_index],
-        )
+    # can contain signal and suppress otherwise valid peaks.  Reprocess affected
+    # gains with the reference baselines so saturated peaks can fall through to
+    # the next usable gain.
+    waveforms = (high, mid, low)
+    truncated_channels = tuple(
+        _baseline_is_truncated(waveform, times, _TOF_REFERENCE_BASELINES[channel_index])
+        for channel_index, waveform in enumerate(waveforms)
+    )
+    if not any(truncated_channels):
+        return False
+
+    peak_results = []
+    for channel_index, waveform in enumerate(waveforms):
+        if truncated_channels[channel_index]:
+            peak_results.append(
+                _reference_qualifying_peaks(
+                    waveform,
+                    times,
+                    _TOF_REFERENCE_BASELINES[channel_index],
+                    _TOF_REFERENCE_SIGMAS[channel_index],
+                )
+            )
+        else:
+            peak_results.append(_qualifying_peaks(waveform, times))
+    corrected_waveforms: tuple[np.ndarray, np.ndarray, np.ndarray] = (
+        peak_results[0][0],
+        peak_results[1][0],
+        peak_results[2][0],
+    )
+    peak_sets: tuple[np.ndarray, np.ndarray, np.ndarray] = (
+        _collapse_saturated_peaks(peak_results[0][2], high, peak_results[0][0]),
+        _collapse_saturated_peaks(peak_results[1][2], mid, peak_results[1][0]),
+        _collapse_saturated_peaks(peak_results[2][2], low, peak_results[2][0]),
+    )
+
+    for channel_index, (peak_result, peaks) in enumerate(
+        zip(peak_results, peak_sets, strict=True)
+    ):
+        _, sigma, _ = peak_result
         if not np.isfinite(sigma):
             continue
-        peaks = _collapse_saturated_peaks(peaks, waveform, corrected)
-        widths = [_fwhm(corrected, times, int(peak_index)) for peak_index in peaks]
+        widths = [
+            _gain_aware_width(
+                channel_index,
+                peak_index,
+                waveforms,
+                times,
+                corrected_waveforms,
+                peak_sets,
+            )
+            for peak_index in peaks
+        ]
         if sum(width >= _MIN_PEAK_WIDTH_US for width in widths) >= _MIN_PEAK_COUNT:
             return True
 
@@ -572,20 +623,87 @@ def _saturation_aware_width(
         or high.size != low.size
         or high.size != times.size
         or high_corrected.size != high.size
+    ):
+        return np.nan
+
+    waveforms = (high, mid, low)
+    peak_results = (
+        (high_corrected, np.nan, np.array([], dtype=int)),
+        _qualifying_peaks(mid, times),
+        _qualifying_peaks(low, times),
+    )
+    corrected_waveforms: tuple[np.ndarray, np.ndarray, np.ndarray] = (
+        peak_results[0][0],
+        peak_results[1][0],
+        peak_results[2][0],
+    )
+    peak_sets: tuple[np.ndarray, np.ndarray, np.ndarray] = (
+        peak_results[0][2],
+        peak_results[1][2],
+        peak_results[2][2],
+    )
+    return _gain_aware_width(
+        0,
+        peak_index,
+        waveforms,
+        times,
+        corrected_waveforms,
+        peak_sets,
+    )
+
+
+def _gain_aware_width(
+    channel_index: int,
+    peak_index: int,
+    waveforms: tuple[np.ndarray, np.ndarray, np.ndarray],
+    times: np.ndarray,
+    corrected_waveforms: tuple[np.ndarray, np.ndarray, np.ndarray],
+    peak_sets: tuple[np.ndarray, np.ndarray, np.ndarray],
+) -> float:
+    """Measure a peak width with saturation-aware lower-gain fallthrough.
+
+    Parameters
+    ----------
+    channel_index : int
+        Index of the candidate gain channel: High, Mid, or Low.
+    peak_index : int
+        Index of the candidate peak in the source waveform.
+    waveforms : tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        Raw High-, Mid-, and Low-gain TOF waveforms.
+    times : numpy.ndarray
+        High-rate waveform times in microseconds.
+    corrected_waveforms : tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        Baseline-corrected High-, Mid-, and Low-gain waveforms.
+    peak_sets : tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        Qualifying peak indices for the High-, Mid-, and Low-gain waveforms.
+
+    Returns
+    -------
+    float
+        Direct or lower-gain-substituted FWHM in microseconds, or NaN when
+        no valid width is available.
+    """
+    if (
+        channel_index < 0
+        or channel_index >= len(waveforms)
         or peak_index < 0
-        or peak_index >= high.size
+        or peak_index >= waveforms[channel_index].size
+        or any(
+            waveform.size != times.size
+            for waveform in (*waveforms, *corrected_waveforms)
+        )
     ):
         return np.nan
 
     peak_time = float(times[peak_index])
     if not np.isfinite(peak_time):
         return np.nan
-    if not _is_saturated(float(high[peak_index])):
-        return _fwhm(high_corrected, times, peak_index)
+    if not _is_saturated(float(waveforms[channel_index][peak_index])):
+        return _fwhm(corrected_waveforms[channel_index], times, peak_index)
 
-    for waveform in (mid, low):
-        corrected, sigma, peaks = _qualifying_peaks(waveform, times)
-        if not np.isfinite(sigma) or peaks.size == 0:
+    for fallback_index in range(channel_index + 1, len(waveforms)):
+        peaks = peak_sets[fallback_index]
+        if peaks.size == 0:
             continue
         distances = np.abs(times[peaks] - peak_time)
         nearest = int(np.argmin(distances))
@@ -594,10 +712,10 @@ def _saturation_aware_width(
             or distances[nearest] > _SATURATION_MATCH_WINDOW_US
         ):
             continue
-        index = int(peaks[nearest])
-        if _is_saturated(float(waveform[index])):
+        fallback_peak = int(peaks[nearest])
+        if _is_saturated(float(waveforms[fallback_index][fallback_peak])):
             continue
-        width = _fwhm(corrected, times, index)
+        width = _fwhm(corrected_waveforms[fallback_index], times, fallback_peak)
         if np.isfinite(width):
             return width
     return np.nan
