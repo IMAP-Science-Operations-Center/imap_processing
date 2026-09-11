@@ -423,28 +423,6 @@ def test_spin_angle_starts_at_minimum(l1b_dataset, mock_ecliptic_bin_centers):
 # ── position_angle_offset_average tests ──────────────────────────────────────
 
 
-def test_compute_position_angle():
-    """compute_position_angle returns (360 - azimuth) % 360 (Eq. 30)."""
-    target_module = (
-        "imap_processing.glows.l2.glows_l2_data.get_instrument_mounting_az_el"
-    )
-    with patch(target_module, return_value=(270.0, 0.0)):
-        result = HistogramL2.compute_position_angle(None)
-    assert result == pytest.approx(90.0)
-
-
-@patch(
-    "imap_processing.glows.l2.glows_l2_data.get_instrument_mounting_az_el",
-    return_value=(270.0, 0.0),
-)
-def test_compute_position_angle_spin_offset_correction(mock_az_el):
-    """spin_offset_correction shifts the position angle by the given amount."""
-
-    assert HistogramL2.compute_position_angle(None, 0.0) == 90.0
-    assert HistogramL2.compute_position_angle(None, 5.0) == 95.0
-    assert HistogramL2.compute_position_angle(None, -10.0) == 80.0
-
-
 @pytest.fixture
 def l1b_dataset_full():
     """Minimal L1B dataset with all variables required by HistogramL2.
@@ -479,6 +457,7 @@ def l1b_dataset_full():
             "hv_voltage_average": (["epoch"], [1000.0, 1000.0]),
             "pulse_length_average": (["epoch"], [5.0, 5.0]),
             "spin_period_ground_average": (["epoch"], [15.0, 15.0]),
+            "position_angle_offset_average": (["epoch"], [40.0, 45.0]),
             "spacecraft_location_average": (
                 ["epoch", "xyz"],
                 np.ones((n_epochs, 3)),
@@ -505,22 +484,49 @@ def test_position_angle_offset_average(
     mock_ecliptic_bin_centers,
     mock_calibration_dataset,
 ):
-    """position_angle_offset_average is a scalar equal to the result of
-    compute_position_angle (Eq. 30, Section 10.6). It is constant across the
-    observational day since it depends only on instrument mounting geometry.
+    """position_angle_offset_average is the mean of the good L1B blocks'
+    per-block values (matches the CBK reference implementation), not an
+    independent recomputation in L2.
     """
-    mock_pa = 42.5
     mock_cal_factor = 1
 
-    with (
-        patch.object(HistogramL2, "compute_position_angle", return_value=mock_pa),
-        patch.object(
-            HistogramL2, "get_calibration_factor", return_value=mock_cal_factor
-        ),
+    with patch.object(
+        HistogramL2, "get_calibration_factor", return_value=mock_cal_factor
     ):
         l2 = HistogramL2(l1b_dataset_full, pipeline_settings, mock_calibration_dataset)
 
-        assert l2.position_angle_offset_average == pytest.approx(mock_pa)
+        assert l2.position_angle_offset_average == pytest.approx(42.5)
+
+
+# ── bad_time_flag_occurrences tests ──────────────────────────────────────────
+
+
+def test_bad_time_flag_occurrences(
+    l1b_dataset_full,
+    pipeline_settings,
+    mock_ecliptic_bin_centers,
+    mock_calibration_dataset,
+):
+    """Per-flag count of lowered (0 = bad) flags over all L1B blocks, including
+    blocks excluded from good_data.
+
+    Block 0 stays all-good; block 1 lowers is_pps_missing (col 0) and
+    is_spin_period_missing (col 3), excluding it from good_data - but its zeros
+    must still be counted.
+    """
+    flags = np.ones((2, 17), dtype=float)
+    flags[1, [0, 3]] = 0.0
+    ds = l1b_dataset_full.copy()
+    ds["flags"] = xr.DataArray(flags, dims=["epoch", "flag_index"])
+
+    with patch.object(HistogramL2, "get_calibration_factor", return_value=1.0):
+        l2 = HistogramL2(ds, pipeline_settings, mock_calibration_dataset)
+
+    expected = np.zeros((1, 17), dtype=np.uint16)
+    expected[0, [0, 3]] = 1
+    assert np.array_equal(l2.bad_time_flag_occurrences, expected)
+    # Block 1 was excluded from good_data, yet its zeros are still counted.
+    assert l2.number_of_good_l1b_inputs == 1
 
 
 # ── spin_axis_orientation_average tests ──────────────────────────────────────
@@ -543,10 +549,7 @@ def test_spin_axis_orientation_average_wrapping(
         dims=["epoch", "lonlat"],
     )
 
-    with (
-        patch.object(HistogramL2, "compute_position_angle", return_value=42.5),
-        patch.object(HistogramL2, "get_calibration_factor", return_value=1.0),
-    ):
+    with patch.object(HistogramL2, "get_calibration_factor", return_value=1.0):
         l2 = HistogramL2(wrapping_dataset, pipeline_settings, mock_calibration_dataset)
 
     lon_avg = l2.spin_axis_orientation_average[0, 0]

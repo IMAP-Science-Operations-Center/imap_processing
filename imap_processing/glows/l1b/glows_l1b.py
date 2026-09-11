@@ -15,6 +15,7 @@ from imap_processing.glows.l1b.glows_l1b_data import (
     HistogramL1B,
     PipelineSettings,
 )
+from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.spice.time import et_to_datetime64, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
@@ -267,6 +268,26 @@ def process_histogram(
         )
         l1a = l1a.isel(epoch=~invalid_mask)
 
+    # Daily total-counts reference (mean/std) for the is_beyond_daily_statistical_error
+    # flag (Section 12.3.2), computed once. Matches the cbk implementation: built from
+    # daytime blocks only, since day/night exposure conditions differ enough that mixing
+    # them makes the reference meaningless. compute_flags still applies the check to
+    # every block. number_of_events already equals the sum of the histogram's valid
+    # bins, so use it directly rather than summing the histogram.
+    is_night_raw = np.array(
+        [
+            HistogramL1B.deserialize_flags(int(raw))[GlowsConstants.IS_NIGHT_FLAG_IDX]
+            for raw in l1a["flags_set_onboard"].data
+        ]
+    )
+    daytime_total_counts = l1a["number_of_events"].data[~is_night_raw]
+    if daytime_total_counts.size > 0:
+        daily_total_counts_average = np.double(np.mean(daytime_total_counts))
+        daily_total_counts_std_dev = np.double(np.std(daytime_total_counts))
+    else:
+        daily_total_counts_average = np.double(np.nan)
+        daily_total_counts_std_dev = np.double(np.nan)
+
     dataarrays = [l1a[i] for i in l1a.keys()]
 
     input_dims: list = [[] for i in l1a.keys()]
@@ -314,7 +335,12 @@ def process_histogram(
             Tuple of processed L1B data arrays from HistogramL1B.output_data().
         """
         return HistogramL1B(  # type: ignore[call-arg]
-            *args, ancillary_exclusions, ancillary_parameters, pipeline_settings
+            *args,
+            ancillary_exclusions,
+            ancillary_parameters,
+            pipeline_settings,
+            daily_total_counts_average,
+            daily_total_counts_std_dev,
         ).output_data()
 
     l1b_fields = xr.apply_ufunc(

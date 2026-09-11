@@ -7,7 +7,6 @@ import xarray as xr
 from numpy.typing import NDArray
 from scipy.stats import circmean, circstd
 
-from imap_processing.glows import FLAG_LENGTH
 from imap_processing.glows.l1b.glows_l1b_data import PipelineSettings
 from imap_processing.glows.utils.constants import GlowsConstants
 from imap_processing.quality_flags import GLOWSL1bFlags
@@ -341,7 +340,7 @@ class HistogramL2:
     pulse_length_std_dev: np.ndarray[np.double]
     spin_period_ground_average: np.ndarray[np.double]
     spin_period_ground_std_dev: np.ndarray[np.double]
-    position_angle_offset_average: np.double
+    position_angle_offset_average: np.ndarray[np.double]
     position_angle_offset_std_dev: np.double
     spin_axis_orientation_std_dev: np.ndarray[np.double]
     spacecraft_location_average: np.ndarray[np.double]
@@ -403,8 +402,13 @@ class HistogramL2:
         self.number_of_good_l1b_inputs = len(good_data["epoch"])
         repointing = l1b_dataset.attrs.get("Repointing")
         self.identifier = int(repointing.replace("repoint", ""))
-        # TODO fill this in
-        self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH), dtype=np.uint16)
+        # Count, per bad-time flag, how many L1B blocks for this observational day
+        # have that flag raised - over all (good and bad) blocks, matching the CBK
+        # implementation. L1B's flags convention is inverted relative to CBK's
+        # (1=good, 0=bad here), so count zeros rather than ones.
+        self.bad_time_flag_occurrences = np.sum(
+            l1b_dataset["flags"].data == 0, axis=0, keepdims=True
+        ).astype(np.uint16)
 
         if len(good_data["epoch"]) != 0:
             # Generate outputs that are passed in directly from L1B
@@ -453,10 +457,11 @@ class HistogramL2:
             good_data["spin_period_ground_average"].std(dim="epoch", keepdims=True).data
         )
 
-        position_angle = self.compute_position_angle(
-            pipeline_settings.spin_offset_correction
+        self.position_angle_offset_average = (
+            good_data["position_angle_offset_average"]
+            .mean(dim="epoch", keepdims=True)
+            .data
         )
-        self.position_angle_offset_average: np.double = np.double(position_angle)
 
         # Always zero - per algorithm doc 10.6
         self.position_angle_offset_std_dev = np.double(0.0)
@@ -505,7 +510,7 @@ class HistogramL2:
             calibration_factor = None  # No good data available. Still proceed
 
         self.daily_lightcurve = DailyLightcurve(
-            good_data, position_angle, calibration_factor
+            good_data, float(self.position_angle_offset_average[0]), calibration_factor
         )
 
     def filter_bad_bins(self, histograms: NDArray, bin_exclusions: NDArray) -> NDArray:
@@ -652,37 +657,6 @@ class HistogramL2:
                 ] = 0
 
         return flags_with_offsets
-
-    def compute_position_angle(self, spin_offset_correction: float = 0.0) -> float:
-        """
-        Compute the position angle based on the instrument mounting.
-
-        This number is not expected to change significantly. It is the same for all L1B
-        blocks (epoch values).
-
-        Parameters
-        ----------
-        spin_offset_correction : float
-            Constant spin angle offset [degrees] from pipeline settings, applied
-            to correct a systematic bias in observed star positions. Default: 0.0.
-
-        Returns
-        -------
-        float
-            The GLOWS mounting position angle, including spin offset correction.
-        """
-        # Calculation described in algorithm doc 10.6 (Eq. 30):
-        # psi_G_eff = 360 - psi_GLOWS
-        # where psi_GLOWS is the azimuth of the GLOWS boresight in the
-        # IMAP spacecraft frame, measured from the spacecraft x-axis.
-        # This angle does not change with time, as it is in the spinning IMAP frame.
-        # It basically defines the angle between x=0 in the IMAP frame and x=0 in the
-        # GLOWS instrument frame, and is defined by the physical mounting location of
-        # the instrument.
-        # delta_psi_G_eff is assumed to be 0 per instrument team decision (aka this
-        # doesn't move from the SPICE determined mounting angle.
-        glows_mounting_azimuth, _ = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
-        return (360.0 - glows_mounting_azimuth + spin_offset_correction) % 360.0
 
     @staticmethod
     def get_calibration_factor(
