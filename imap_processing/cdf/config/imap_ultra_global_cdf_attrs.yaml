@@ -13,497 +13,497 @@ imap_ultra_l1a_45sensor-aux:
     <<: *instrument_base
     Data_type: L1A_AUX>Level-1A Auxiliary
     Logical_source: imap_ultra_l1a_45sensor-aux
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data
 
 imap_ultra_l1a_90sensor-aux:
     <<: *instrument_base
     Data_type: L1A_AUX>Level-1A Auxiliary
     Logical_source: imap_ultra_l1a_90sensor-aux
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Auxilliary Data
 
 imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-ang
-    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data
 
 imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-ang
-    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Angular Data
 
 imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-nrg
-    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Energy Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Energy Data
 
 imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-nrg:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-nrg
-    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Energy Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Energy Data
 
 imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-time:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_45sensor-histogram-ena-phxtof-hi-time
-    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Time Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Time Data
 
 imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-time:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_90sensor-histogram-ena-phxtof-hi-time
-    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Time Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A PHxTOF Hi Time Data
 
 imap_ultra_l1a_45sensor-histogram-ena-extof-hi-ang:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_45sensor-histogram-ena-extof-hi-ang
-    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Angular Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Angular Data
 
 imap_ultra_l1a_90sensor-histogram-ena-extof-hi-ang:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A TOF
     Logical_source: imap_ultra_l1a_90sensor-histogram-ena-extof-hi-ang
-    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Angular Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Angular Data
 
 imap_ultra_l1a_45sensor-histogram-ion-extof-hi-time:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
     Logical_source: imap_ultra_l1a_45sensor-histogram-ion-extof-hi-time
-    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Time Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Time Data
 
 imap_ultra_l1a_90sensor-histogram-ion-extof-hi-time:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
     Logical_source: imap_ultra_l1a_90sensor-histogram-ion-extof-hi-time
-    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Time Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Time Data
 
 imap_ultra_l1a_45sensor-histogram-ion-extof-hi-nrg:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
     Logical_source: imap_ultra_l1a_45sensor-histogram-ion-extof-hi-nrg
-    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Energy Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Energy Data
 
 imap_ultra_l1a_90sensor-histogram-ion-extof-hi-nrg:
     <<: *instrument_base
     Data_type: L1A_Histogram>Level-1A ExTOF
     Logical_source: imap_ultra_l1a_90sensor-histogram-ion-extof-hi-nrg
-    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Energy Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A ExTOF Hi Energy Data
 
 imap_ultra_l1a_45sensor-rates:
     <<: *instrument_base
     Data_type: L1A_Rates>Level-1A Rates
     Logical_source: imap_ultra_l1a_45sensor-rates
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data
 
 imap_ultra_l1a_90sensor-rates:
     <<: *instrument_base
     Data_type: L1A_Rates>Level-1A Rates
     Logical_source: imap_ultra_l1a_90sensor-rates
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Rates Data
 
 imap_ultra_l1a_45sensor-energy-rates:
     <<: *instrument_base
     Data_type: L1A_Energy_Rates>Level-1A Energy Rates
     Logical_source: imap_ultra_l1a_45sensor-energy-rates
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Rates Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Rates Data
 
 imap_ultra_l1a_90sensor-energy-rates:
     <<: *instrument_base
     Data_type: L1A_Energy_Rates>Level-1A Energy Rates
     Logical_source: imap_ultra_l1a_90sensor-energy-rates
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Rates Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Rates Data
 
 imap_ultra_l1a_45sensor-energy-spectra:
     <<: *instrument_base
     Data_type: L1A_Energy_Spectra>Level-1A Energy Spectra
     Logical_source: imap_ultra_l1a_45sensor-energy-spectra
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Spectra Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Spectra Data
 
 imap_ultra_l1a_90sensor-energy-spectra:
     <<: *instrument_base
     Data_type: L1A_Energy_Spectra>Level-1A Energy Spectra
     Logical_source: imap_ultra_l1a_90sensor-energy-spectra
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Spectra Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Spectra Data
 
 imap_ultra_l1a_45sensor-de:
     <<: *instrument_base
     Data_type: L1A_DE>Level-1A Direct Event
     Logical_source: imap_ultra_l1a_45sensor-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Direct Event Data
 
 imap_ultra_l1a_90sensor-de:
     <<: *instrument_base
     Data_type: L1A_DE>Level-1A Direct Event
     Logical_source: imap_ultra_l1a_90sensor-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Direct Event Data
 
 imap_ultra_l1a_45sensor-energy-de:
     <<: *instrument_base
     Data_type: L1A_ENERGY_DE>Level-1A Energy Direct Event
     Logical_source: imap_ultra_l1a_45sensor-energy-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Direct Event Data
 
 imap_ultra_l1a_90sensor-energy-de:
     <<: *instrument_base
     Data_type: L1A_ENERGY_DE>Level-1A EnergyDirect Event
     Logical_source: imap_ultra_l1a_90sensor-energy-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Energy Direct Event Data
 
 imap_ultra_l1a_45sensor-priority-1-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_1_DE>Level-1A Priority 1 Direct Event
     Logical_source: imap_ultra_l1a_45sensor-priority-1-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 1 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 1 Direct Event Data
 
 imap_ultra_l1a_90sensor-priority-1-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_1_DE>Level-1A Priority 1 Direct Event
     Logical_source: imap_ultra_l1a_90sensor-priority-1-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 1 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 1 Direct Event Data
 
 imap_ultra_l1a_45sensor-priority-2-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_2_DE>Level-1A Priority 2 Direct Event
     Logical_source: imap_ultra_l1a_45sensor-priority-2-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 2 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 2 Direct Event Data
 
 imap_ultra_l1a_90sensor-priority-2-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_2_DE>Level-1A Priority 2 Direct Event
     Logical_source: imap_ultra_l1a_90sensor-priority-2-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 2 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 2 Direct Event Data
 
 imap_ultra_l1a_45sensor-priority-3-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_3_DE>Level-1A Priority 3 Direct Event
     Logical_source: imap_ultra_l1a_45sensor-priority-3-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 3 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 3 Direct Event Data
 
 imap_ultra_l1a_90sensor-priority-3-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_3_DE>Level-1A Priority 3 Direct Event
     Logical_source: imap_ultra_l1a_90sensor-priority-3-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 3 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 3 Direct Event Data
 
 imap_ultra_l1a_45sensor-priority-4-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_4_DE>Level-1A Priority 4 Direct Event
     Logical_source: imap_ultra_l1a_45sensor-priority-4-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 4 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 4 Direct Event Data
 
 imap_ultra_l1a_90sensor-priority-4-de:
     <<: *instrument_base
     Data_type: L1A_PRIORITY_4_DE>Level-1A Priority 4 Direct Event
     Logical_source: imap_ultra_l1a_90sensor-priority-4-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 4 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Priority 4 Direct Event Data
 
 imap_ultra_l1b_45sensor-de:
     <<: *instrument_base
     Data_type: L1B_45Sensor-DE>Level-1B Direct Events for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data
 
 imap_ultra_l1b_90sensor-de:
     <<: *instrument_base
     Data_type: L1B_90Sensor-DE>Level-1B Direct Events for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Direct Event Data
 
 imap_ultra_l1b_45sensor-priority-1-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_1_DE>Level-1B Priority 1 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-1-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 1 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 1 Direct Event Data
 
 imap_ultra_l1b_90sensor-priority-1-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_1_DE>Level-1B Priority 1 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-1-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 1 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 1 Direct Event Data
 
 imap_ultra_l1b_45sensor-priority-2-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_2_DE>Level-1B Priority 2 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-2-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 2 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 2 Direct Event Data
 
 imap_ultra_l1b_90sensor-priority-2-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_2_DE>Level-1B Priority 2 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-2-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 2 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 2 Direct Event Data
 
 imap_ultra_l1b_45sensor-priority-3-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_3_DE>Level-1B Priority 3 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-3-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 3 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 3 Direct Event Data
 
 imap_ultra_l1b_90sensor-priority-3-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_3_DE>Level-1B Priority 3 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-3-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 3 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 3 Direct Event Data
 
 imap_ultra_l1b_45sensor-priority-4-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_4_DE>Level-1B Priority 4 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-4-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 4 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 4 Direct Event Data
 
 imap_ultra_l1b_90sensor-priority-4-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_4_DE>Level-1B Priority 4 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-4-de
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 4 Direct Event Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Priority 4 Direct Event Data
 
 imap_ultra_l1b_45sensor-extendedspin:
     <<: *instrument_base
     Data_type: L1B_45Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-extendedspin
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data
 
 imap_ultra_l1b_90sensor-extendedspin:
     <<: *instrument_base
     Data_type: L1B_90Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-extendedspin
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Extended Spin Data
 
 imap_ultra_l1b_45sensor-goodtimes:
     <<: *instrument_base
     Data_type: L1B_45Sensor-Goodtimes>Level-1B Goodtimes for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-goodtimes
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Goodtimes Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Goodtimes Data
 
 imap_ultra_l1b_90sensor-goodtimes:
     <<: *instrument_base
     Data_type: L1B_90Sensor-Goodtimes>Level-1B Goodtimes for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-goodtimes
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Goodtimes Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Goodtimes Data
 
 imap_ultra_l1b_45sensor-badtimes:
     <<: *instrument_base
     Data_type: L1B_45Sensor-Badtimes>Level-1B Badtimes for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-badtimes
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data
 
 imap_ultra_l1b_90sensor-badtimes:
     <<: *instrument_base
     Data_type: L1B_90Sensor-Badtimes>Level-1B Badtimes for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-badtimes
-    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1B Badtimes Data
 
 imap_ultra_l1c_45sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-spacecraftpset
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid
 
 imap_ultra_l1c_90sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-spacecraftpset
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid
 
 imap_ultra_l1c_45sensor-spacecraftpset-nonproton:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-spacecraftpset-nonproton
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species
 
 imap_ultra_l1c_90sensor-spacecraftpset-nonproton:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-spacecraftpset-nonproton
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species
 
 imap_ultra_l1c_45sensor-heliopset:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-heliopset
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid
 
 imap_ultra_l1c_90sensor-heliopset:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-heliopset
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid
 
 imap_ultra_l1c_45sensor-histogram:
     <<: *instrument_base
     Data_type: L1C_45Sensor-Histogram>Level-1C Histogram for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-histogram
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data
 
 imap_ultra_l1c_90sensor-histogram:
     <<: *instrument_base
     Data_type: L1C_45Sensor-Histogram>Level-1C Histogram for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-histogram
-    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1C Pointing Set Grid Histogram Data
 
 imap_ultra_l1a_45sensor-alarm:
     <<: *instrument_base
     Data_type: L1A_45Sensor-Alarm>Level-1A Alarm for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-alarm
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Alarm Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Alarm Data for Ultra45
 
 imap_ultra_l1a_90sensor-alarm:
     <<: *instrument_base
     Data_type: L1A_90Sensor-Alarm>Level-1A Alarm for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-alarm
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Alarm Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Alarm Data for Ultra90
 
 imap_ultra_l1a_45sensor-cmdecho:
     <<: *instrument_base
     Data_type: L1A_CMDECHO>Level-1A Command Echo
     Logical_source: imap_ultra_l1a_45sensor-cmdecho
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Echo Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Echo Data
 
 imap_ultra_l1a_90sensor-cmdecho:
     <<: *instrument_base
     Data_type: L1A_CMDECHO>Level-1A Command Echo
     Logical_source: imap_ultra_l1a_90sensor-cmdecho
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Echo Data.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Echo Data
 
 imap_ultra_l1a_45sensor-memchecksum:
     <<: *instrument_base
     Data_type: L1A_45Sensor-MemChecksum>Level-1A Memory Checksum for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-memchecksum
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Checksum Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Checksum Data for Ultra45
 
 imap_ultra_l1a_90sensor-memchecksum:
     <<: *instrument_base
     Data_type: L1A_90Sensor-MemChecksum>Level-1A Memory Checksum for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-memchecksum
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Checksum Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Checksum Data for Ultra90
 
 imap_ultra_l1a_45sensor-memdump:
     <<: *instrument_base
     Data_type: L1A_45Sensor-MemDump>Level-1A Memory Dump for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-memdump
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Dump Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Dump Data for Ultra45
 
 imap_ultra_l1a_90sensor-memdump:
     <<: *instrument_base
     Data_type: L1A_90Sensor-MemDump>Level-1A Memory Dump for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-memdump
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Dump Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Memory Dump Data for Ultra90
 
 imap_ultra_l1a_45sensor-status:
     <<: *instrument_base
     Data_type: L1A_45Sensor-Status>Level-1A Status for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-status
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Status Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Status Data for Ultra45
 
 imap_ultra_l1a_90sensor-status:
     <<: *instrument_base
     Data_type: L1A_90Sensor-Status>Level-1A Status for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-status
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Status Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Status Data for Ultra90
 
 imap_ultra_l1a_45sensor-bootstatus:
     <<: *instrument_base
     Data_type: L1A_45Sensor-BootStatus>Level-1A Boot Status for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-bootstatus
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Boot Status Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Boot Status Data for Ultra45
 
 imap_ultra_l1a_90sensor-bootstatus:
     <<: *instrument_base
     Data_type: L1A_90Sensor-BootStatus>Level-1A Boot Status for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-bootstatus
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Boot Status Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Boot Status Data for Ultra90
 
 imap_ultra_l1a_45sensor-macroschecksum:
     <<: *instrument_base
     Data_type: L1A_45Sensor-MacroChecksum>Level-1A Macro Checksum for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-macroschecksum
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Checksum Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Checksum Data for Ultra45
 
 imap_ultra_l1a_90sensor-macroschecksum:
     <<: *instrument_base
     Data_type: L1A_90Sensor-MacroChecksum>Level-1A Macro Checksum for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-macroschecksum
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Checksum Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Checksum Data for Ultra90
 
 imap_ultra_l1a_45sensor-macrodump:
     <<: *instrument_base
     Data_type: L1A_45Sensor-MacroDump>Level-1A Macro Dump for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-macrodump
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Dump Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Dump Data for Ultra45
 
 imap_ultra_l1a_90sensor-macrodump:
     <<: *instrument_base
     Data_type: L1A_90Sensor-MacroDump>Level-1A Macro Dump for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-macrodump
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Dump Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Macro Dump Data for Ultra90
 
 imap_ultra_l1a_45sensor-monitorlimits:
     <<: *instrument_base
     Data_type: L1A_45Sensor-MonitorLimits>Level-1A Monitor Limits for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-monitorlimits
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Monitor Limits Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Monitor Limits Data for Ultra45
 
 imap_ultra_l1a_90sensor-monitorlimits:
     <<: *instrument_base
     Data_type: L1A_90Sensor-MonitorLimits>Level-1A Monitor Limits for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-monitorlimits
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Monitor Limits Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Monitor Limits Data for Ultra90
 
 imap_ultra_l1a_45sensor-params:
     <<: *instrument_base
     Data_type: L1A_45Sensor-Params>Level-1A Parameters for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-params
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Parameters Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Parameters Data for Ultra45
 
 imap_ultra_l1a_90sensor-params:
     <<: *instrument_base
     Data_type: L1A_90Sensor-Params>Level-1A Parameters for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-params
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Parameters Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Parameters Data for Ultra90
 
 imap_ultra_l1a_45sensor-cmdtext:
     <<: *instrument_base
     Data_type: L1A_45Sensor-CmdText>Level-1A Command Text for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-cmdtext
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Text Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Text Data for Ultra45
 
 imap_ultra_l1a_90sensor-cmdtext:
     <<: *instrument_base
     Data_type: L1A_90Sensor-CmdText>Level-1A Command Text for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-cmdtext
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Text Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Command Text Data for Ultra90
 
 imap_ultra_l1a_45sensor-scauto:
     <<: *instrument_base
     Data_type: L1A_45Sensor-SCAuto>Level-1A SCAuto for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-scauto
-    Logical_source_description: IMAP-Ultra Instrument Level-1A SCAuto Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A SCAuto Data for Ultra45
 
 imap_ultra_l1a_90sensor-scauto:
     <<: *instrument_base
     Data_type: L1A_90Sensor-SCAuto>Level-1A SCAuto for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-scauto
-    Logical_source_description: IMAP-Ultra Instrument Level-1A SCAuto Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A SCAuto Data for Ultra90
 
 imap_ultra_l1a_45sensor-imgparams:
     <<: *instrument_base
     Data_type: L1A_45Sensor-ImgParams>Level-1A Image Parameters for Ultra45
     Logical_source: imap_ultra_l1a_45sensor-imgparams
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra45.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra45
 
 imap_ultra_l1a_90sensor-imgparams:
     <<: *instrument_base
     Data_type: L1A_90Sensor-ImgParams>Level-1A Image Parameters for Ultra90
     Logical_source: imap_ultra_l1a_90sensor-imgparams
-    Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra90.
+    Logical_source_description: IMAP-Ultra Instrument Level-1A Image Parameters Data for Ultra90
 
 # Ultra L2 Global attributes for different sensors and sky tiling types and durations
 imap_ultra_l2_enamap:
     <<: *instrument_base
     Data_type: L2_u{sensor}-ena-h-{inertial_frame_short_name}-nsp-full-hae-{resolution_string}-{duration}>Level-2 ENA Intensity Map for Ultra{sensor}
     Logical_source: imap_ultra_l2_u{sensor}-ena-h-{inertial_frame_short_name}-nsp-full-hae-{resolution_string}-{duration}
-    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Intensity Map Data for Ultra{sensor} on {tiling} tiling in {inertial_frame_long_name} frame over {duration} duration.
+    Logical_source_description: IMAP-Ultra Instrument Level-2 ENA Intensity Map Data for Ultra{sensor} on {tiling} tiling in {inertial_frame_long_name} frame over {duration} duration
