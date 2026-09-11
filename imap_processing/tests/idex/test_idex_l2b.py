@@ -257,6 +257,16 @@ def test_bin_spin_phases():
     assert_array_equal(spin_quadrants, [0, 1, 2, 3])
 
 
+def test_spin_phase_means_match_true_bin_centers():
+    """Tests that the reported spin_phase coordinate values are the true centers
+    of the quadrants that bin_spin_phases() actually assigns data to.
+    """
+    # Mirrors the spin_phase_means computation in idex_l2b().
+    spin_phase_means = (SPIN_PHASE_BIN_EDGES[:-1] + SPIN_PHASE_BIN_EDGES[1:]) / 2
+    spin_phase_means = spin_phase_means.astype(np.uint16)
+    assert_array_equal(spin_phase_means, [0, 90, 180, 270])
+
+
 def test_bin_spin_phases_warning(caplog):
     """Tests that bin_spin_phases() logs expected out of range warning."""
     # The last value in the array should trigger a warning since it is >=360.
