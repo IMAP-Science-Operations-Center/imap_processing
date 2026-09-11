@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing.ancillary.ancillary_dataset_combiner import GlowsAncillaryCombiner
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
@@ -372,6 +373,26 @@ def test_get_spin_offset_correction_fallbacks():
         PipelineSettings(xr.Dataset({"spin_offset_correction": 1.5}))
     empty = PipelineSettings(xr.Dataset())
     assert empty.get_spin_offset_correction(np.datetime64("2026-01-01T00:00:00")) == 0.0
+
+
+def test_pipeline_settings_from_json_parses_spin_offset_table():
+    """ISO time strings survive the full JSON -> dataset -> PipelineSettings path,
+    parsing to datetime64 with a working asof lookup.
+    """
+    json_path = (
+        Path(__file__).parent
+        / "validation_data"
+        / "imap_glows_pipeline-settings_20251112_v001.json"
+    )
+    settings = PipelineSettings(
+        GlowsAncillaryCombiner.convert_json_to_dataset(json_path)
+    )
+    assert settings.get_spin_offset_correction(
+        np.datetime64("2026-01-01T00:00:00")
+    ) == pytest.approx(1.047)  # first entry
+    assert settings.get_spin_offset_correction(
+        np.datetime64("2026-07-08T15:50:00")
+    ) == pytest.approx(2.347)  # second entry takes effect at its timestamp
 
 
 def _mock_histogram_for_flags(number_of_events):

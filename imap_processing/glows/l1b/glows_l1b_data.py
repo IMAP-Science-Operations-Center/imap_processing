@@ -166,6 +166,9 @@ class PipelineSettings:  # numpydoc ignore=PR02
             "spin_offset_correction_times" in pipeline_dataset.data_vars
             and "spin_offset_correction_values" in pipeline_dataset.data_vars
         ):
+            # Times are ISO 8601 strings in the JSON (e.g. "2026-07-08T15:50:00").
+            # We use dtype="datetime64[s]" so np.asarray parses those strings
+            # directly to the target resolution.
             times = np.asarray(
                 pipeline_dataset["spin_offset_correction_times"].values,
                 dtype="datetime64[s]",
