@@ -79,11 +79,10 @@ CHARGE_BIN_EDGES = np.array(
         1.00e04,
     ]
 )
-# True spin-phase quadrant boundaries in real angle space: 4 quadrants of
-# [315-45, 45-135, 135-225, 225-315] degrees. The [315, 45] quadrant wraps through
-# 0 deg, so its lower edge is expressed here as -45 to keep the array sorted/
-# increasing (equivalent to 315 deg). bin_spin_phases() shifts these edges (and the
-# input angles) by +45 deg internally to make them digitize-friendly.
+# Define the 4 Spin phase quadrant boundaries. The [315, 45] quadrant wraps through
+# 0 deg, so its lower edge is -45 to keep the array increasing (equivalent to 315 deg).
+# bin_spin_phases() shifts these edges (and the input angles) by +45 deg internally
+# to make them digitize-friendly.
 SPIN_PHASE_BIN_EDGES = np.array([-45, 45, 135, 225, 315])
 
 # Get the rectangular map grid with the specified spacing

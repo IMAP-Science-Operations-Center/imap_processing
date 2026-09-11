@@ -100,6 +100,9 @@ spin_phase:
     VALIDMAX: 360
     VALIDMIN: 0
     VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
+      The coordinate value reported for each bin is that bin's center, not an edge
+      of its range -- [315-45] degrees is reported as 0, [45-135] as 90, [135-225]
+      as 180, and [225-315] as 270.
     VAR_TYPE: support_data
 
 impact_charge:
