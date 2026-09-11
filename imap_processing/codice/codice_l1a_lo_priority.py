@@ -192,6 +192,9 @@ def l1a_lo_priority(
         )
         species_mask = half_spin_mask[:, np.newaxis, :, np.newaxis]
         species_mask = np.broadcast_to(species_mask, species_data.shape)
+        # For older packets, the science-data mask and the metadata mask
+        # are the same here.
+        half_spin_mask_metadata = half_spin_mask
     else:
         # nso_spin_sector and nso_esa_step for comparison. Shape (epoch, 1, 1)
         # to broadcast
@@ -206,12 +209,27 @@ def l1a_lo_priority(
         # Shape (1, 1, spin_sector) and (1, esa_step, 1)
         spin_sectors = np.arange(num_spin_sectors)[np.newaxis, np.newaxis, :]
         esa_steps = np.arange(num_esa_steps)[np.newaxis, :, np.newaxis]
-        # Create a mask for half_spin > nso_half_spin. Shape (epoch, esa_step))
-        # This will be used below to set half_spin_per_esa_step to fillval and
-        # acquisition_time_per_step to NaN for those steps.
+        # half_spin_mask: True once the half-spin is *strictly past* the NSO
+        # trigger, or is unused padding. It deliberately EXCLUDES the boundary
+        # half-spin (half_spin_per_esa_step == nso_half_spin), because within
+        # that one half-spin, only SOME spin sectors are actually invalid --
+        # specifically the ones at/after wherever NSO triggered. This mask is
+        # only precise enough for science data (species_data, which has a
+        # spin_sector axis); boundary_half_spin_mask below fills in the
+        # per-spin-sector detail for that one boundary half-spin.
         half_spin_mask = (half_spin_per_esa_step > nso_half_spin[:, np.newaxis]) | (
             half_spin_per_esa_step == HALF_SPIN_FILLVAL
         )
+        # half_spin_mask_metadata: True once the half-spin is AT OR PAST the NSO
+        # trigger (note >=, not >). half_spin_per_esa_step and
+        # acquisition_time_per_step have no spin_sector axis, so they can't
+        # represent "valid for some spin sectors, invalid for others" within the
+        # boundary half-spin the way species_data can. So for these two
+        # variables specifically, the entire boundary half-spin is treated as
+        # invalid as soon as NSO has triggered anywhere within it.
+        half_spin_mask_metadata = (
+            half_spin_per_esa_step >= nso_half_spin[:, np.newaxis]
+        ) | (half_spin_per_esa_step == HALF_SPIN_FILLVAL)
         # Create a mask for the boundary condition where half_spin == nso_half_spin.
         at_boundary = (
             half_spin_per_esa_step[:, :, np.newaxis]
@@ -230,7 +248,9 @@ def l1a_lo_priority(
             )
         )
         # Combine masks. Shape (epoch, esa_step, spin_sector). This mask is True
-        # where data should be set to NaN
+        # where data should be set to NaN. Uses half_spin_mask (not
+        # half_spin_mask_metadata) so the boundary half-spin keeps its
+        # per-spin-sector precision here.
         nso_mask = half_spin_mask[:, :, np.newaxis] | boundary_half_spin_mask
         # Expand nso_mask to (epoch, 1, esa_step, spin_sector) to apply to species_data.
         species_mask = np.broadcast_to(
@@ -239,10 +259,12 @@ def l1a_lo_priority(
 
     species_data = species_data.astype(np.float64)
     species_data[species_mask] = np.nan
-    # Set half_spin_per_esa_step to (fillval) where nso_mask is True
-    half_spin_per_esa_step[half_spin_mask] = HALF_SPIN_FILLVAL
-    # Set acquisition_time_per_step to nan where nso_mask is True
-    acquisition_time_per_step[half_spin_mask] = np.nan
+    # Set half_spin_per_esa_step to (fillval) where half_spin_mask_metadata is
+    # True. Uses half_spin_mask_metadata (not half_spin_mask) since this
+    # variable has no spin_sector axis -- see comment above.
+    half_spin_per_esa_step[half_spin_mask_metadata] = HALF_SPIN_FILLVAL
+    # Set acquisition_time_per_step to nan where half_spin_mask_metadata is True
+    acquisition_time_per_step[half_spin_mask_metadata] = np.nan
 
     # ========== Create CDF Dataset with Metadata ===========
     cdf_attrs = ImapCdfAttributes()

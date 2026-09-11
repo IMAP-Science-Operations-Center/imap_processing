@@ -68,7 +68,7 @@ def test_l2_hi_omni(mock_get_file_paths):
     sci_input = ScienceInput(
         f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
     )
-    anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251212_v003.csv")
+    anc_input = AncillaryInput("imap_codice_l2-hi-omni-efficiency_20251212_v004.csv")
     dependencies = ProcessingInputCollection(anc_input, sci_input)
 
     processed_l2 = process_codice_l2("hi-omni", dependencies)
@@ -188,7 +188,7 @@ def test_l2_hi_omni(mock_get_file_paths):
 
 def test_l2_hi_sectored(mock_get_file_paths):
     anc_input = AncillaryInput(
-        "imap_codice_l2-hi-sectored-efficiency_20251008_v001.csv"
+        "imap_codice_l2-hi-sectored-efficiency_20251212_v004.csv"
     )
     sci_input = ScienceInput(
         f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_{VALIDATION_FILE_VERSION}.cdf"
@@ -207,8 +207,6 @@ def test_l2_hi_sectored(mock_get_file_paths):
     )
 
     val_data = load_cdf(val_data)
-    # TODO fix validation data to have correct array name. Spin_angles -> spin_angle
-    val_data = val_data.rename({"spin_angles": "spin_angle"})
     # Check data variables
     for variable in val_data.data_vars:
         # Spin angle bug is fixed but the old validation data is outdated.

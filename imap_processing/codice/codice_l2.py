@@ -1554,12 +1554,12 @@ def process_codice_l2(
     # make sure we drop vars not needed in l2 products
     vars_to_drop = [
         "acquisition_time_per_esa_step",
-        "rgfo_half_spin",
         "half_spin_per_esa_step",
-        "rgfo_esa_step",
-        "rgfo_spin_sector",
         "packet_version",
     ]
+    if dataset_name != "imap_codice_l2_lo-direct-events":
+        # rgfo_half_spin/esa_step/spin_sector are needed for lo-direct-events
+        vars_to_drop += ["rgfo_half_spin", "rgfo_esa_step", "rgfo_spin_sector"]
     for var in vars_to_drop:
         if var in l2_dataset.data_vars:
             l2_dataset = l2_dataset.drop_vars(var)

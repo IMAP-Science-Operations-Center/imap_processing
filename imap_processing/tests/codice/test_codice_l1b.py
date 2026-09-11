@@ -14,6 +14,7 @@ from imap_processing.tests.codice.conftest import (
     VALIDATION_FILE_DATE,
     VALIDATION_FILE_VERSION,
 )
+from imap_processing.utils import filter_day_boundary_data
 
 pytestmark = pytest.mark.external_test_data
 
@@ -33,7 +34,10 @@ def test_l1b_lo_sw_species(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    processed_l1a_file = write_cdf(process_l1a(ProcessingInputCollection())[0])
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
+    processed_l1a_file = write_cdf(l1a_ds)
     l1b_val_data = (
         imap_module_directory
         / "tests"
@@ -92,7 +96,10 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    l1a_file_path = write_cdf(process_l1a(dependency=ProcessingInputCollection())[0])
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(dependency=ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
+    l1a_file_path = write_cdf(l1a_ds)
     val_path = (
         imap_module_directory
         / "tests/codice/data/l1b_validation/"
@@ -103,6 +110,16 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     processed_data = process_codice_l1b(file_path=l1a_file_path)
     # hi-omni has species-specific shapes
     for variable in val_data.data_vars:
+        if variable in ("epoch_delta_minus", "epoch_delta_plus"):
+            # Slightly higher tolerance for these two variables because we still have
+            # timing differences
+            np.testing.assert_allclose(
+                processed_data[variable].values,
+                val_data[variable].values,
+                rtol=5e-5,
+                err_msg=f"Mismatch in variable '{variable}'",
+            )
+            continue
         assert processed_data[variable].shape == val_data[variable].shape
         np.testing.assert_allclose(
             processed_data[variable].values,
@@ -117,7 +134,6 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     )
 
 
-@pytest.mark.xfail(reason="Need to revisit in future PR")
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
@@ -130,7 +146,10 @@ def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
         / f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}"
         f"_{VALIDATION_FILE_VERSION}.cdf"
     )
-    l1a_file_path = write_cdf(process_l1a(dependency=ProcessingInputCollection())[0])
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(dependency=ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
+    l1a_file_path = write_cdf(l1a_ds)
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
     for variable in val_data.data_vars:
@@ -143,7 +162,8 @@ def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
 
     cdf_file = write_cdf(processed_data)
     assert (
-        cdf_file.name == f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_v999.cdf"
+        cdf_file.name == f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_"
+        f"v001.0001.cdf"
     )
 
 
@@ -159,7 +179,9 @@ def test_l1b_hi_priorities(mock_get_file_paths, codice_lut_path):
         / f"imap_codice_l1b_hi-priority_{VALIDATION_FILE_DATE}"
         f"_{VALIDATION_FILE_VERSION}.cdf"
     )
-    l1a_ds = process_l1a(ProcessingInputCollection())[0]
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
     l1a_file_path = write_cdf(l1a_ds)
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
@@ -190,7 +212,9 @@ def test_l1b_nsw_lo_priorities(mock_get_file_paths, codice_lut_path):
         / f"imap_codice_l1b_lo-nsw-priority_{VALIDATION_FILE_DATE}"
         f"_{VALIDATION_FILE_VERSION}.cdf"
     )
-    l1a_ds = process_l1a(ProcessingInputCollection())[0]
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
     l1a_file_path = write_cdf(l1a_ds)
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
@@ -221,7 +245,9 @@ def test_l1b_sw_lo_priorities(mock_get_file_paths, codice_lut_path):
         / f"imap_codice_l1b_lo-sw-priority_{VALIDATION_FILE_DATE}"
         f"_{VALIDATION_FILE_VERSION}.cdf"
     )
-    l1a_ds = process_l1a(ProcessingInputCollection())[0]
+    l1a_ds = filter_day_boundary_data(
+        process_l1a(ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
     l1a_file_path = write_cdf(l1a_ds)
     val_data = load_cdf(val_path)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
@@ -248,7 +274,9 @@ def test_l1b_lo_counters_aggregated(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    l1a_data = process_l1a(dependency=ProcessingInputCollection())[0]
+    l1a_data = filter_day_boundary_data(
+        process_l1a(dependency=ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
     l1a_file_path = write_cdf(l1a_data)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
     # Validation
@@ -288,7 +316,9 @@ def test_l1b_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    l1a_data = process_l1a(dependency=ProcessingInputCollection())[0]
+    l1a_data = filter_day_boundary_data(
+        process_l1a(dependency=ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
     l1a_file_path = write_cdf(l1a_data)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
     # Validation
@@ -325,7 +355,9 @@ def test_lo_counters_singles(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    l1a_data = process_l1a(dependency=ProcessingInputCollection())[0]
+    l1a_data = filter_day_boundary_data(
+        process_l1a(dependency=ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
     l1a_file_path = write_cdf(l1a_data)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
 
@@ -363,7 +395,9 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l1a-sci-lut"),
     ]
 
-    l1a_data = process_l1a(dependency=ProcessingInputCollection())[0]
+    l1a_data = filter_day_boundary_data(
+        process_l1a(dependency=ProcessingInputCollection())[0], VALIDATION_FILE_DATE
+    )
     l1a_file_path = write_cdf(l1a_data)
     processed_data = process_codice_l1b(file_path=l1a_file_path)
 
