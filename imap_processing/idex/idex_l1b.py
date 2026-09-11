@@ -182,7 +182,7 @@ def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset | None:
     science_on[l1a_messages == EventMessage.SCIENCE_OFF.value] = 0
     # Find indices where PULSER_ON is followed by PULSER_OFF within 5 seconds.
     # These are the only cases where we should set pulser_on to 1 and 0.
-    pulser_on_events = np.where(l1a_messages == EventMessage.PULSER_ON.value)[0]
+    pulser_on_events = np.nonzero(l1a_messages == EventMessage.PULSER_ON.value)[0]
     pulser_on = np.full(len(l1a_messages), 255)  # initialize with 255 (unknown)
     epochs = l1a_dataset.epoch.values
     # Loop through each pulser on event and check if there is a pulser off
@@ -190,7 +190,7 @@ def idex_l1b_msg(l1a_dataset: xr.Dataset) -> xr.Dataset | None:
     for on in pulser_on_events:
         on_epoch = epochs[on]
         within_5s = (epochs >= on_epoch) & (epochs <= on_epoch + 5 / NS_TO_S)
-        off = np.where(within_5s & (l1a_messages == EventMessage.PULSER_OFF.value))[0]
+        off = np.nonzero(within_5s & (l1a_messages == EventMessage.PULSER_OFF.value))[0]
         if off.size:
             # If an on was followed by an off, set the values.
             pulser_on[on] = 1
