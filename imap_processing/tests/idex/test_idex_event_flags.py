@@ -234,6 +234,22 @@ def test_dust_hit_uses_reference_baseline_for_truncated_waveform() -> None:
     assert flags["dust_hit_flag"] == 1
 
 
+def test_noisy_baseline_does_not_use_reference_noise_sigma() -> None:
+    """A globally noisy baseline is not reprocessed as a truncated record."""
+    times = np.arange(2048, dtype=float) / 260.0
+    noisy_baseline = 511.0 + 25.0 * np.sin(np.arange(times.size, dtype=float) / 3.0)
+
+    flags = classify_event_flags(
+        _telemetry(trigger_id=1 | 4, hg_mode=1),
+        noisy_baseline,
+        noisy_baseline,
+        noisy_baseline,
+        times,
+    )
+
+    assert flags["dust_hit_flag"] == 0
+
+
 def test_peak_detection_rejects_low_prominence_secondary_maxima() -> None:
     """A small shoulder above 7 sigma is not counted as a separate peak."""
     times = np.arange(256, dtype=float) / 260.0

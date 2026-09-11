@@ -40,7 +40,6 @@ _SATURATION_MATCH_WINDOW_US = 0.050
 _TOF_REFERENCE_BASELINES = (511.0, 513.0, 514.0)
 _TOF_REFERENCE_SIGMAS = (2.9652, 1.4826, 2.9652)
 _TRUNCATED_BASELINE_OFFSET_DN = 20.0
-_TRUNCATED_BASELINE_NOISE_DN = 10.0
 
 _TRIGGER_CHANNELS = {
     0: "TOF H",
@@ -214,7 +213,8 @@ def _has_dust_hit(
     -------
     bool
         Whether at least two peaks meet the sigma and FWHM requirements in
-        one gain, or one peak is at least 50 ns wide.
+        one gain, or High gain contains exactly one directly measured peak
+        that is at least 50 ns wide.
     """
     high = _as_1d_array(tof_high)
     mid = _as_1d_array(tof_mid)
@@ -282,8 +282,11 @@ def _has_standard_dust_hit(
             if np.isfinite(width_us):
                 widths.append(width_us)
 
+        # If any one gain has at least 2 peaks with FWHM >= 20 ns, it is a dust hit.
         if sum(width >= _MIN_PEAK_WIDTH_US for width in widths) >= _MIN_PEAK_COUNT:
             return True
+        # If High gain has exactly one directly measured peak and it is at least
+        # 50 ns wide, count it as a dust hit.
         if (
             channel_index == 0
             and len(direct_widths) == 1
@@ -481,11 +484,7 @@ def _baseline_is_truncated(
     if samples.size == 0:
         return False
     median = float(np.nanmedian(samples))
-    robust_noise = 1.4826 * float(np.nanmedian(np.abs(samples - median)))
-    return bool(
-        abs(median - reference_baseline) > _TRUNCATED_BASELINE_OFFSET_DN
-        or robust_noise > _TRUNCATED_BASELINE_NOISE_DN
-    )
+    return bool(abs(median - reference_baseline) > _TRUNCATED_BASELINE_OFFSET_DN)
 
 
 def _reference_qualifying_peaks(
