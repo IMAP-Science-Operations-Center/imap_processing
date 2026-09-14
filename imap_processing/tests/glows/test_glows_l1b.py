@@ -253,6 +253,8 @@ def test_histogram_mapping(
                 mock_ancillary_exclusions,
                 mock_ancillary_parameters,
                 pipeline_settings,
+                0.0,  # daily_total_counts_average
+                0.0,  # daily_total_counts_std_dev
             )
         ).values()
     )
@@ -319,6 +321,8 @@ def test_process_histogram(
         mock_ancillary_exclusions,
         mock_ancillary_parameters,
         pipeline_settings,
+        0.0,  # daily_total_counts_average
+        0.0,  # daily_total_counts_std_dev
     )
 
     output = process_histogram(
@@ -331,7 +335,9 @@ def test_process_histogram(
 
     # flags[0:10]  = onboard flags (1=good, 0=bad), one per bit of flags_set_onboard
     # flags[10]    = is_generated_on_ground (1=onboard, 0=ground)
-    # flags[11]    = is_beyond_daily_statistical_error (placeholder, always 1)
+    # flags[11]    = is_beyond_daily_statistical_error (1 here: total counts of 0
+    #                matches the daily_total_counts_average/std_dev of 0.0/0.0 passed
+    #                in above, so it's within the n-sigma band)
     # flags[12:16] = std_dev threshold flags
     # flags[16]    = is_beyond_background
     assert test_l1b.flags[6] == 0  # is_night
@@ -341,6 +347,52 @@ def test_process_histogram(
     assert test_l1b.flags[14] == 0  # is_spin_std_ok
     assert test_l1b.flags[15] == 0  # is_pulse_ok
     assert test_l1b.flags[16] == 1  # is_beyond_background
+
+
+@patch.object(
+    HistogramL1B,
+    "flag_uv_and_excluded",
+    return_value=(np.zeros(3600, dtype=bool), np.zeros(3600, dtype=bool)),
+)
+@patch.object(HistogramL1B, "update_spice_parameters", autospec=True)
+def test_process_histogram_daily_reference_excludes_night(
+    mock_spice_function,
+    mock_flag_uv_and_excluded,
+    hist_dataset,
+    mock_ancillary_exclusions,
+    mock_ancillary_parameters,
+    mock_pipeline_settings,
+):
+    """The daily total-counts reference excludes night blocks.
+
+    Daytime blocks share one count, so the reference std is 0 and the band is a
+    single point. A night block with a different count falls outside it (flag 0)
+    only because it was excluded from -- not averaged into -- the reference.
+    """
+    mock_spice_function.side_effect = mock_update_spice_parameters
+
+    onboard = np.zeros(20)
+    n_events = np.full(20, 100.0)
+    onboard[[0, 1]] = 64.0  # flags_set_onboard bit 6 (is_night)
+    n_events[[0, 1]] = 500.0
+    hist_dataset["flags_set_onboard"][:] = onboard
+    hist_dataset["number_of_events"][:] = n_events
+
+    pipeline_settings = PipelineSettings(
+        mock_pipeline_settings.sel(
+            epoch=mock_pipeline_settings.epoch[0], method="nearest"
+        )
+    )
+    output = process_histogram(
+        hist_dataset,
+        mock_ancillary_exclusions,
+        mock_ancillary_parameters,
+        pipeline_settings,
+    )
+    flag_idx = [f.name for f in dataclasses.fields(HistogramL1B)].index("flags")
+    flags = output[flag_idx].values  # (epoch, 17); column 11 = is_beyond_daily
+    assert flags[5, 11] == 1  # a daytime block sits inside the daytime band
+    assert flags[0, 11] == 0  # a night block is excluded, so its count is outside
 
 
 @patch.object(
@@ -630,6 +682,8 @@ def test_hist_spice_output(
                 epoch=mock_pipeline_settings.epoch[0], method="nearest"
             ),
         ),
+        "daily_total_counts_average": 0.0,
+        "daily_total_counts_std_dev": 0.0,
     }
 
     kernels = [

@@ -44,7 +44,6 @@ def l1b_hists():
     return input
 
 
-@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
@@ -54,7 +53,6 @@ def l1b_hists():
 def test_glows_l2(
     mock_spice_function,
     mock_flag_uv_and_excluded,
-    mock_compute_position_angle,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -110,7 +108,6 @@ def test_glows_l2(
     assert any(record.levelname == "WARNING" for record in caplog.records)
 
 
-@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
@@ -120,7 +117,6 @@ def test_glows_l2(
 def test_generate_l2(
     mock_spice_function,
     mock_flag_uv_and_excluded,
-    mock_compute_position_angle,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -189,7 +185,6 @@ def test_generate_l2(
         assert ds.bad_time_flag_occurrences.dtype == np.uint16
 
 
-@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
@@ -199,7 +194,6 @@ def test_generate_l2(
 def test_glows_l2_cdf_metadata(
     mock_spice_function,
     mock_flag_uv_and_excluded,
-    mock_compute_position_angle,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,
@@ -286,7 +280,6 @@ def test_glows_l2_cdf_metadata(
         )
 
 
-@patch.object(HistogramL2, "compute_position_angle", return_value=42.0)
 @patch.object(
     HistogramL1B,
     "flag_uv_and_excluded",
@@ -296,7 +289,6 @@ def test_glows_l2_cdf_metadata(
 def test_glows_l2_cdf_fillvals(
     mock_spice_function,
     mock_flag_uv_and_excluded,
-    mock_compute_position_angle,
     l1a_dataset,
     mock_ancillary_exclusions,
     mock_pipeline_settings,

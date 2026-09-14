@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+from imap_processing.ancillary.ancillary_dataset_combiner import GlowsAncillaryCombiner
 from imap_processing.glows.l1b.glows_l1b import glows_l1b, glows_l1b_de
 from imap_processing.glows.l1b.glows_l1b_data import (
     AncillaryParameters,
@@ -326,6 +327,121 @@ def test_get_threshold():
     for name, exp in zip(description, expected, strict=False):
         threshold = settings.get_threshold(name)
         assert threshold == exp
+
+
+def _spin_offset_settings(times, values):
+    """Build PipelineSettings from a spin-offset correction time/value table."""
+    return PipelineSettings(
+        xr.Dataset(
+            {
+                "spin_offset_correction_times": (["t"], times),
+                "spin_offset_correction_values": (["t"], values),
+            }
+        )
+    )
+
+
+def test_get_spin_offset_correction():
+    """Asof lookup: a value takes effect from its timestamp forward, and times
+    before the first entry fall back to the earliest value.
+    """
+    settings = _spin_offset_settings(
+        ["2025-11-12T00:00:00", "2026-07-08T15:50:00"], [1.047, 2.347]
+    )
+
+    def lookup(time):
+        return settings.get_spin_offset_correction(np.datetime64(time))
+
+    assert lookup("2025-01-01T00:00:00") == pytest.approx(1.047)  # before first entry
+    assert lookup("2026-07-08T15:49:59") == pytest.approx(1.047)  # 1 s before switch
+    assert lookup("2026-07-08T15:50:00") == pytest.approx(2.347)  # switch is inclusive
+
+
+def test_get_spin_offset_correction_sorts_by_time():
+    """Out-of-order ancillary entries are sorted on construction."""
+    settings = _spin_offset_settings(
+        ["2026-07-08T15:50:00", "2025-11-12T00:00:00"], [2.347, 1.047]
+    )
+    assert settings.get_spin_offset_correction(
+        np.datetime64("2026-01-01T00:00:00")
+    ) == pytest.approx(1.047)
+
+
+def test_get_spin_offset_correction_fallbacks():
+    """The deprecated scalar raises; a missing table defaults to 0.0."""
+    with pytest.raises(ValueError, match="deprecated scalar"):
+        PipelineSettings(xr.Dataset({"spin_offset_correction": 1.5}))
+    empty = PipelineSettings(xr.Dataset())
+    assert empty.get_spin_offset_correction(np.datetime64("2026-01-01T00:00:00")) == 0.0
+
+
+def test_pipeline_settings_from_json_parses_spin_offset_table():
+    """ISO time strings survive the full JSON -> dataset -> PipelineSettings path,
+    parsing to datetime64 with a working asof lookup.
+    """
+    json_path = (
+        Path(__file__).parent
+        / "validation_data"
+        / "imap_glows_pipeline-settings_20251112_v001.json"
+    )
+    settings = PipelineSettings(
+        GlowsAncillaryCombiner.convert_json_to_dataset(json_path)
+    )
+    assert settings.get_spin_offset_correction(
+        np.datetime64("2026-01-01T00:00:00")
+    ) == pytest.approx(1.047)  # first entry
+    assert settings.get_spin_offset_correction(
+        np.datetime64("2026-07-08T15:50:00")
+    ) == pytest.approx(2.347)  # second entry takes effect at its timestamp
+
+
+def _mock_histogram_for_flags(number_of_events):
+    """Minimal HistogramL1B-like object exposing what compute_flags reads."""
+
+    class MockHistogram:
+        flags_set_onboard = 0
+        is_generated_on_ground = 1
+        filter_temperature_std_dev = 0.0
+        hv_voltage_std_dev = 0.0
+        spin_period_std_dev = 0.0
+        pulse_length_std_dev = 0.0
+        deserialize_flags = staticmethod(HistogramL1B.deserialize_flags)
+
+    hist = MockHistogram()
+    hist.number_of_events = number_of_events
+    return hist
+
+
+@pytest.mark.parametrize(
+    ("number_of_events", "n_sigma", "avg", "std", "expected"),
+    [
+        (100, 3.0, 100.0, 10.0, 1),  # inside the band -> good
+        (200, 3.0, 100.0, 10.0, 0),  # outside the band -> bad
+        (200, -1.0, 100.0, 10.0, 1),  # negative threshold disables the check
+        (200, 3.0, np.nan, np.nan, 1),  # no daytime reference disables the check
+    ],
+)
+def test_compute_flags_is_beyond_daily_statistical_error(
+    number_of_events, n_sigma, avg, std, expected
+):
+    """is_beyond_daily_statistical_error (flag 11) is bad (0) only for a block
+    outside the n-sigma band; a negative threshold or a missing (NaN) daytime
+    reference disables the check (good).
+    """
+    thresholds = {
+        "n_sigma_threshold_lower": n_sigma,
+        "n_sigma_threshold_upper": n_sigma,
+        "std_dev_threshold__celsius_deg": 1.0,
+        "std_dev_threshold__volt": 1.0,
+        "std_dev_threshold__sec": 1.0,
+        "std_dev_threshold__usec": 1.0,
+    }
+    settings = PipelineSettings(
+        xr.Dataset({k: xr.DataArray(v) for k, v in thresholds.items()})
+    )
+    hist = _mock_histogram_for_flags(number_of_events)
+    flags = HistogramL1B.compute_flags(hist, settings, np.double(avg), np.double(std))
+    assert flags[11] == expected
 
 
 @patch("imap_processing.glows.l1b.glows_l1b_data.geometry.imap_state")
