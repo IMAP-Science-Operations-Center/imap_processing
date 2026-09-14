@@ -88,7 +88,7 @@ mass:
   VAR_TYPE: support_data
 
 spin_phase:
-    CATDESC: The spacecraft spin phase at the time of detection
+    CATDESC: The instrument spin phase at the time of detection
     DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array
     FIELDNAM: Spin Phase
     FILLVAL: *int_fillval
