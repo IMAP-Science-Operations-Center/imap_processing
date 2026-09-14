@@ -79,7 +79,11 @@ CHARGE_BIN_EDGES = np.array(
         1.00e04,
     ]
 )
-SPIN_PHASE_BIN_EDGES = np.array([0, 90, 180, 270, 360])
+# Define the 4 Spin phase quadrant boundaries. The [315, 45] quadrant wraps through
+# 0 deg, so its lower edge is -45 to keep the array increasing (equivalent to 315 deg).
+# bin_spin_phases() shifts these edges (and the input angles) by +45 deg internally
+# to make them digitize-friendly.
+SPIN_PHASE_BIN_EDGES = np.array([-45, 45, 135, 225, 315])
 
 # Get the rectangular map grid with the specified spacing
 SKY_GRID = AzElSkyGrid(IDEX_SPACING_DEG)
@@ -713,11 +717,14 @@ def bin_spin_phases(spin_phases: xr.DataArray) -> np.ndarray:
             f"Spin phase angles, {spin_phases.data} are outside of the expected spin "
             f"phase angle range, [0, 360)."
         )
-    # Shift spin phases by +45° so that the first bin starts at 0°.
-    # Use mod to wrap values >= 360 to 0.
+    # SPIN_PHASE_BIN_EDGES are the true bin edges, but np.digitize needs a plain
+    # increasing range starting at (or above) the lowest angle it will see. Shift
+    # both the edges and the input angles by +45° -- which turns the edges into
+    # [0, 90, 180, 270, 360] -- and wrap the shifted angles into [0, 360).
+    shifted_bin_edges = SPIN_PHASE_BIN_EDGES + 45
     shifted_spin_phases = (spin_phases + 45) % 360
     # Use np.digitize to find the bin index for each spin phase.
-    bin_indices = np.digitize(shifted_spin_phases, SPIN_PHASE_BIN_EDGES, right=False)
+    bin_indices = np.digitize(shifted_spin_phases, shifted_bin_edges, right=False)
     # Shift bins to be zero-based.
     bin_indices -= 1
     return np.asarray(bin_indices)

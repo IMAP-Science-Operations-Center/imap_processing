@@ -257,6 +257,15 @@ def test_bin_spin_phases():
     assert_array_equal(spin_quadrants, [0, 1, 2, 3])
 
 
+@pytest.mark.external_test_data
+def test_spin_phase_means_match_true_bin_centers(
+    l2b_and_l2c_datasets: list[xr.Dataset],
+):
+    """Test that the reported spin-phase coordinate contains the true bin centers."""
+    l2b_dataset = l2b_and_l2c_datasets[0]
+    assert_array_equal(l2b_dataset["spin_phase"].data, [0, 90, 180, 270])
+
+
 def test_bin_spin_phases_warning(caplog):
     """Tests that bin_spin_phases() logs expected out of range warning."""
     # The last value in the array should trigger a warning since it is >=360.

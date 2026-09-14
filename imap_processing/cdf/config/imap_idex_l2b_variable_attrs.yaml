@@ -88,7 +88,7 @@ mass:
   VAR_TYPE: support_data
 
 spin_phase:
-    CATDESC: The spacecraft spin phase at the time of detection
+    CATDESC: The instrument spin phase at the time of detection
     DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase,Qualifier:Array
     FIELDNAM: Spin Phase
     FILLVAL: *int_fillval
@@ -100,6 +100,8 @@ spin_phase:
     VALIDMAX: 360
     VALIDMIN: 0
     VAR_NOTES: This is given in 4 bins [315-45, 45-135, 135-225, 225-315] degrees.
+      The coordinate value reported for each bin is that bin's center,
+      e.g. [0, 90, 180, 270].
     VAR_TYPE: support_data
 
 impact_charge:

@@ -555,7 +555,7 @@ latitude:
 
 spin_phase:
   <<: *spice_base
-  CATDESC: IMAP Spin Phase
+  CATDESC: IDEX Spin Phase
   DICT_KEY: SPASE>Support>SupportQuantity:SpinPhase
   FIELDNAM: Spin Phase
   FILLVAL: *double_fillval
