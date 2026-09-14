@@ -163,7 +163,7 @@ def test_cdf_de(
 
     assert (
         l1b_de_dataset[0].attrs["Logical_source_description"]
-        == "IMAP-Ultra Instrument Level-1B Direct Event Data."
+        == "IMAP-Ultra Instrument Level-1B Direct Event Data"
     )
 
     l1b_de_dataset[0].attrs["Data_version"] = "999"

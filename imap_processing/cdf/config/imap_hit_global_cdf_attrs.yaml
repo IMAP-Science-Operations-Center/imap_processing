@@ -16,50 +16,50 @@ imap_hit_l1a_hk:
     <<: *instrument_base
     Data_type: L1A_HK>Level-1A Housekeeping
     Logical_source: imap_hit_l1a_hk
-    Logical_source_description: IMAP Mission HIT Instrument Level-1A Housekeeping Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Housekeeping Data
 
 imap_hit_l1a_counts-standard:
     <<: *instrument_base
     Data_type: L1A_counts>Level-1A Standard Counts
     Logical_source: imap_hit_l1a_counts-standard
-    Logical_source_description: IMAP Mission HIT Instrument Level-1A Standard Count Rates Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Standard Count Rates Data
 
 imap_hit_l1a_counts-sectored:
     <<: *instrument_base
     Data_type: L1A_counts>Level-1A Sectored Counts
     Logical_source: imap_hit_l1a_counts-sectored
-    Logical_source_description: IMAP Mission HIT Instrument Level-1A Sectored Count Rates Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Sectored Count Rates Data
 
 imap_hit_l1a_direct-events:
     <<: *instrument_base
     Data_type: L1A_pha>Level-1A Direct Events
     Logical_source: imap_hit_l1a_direct-events
-    Logical_source_description: IMAP Mission HIT Instrument Level-1A Pulse Height Events Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1A Pulse Height Events Data
 
   # L1b
 imap_hit_l1b_hk:
     <<: *instrument_base
     Data_type: L1B_HK>Level-1B Housekeeping
     Logical_source: imap_hit_l1b_hk
-    Logical_source_description: IMAP Mission HIT Instrument Level-1B Housekeeping Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Housekeeping Data
 
 imap_hit_l1b_standard-rates:
     <<: *instrument_base
     Data_type: L1B_standard-rates>Level-1B Standard Rates
     Logical_source: imap_hit_l1b_standard-rates
-    Logical_source_description: IMAP Mission HIT Instrument Level-1B Standard Rates Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Standard Rates Data
 
 imap_hit_l1b_summed-rates:
     <<: *instrument_base
     Data_type: L1B_summed-rates>Level-1B Summed Rates
     Logical_source: imap_hit_l1b_summed-rates
-    Logical_source_description: IMAP Mission HIT Instrument Level-1B Summed Rates Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Summed Rates Data
 
 imap_hit_l1b_sectored-rates:
     <<: *instrument_base
     Data_type: L1B_sectored-rates>Level-1B Sectored Rates
     Logical_source: imap_hit_l1b_sectored-rates
-    Logical_source_description: IMAP Mission HIT Instrument Level-1B Sectored Rates Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-1B Sectored Rates Data
 
   # L2
 
@@ -67,16 +67,16 @@ imap_hit_l2_standard-intensity:
     <<: *instrument_base
     Data_type: L2_standard-intensity>Level-2 Standard Intensity
     Logical_source: imap_hit_l2_standard-intensity
-    Logical_source_description: IMAP Mission HIT Instrument Level-2 Standard Intensity Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Standard Intensity Data
 
 imap_hit_l2_summed-intensity:
     <<: *instrument_base
     Data_type: L2_summed-intensity>Level-2 Summed Intensity
     Logical_source: imap_hit_l2_summed-intensity
-    Logical_source_description: IMAP Mission HIT Instrument Level-2 Summed Intensity Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Summed Intensity Data
 
 imap_hit_l2_macropixel-intensity:
     <<: *instrument_base
     Data_type: L2_macropixel-intensity>Level-2 Macro Pixel Intensity
     Logical_source: imap_hit_l2_macropixel-intensity
-    Logical_source_description: IMAP Mission HIT Instrument Level-2 Macro Pixel Intensity Data.
+    Logical_source_description: IMAP Mission HIT Instrument Level-2 Macro Pixel Intensity Data

@@ -209,7 +209,7 @@ def test_process_housekeeping(housekeeping_dataset, attribute_manager):
         "Logical_file_id": None,
         "Logical_source": "imap_hit_l1a_hk",
         "Logical_source_description": "IMAP Mission HIT Instrument Level-1A "
-        "Housekeeping Data.",
+        "Housekeeping Data",
         "Mission_group": "IMAP",
         "PI_affiliation": "Princeton University",
         "PI_name": "Prof. David J. McComas",
