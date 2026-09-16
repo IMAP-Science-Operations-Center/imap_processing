@@ -489,6 +489,8 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
     assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-species"
     cdf_path = write_cdf(processed_2_ds)
     assert_l2_epoch_delta_cdf_metadata(cdf_path)
+    # Make sure the written file can actually be reloaded
+    load_cdf(cdf_path)
     with cdflib.CDF(cdf_path) as cdf_file:
         hplus_attrs = cdf_file.varattsget("hplus")
         assert (
@@ -509,6 +511,10 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
             var_attrs = cdf_file.varattsget(var)
             assert var_info.Data_Type_Description == "CDF_UINT1"
             assert var_attrs["FILLVAL"] == np.uint8(255)
+        # y-axis should be physical energy_per_charge values, not esa_step
+        assert hplus_attrs["DEPEND_1"] == "energy_per_charge"
+        energy_per_charge_attrs = cdf_file.varattsget("energy_per_charge")
+        assert "DEPEND_1" not in energy_per_charge_attrs
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
