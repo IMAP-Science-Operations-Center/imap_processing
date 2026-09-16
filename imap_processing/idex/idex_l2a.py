@@ -467,8 +467,9 @@ def calculate_ion_grid_velocity_and_mass(
     Target High is preferred when it is unsaturated. Target Low is used only
     when Target High is saturated or has no finite fitted charge. If both
     target channels are saturated, or Ion Grid is saturated, both estimates
-    are invalid. Velocity estimates outside 1--100 km/s (inclusive bounds)
-    and their corresponding mass estimates are also invalid.
+    are invalid. Fractional Ion Grid-to-target charge ratios outside the
+    inclusive range [0.01, 1.0] also invalidate both estimates. The velocity
+    calibration uses the charge ratio expressed as a percentage.
 
     Parameters
     ----------
@@ -503,14 +504,15 @@ def calculate_ion_grid_velocity_and_mass(
         return np.nan, np.nan
 
     charge_ratio = ion_grid_charge / target_charge
-    velocity_estimate = (
-        idex_constants.ION_GRID_VELOCITY_SCALE
-        * charge_ratio**idex_constants.ION_GRID_VELOCITY_EXPONENT
-        + idex_constants.ION_GRID_VELOCITY_OFFSET
-    )
-    if not 1.0 <= velocity_estimate <= 100.0:
+    if not 0.01 <= charge_ratio <= 1.0:
         return np.nan, np.nan
 
+    # The empirical velocity calibration expects percent, not a fractional ratio.
+    velocity_estimate = (
+        idex_constants.ION_GRID_VELOCITY_SCALE
+        * (100.0 * charge_ratio) ** idex_constants.ION_GRID_VELOCITY_EXPONENT
+        + idex_constants.ION_GRID_VELOCITY_OFFSET
+    )
     mass_estimate = calculate_mass_from_velocity(
         target_charge, velocity_estimate, yield_params
     )
