@@ -530,6 +530,41 @@ def test_ion_grid_velocity_falls_back_to_low_target_when_high_saturates():
     assert velocity == pytest.approx(55.0 * 2.0**-3.2 + 1.5)
 
 
+@pytest.mark.parametrize("target_high_saturated", [0, 1])
+def test_ion_grid_velocity_outside_range_is_nan(target_high_saturated):
+    """Small charge ratios cannot publish excessive IG velocity or mass."""
+    yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+    velocity, mass = calculate_ion_grid_velocity_and_mass(
+        0.01, 1.0, 1.0, target_high_saturated, 0, 0, yield_params
+    )
+
+    assert np.isnan(velocity)
+    assert np.isnan(mass)
+
+
+@pytest.mark.parametrize("expected_velocity", [0.999, 1.0, 56.5, 100.0, 100.001])
+def test_ion_grid_velocity_range_is_inclusive(monkeypatch, expected_velocity):
+    """Both bounds are inclusive; estimates outside either bound are invalid."""
+    # Use an identity relation to exercise exact bounds without inversion roundoff.
+    # The production relation's 1.5 km/s offset makes the lower bound unreachable.
+    monkeypatch.setattr(idex_constants, "ION_GRID_VELOCITY_SCALE", 1.0)
+    monkeypatch.setattr(idex_constants, "ION_GRID_VELOCITY_EXPONENT", 1.0)
+    monkeypatch.setattr(idex_constants, "ION_GRID_VELOCITY_OFFSET", 0.0)
+    yield_params = np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40])
+    velocity, mass = calculate_ion_grid_velocity_and_mass(
+        expected_velocity, 1.0, 1.0, 0, 0, 0, yield_params
+    )
+
+    if 1.0 <= expected_velocity <= 100.0:
+        assert velocity == expected_velocity
+        assert mass == pytest.approx(
+            calculate_mass_from_velocity(1.0, expected_velocity, yield_params)
+        )
+    else:
+        assert np.isnan(velocity)
+        assert np.isnan(mass)
+
+
 @pytest.mark.parametrize(
     "target_high_saturated,target_low_saturated,ion_grid_saturated",
     [(1, 1, 0), (0, 0, 1)],

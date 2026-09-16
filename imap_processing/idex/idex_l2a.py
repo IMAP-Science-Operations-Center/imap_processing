@@ -467,7 +467,8 @@ def calculate_ion_grid_velocity_and_mass(
     Target High is preferred when it is unsaturated. Target Low is used only
     when Target High is saturated or has no finite fitted charge. If both
     target channels are saturated, or Ion Grid is saturated, both estimates
-    are invalid.
+    are invalid. Velocity estimates outside 1--100 km/s (inclusive bounds)
+    and their corresponding mass estimates are also invalid.
 
     Parameters
     ----------
@@ -507,6 +508,9 @@ def calculate_ion_grid_velocity_and_mass(
         * charge_ratio**idex_constants.ION_GRID_VELOCITY_EXPONENT
         + idex_constants.ION_GRID_VELOCITY_OFFSET
     )
+    if not 1.0 <= velocity_estimate <= 100.0:
+        return np.nan, np.nan
+
     mass_estimate = calculate_mass_from_velocity(
         target_charge, velocity_estimate, yield_params
     )
