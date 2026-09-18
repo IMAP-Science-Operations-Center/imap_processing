@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
@@ -551,3 +552,100 @@ def test_update_spice_parameters_spin_axis_near_wrapping_point(
     # Standard deviations should be small (all points are within a few degrees)
     assert lon_std < 5.0, f"Longitude std dev {lon_std} should be small"
     assert lat_std < 1.0, f"Latitude std dev {lat_std} should be small"
+
+
+def test_flag_from_mask_dataset_tolerance():
+    """flag_from_mask_dataset matches block identifiers within a 5-second
+    tolerance rather than requiring an exact string match, since the
+    ancillary file's identifier can differ from this block's own by a few
+    seconds."""
+    mask_dataset = xr.Dataset(
+        {
+            "l1b_unique_block_identifier": (
+                ["time_block"],
+                ["2026-01-01T15:00:00", "2026-01-01T15:01:00"],
+            ),
+            "histogram_mask_array": (
+                ["time_block"],
+                ["1" * 10, "0" * 5 + "1" * 5],
+            ),
+        }
+    )
+
+    def fake_hist(identifier):
+        return SimpleNamespace(
+            unique_block_identifier=identifier, histogram=np.zeros(10)
+        )
+
+    all_ones = np.ones(10, dtype=bool)
+    all_zeros = np.zeros(10, dtype=bool)
+    second_entry_mask = np.array([False] * 5 + [True] * 5)
+
+    # Exact match.
+    mask = HistogramL1B.flag_from_mask_dataset(
+        fake_hist("2026-01-01T15:00:00"), mask_dataset
+    )
+    np.testing.assert_array_equal(mask, all_ones)
+
+    # Within the 5-second tolerance.
+    mask = HistogramL1B.flag_from_mask_dataset(
+        fake_hist("2026-01-01T15:00:03"), mask_dataset
+    )
+    np.testing.assert_array_equal(mask, all_ones)
+
+    # Exactly at the tolerance boundary (inclusive).
+    mask = HistogramL1B.flag_from_mask_dataset(
+        fake_hist("2026-01-01T15:00:05"), mask_dataset
+    )
+    np.testing.assert_array_equal(mask, all_ones)
+
+    # Just beyond the tolerance: no match, all-False mask.
+    mask = HistogramL1B.flag_from_mask_dataset(
+        fake_hist("2026-01-01T15:00:06"), mask_dataset
+    )
+    np.testing.assert_array_equal(mask, all_zeros)
+
+    # Equidistant from both entries (30s from each), beyond tolerance either way:
+    # no match.
+    mask = HistogramL1B.flag_from_mask_dataset(
+        fake_hist("2026-01-01T15:00:30"), mask_dataset
+    )
+    np.testing.assert_array_equal(mask, all_zeros)
+
+    # Closer to the second entry: matches the second entry's mask, not the first.
+    mask = HistogramL1B.flag_from_mask_dataset(
+        fake_hist("2026-01-01T15:00:58"), mask_dataset
+    )
+    np.testing.assert_array_equal(mask, second_entry_mask)
+
+
+def test_flag_from_mask_dataset_picks_closest_within_tolerance():
+    """When more than one ancillary entry falls within the tolerance window,
+    flag_from_mask_dataset uses the closest one."""
+    mask_dataset = xr.Dataset(
+        {
+            "l1b_unique_block_identifier": (
+                ["time_block"],
+                ["2026-01-01T15:00:00", "2026-01-01T15:00:04"],
+            ),
+            "histogram_mask_array": (
+                ["time_block"],
+                ["1" * 5 + "0" * 5, "0" * 5 + "1" * 5],
+            ),
+        }
+    )
+    hist = SimpleNamespace(
+        unique_block_identifier="2026-01-01T15:00:02", histogram=np.zeros(10)
+    )
+    # 2026-01-01T15:00:02 is within 5s of both entries (2s and 2s away - tied).
+    # np.argmin resolves ties by taking the first occurring minimum, matching
+    # the earlier (closer-in-index) entry.
+    mask = HistogramL1B.flag_from_mask_dataset(hist, mask_dataset)
+    np.testing.assert_array_equal(mask, np.array([True] * 5 + [False] * 5))
+
+    # Now favor the second entry unambiguously (1s vs 3s away).
+    hist = SimpleNamespace(
+        unique_block_identifier="2026-01-01T15:00:03", histogram=np.zeros(10)
+    )
+    mask = HistogramL1B.flag_from_mask_dataset(hist, mask_dataset)
+    np.testing.assert_array_equal(mask, np.array([False] * 5 + [True] * 5))
