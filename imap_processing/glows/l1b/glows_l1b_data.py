@@ -1334,11 +1334,21 @@ class HistogramL1B:
         mask : np.ndarray
             Boolean array of shape (n_bins,). True where the bin is flagged.
         """
-        identifiers = mask_dataset["l1b_unique_block_identifier"].values
-        match = np.where(identifiers == self.unique_block_identifier)[0]
+        # Match by timestamp within a tolerance rather than exact string equality:
+        # the ancillary file's block identifier can differ from this block's own
+        # by a few seconds, because the GLOWS team and the SDC may use different
+        # sclk kernel versions when converting the block start time. If more than
+        # one entry falls within the tolerance, use the closest one.
+        identifiers = mask_dataset["l1b_unique_block_identifier"].values.astype(
+            "datetime64[s]"
+        )
+        self_time = np.datetime64(self.unique_block_identifier)
+        diffs = np.abs(identifiers - self_time)
+        match = np.where(diffs <= np.timedelta64(5, "s"))[0]
         if not match.size:
             return np.zeros(len(self.histogram), dtype=bool)
-        mask_str = mask_dataset["histogram_mask_array"].values[match[0]]
+        best = match[np.argmin(diffs[match])]
+        mask_str = mask_dataset["histogram_mask_array"].values[best]
 
         # Parse the "0"/"1" character string into a boolean array
         mask = np.array(list(mask_str)) == "1"
