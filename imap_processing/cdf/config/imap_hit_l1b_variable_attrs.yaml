@@ -2909,7 +2909,38 @@ ni_stat_uncert_minus:
   SCALEMAX: 10000000000
   VAR_TYPE: support_data
 
-# TODO: spreadsheet has no row for he_energy_delta_plus/minus — need to be confirmed
+# NOTE: spreadsheet has no row for he_energy_delta_plus/minus — need to be confirmed
+he_energy_delta_plus:
+  DEPEND_0: he_energy_mean
+  CATDESC: He energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+he_energy_delta_minus:
+  DEPEND_0: he_energy_mean
+  CATDESC: He energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
 
 #Sectored-only particles
 cno:
