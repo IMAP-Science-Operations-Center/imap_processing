@@ -60,7 +60,7 @@ def calculate_extendedspin(
     rates_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-rates"]
     status_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-status"]
 
-    # Events with no aux/spin coverage (AUXOUTLIER, flagged in de.py) have a
+    # Events with no aux data coverage (AUXOUTLIER, flagged in de.py) have a
     # fill-valued "spin" that isn't a real spin number and must be excluded
     # from per-spin binning to avoid using an invalid spin.
     has_spin_mask = de_dataset["spin"].values != FILLVAL_UINT32
