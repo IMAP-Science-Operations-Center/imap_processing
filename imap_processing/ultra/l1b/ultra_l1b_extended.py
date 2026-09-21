@@ -943,8 +943,10 @@ def get_spin_start_indices(
     # Check that all events fall within the aux dataset time range.
     # The time window spans from the first spin start to the end of the last spin.
     first_spin_start = spin_start_sec[0]
-    # Define the end of the last spin as start time + max duration (15s)
-    last_spin_end = spin_start_sec[-1] + 15.0  # TODO use actual duration
+    # Define the end of the last spin as start time + nominal spin duration
+    last_spin_end = (
+        spin_start_sec[-1] + UltraConstants.NOMINAL_SPIN_PERIOD_SEC
+    )  # TODO ask ultra team
     missing_aux_data_mask = (de_event_met < first_spin_start) | (
         de_event_met > last_spin_end
     )

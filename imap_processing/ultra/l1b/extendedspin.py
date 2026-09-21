@@ -69,7 +69,7 @@ def calculate_extendedspin(
     # The energy dependent culling selects its de dataset per energy range.
     priority_1_de_dataset = de_datasets["p1"]
 
-    # Events with no aux/spin coverage (AUXOUTLIER, flagged in de.py) have a
+    # Events with no aux data coverage (AUXOUTLIER, flagged in de.py) have a
     # fill-valued "spin" that isn't a real spin number and must be excluded
     # from per-spin binning to avoid using an invalid spin.
     has_spin_mask = priority_1_de_dataset["spin"].values != FILLVAL_UINT32

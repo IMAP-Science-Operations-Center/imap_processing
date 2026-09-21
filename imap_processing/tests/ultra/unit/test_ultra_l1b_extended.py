@@ -609,8 +609,8 @@ def test_get_event_times_out_of_range(
     assert event_times.shape == coarse_times.shape
     assert spin_starts.shape == coarse_times.shape
 
-    # The out-of-range event should be filled and flagged, not silently
-    # converted to a bogus (but finite) spice time.
+    # Check events that dont have aux data coverage. These should be fill vals
+    # and the quality flag array should indicate an AUXOUTLIER flag.
     assert event_times[0] == FILLVAL_FLOAT32
     assert spin_starts[0] == FILLVAL_FLOAT32
     assert quality_flags[0] == ImapDEOutliersUltraFlags.AUXOUTLIER.value
