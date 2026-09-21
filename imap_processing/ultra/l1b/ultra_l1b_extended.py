@@ -935,8 +935,8 @@ def get_spin_start_indices(
     start_inds : numpy.ndarray
         Spin start indices for each event.
     missing_aux_data_mask : numpy.ndarray
-        Boolean array indicating where there are events out of the aux data range. The
-        universal spin table should be used to fill in missing data for these events.
+        Boolean array indicating where there are events out of the aux data range.
+        These events are dropped/flagged rather than filled in.
     """
     # Get Spin Start Time in seconds
     spin_start_sec = aux_dataset["timespinstart"].values

@@ -212,7 +212,10 @@ def calculate_de(
     )
     quality_flags[valid_mask] |= event_time_qf
 
-    de_dict["spin"] = spin_ds.spin_number.data
+    spin_number = spin_ds.spin_number.data
+    spin_missing_mask = np.isnan(spin_number)
+    spin_number[spin_missing_mask] = FILLVAL_UINT32
+    de_dict["spin"] = spin_number.astype(np.uint32)
     de_dict["event_times"] = event_times.astype(np.float64)
     # Pulse height
     ph_result = get_ph_tof_and_back_positions(

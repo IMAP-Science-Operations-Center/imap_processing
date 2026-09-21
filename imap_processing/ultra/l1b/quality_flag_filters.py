@@ -34,6 +34,7 @@ DE_QUALITY_FLAG_FILTERS: dict[str, list[FlagNameMixin]] = {
         ImapDEOutliersUltraFlags.DURINGREPOINT,
         ImapDEOutliersUltraFlags.COINPH,
         ImapDEOutliersUltraFlags.BACKTOF,
+        ImapDEOutliersUltraFlags.AUXOUTLIER,
     ],
     "quality_scattering": [
         ImapDEScatteringUltraFlags.ABOVE_THRESHOLD,
