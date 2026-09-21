@@ -1,5 +1,3 @@
-# TODO: add attributes for science packets
-
 # <=== Defaults ===>
 # Assumed values for all variable attrs unless overwritten
 default_attrs: &default
@@ -545,4 +543,2490 @@ ebox_p2d0vd:
   LABLAXIS: Voltage
   UNITS: V
   VALIDMAX: 10000000000
+
+#science data variable attributes
+dynamic_threshold_state:
+  DEPEND_0: epoch
+  CATDESC: Raw dynamic threshold state per integration
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Dynamic Threshold State
+  FILLVAL: -128
+  FORMAT: I1
+  LABLAXIS: State
+  SCALETYP: linear
+  SCALEMIN: 0
+  SCALEMAX: 3
+  UNITS: ' '
+  VALIDMIN: 0
+  VALIDMAX: 3
+  VAR_TYPE: data
+  dtype: int8
+
+#standard rates data variable attributes
+sngrates:
+  DEPEND_0: epoch
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  CATDESC: Standard sngrates Count Rates
+  DELTA_PLUS_VAR: sngrates_stat_uncert_plus
+  DELTA_MINUS_VAR: sngrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: sngrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
+
+coinrates:
+  DEPEND_0: epoch
+  DEPEND_1: coinrates_index
+  CATDESC: Standard coinrates Count Rates
+  DELTA_PLUS_VAR: coinrates_stat_uncert_plus
+  DELTA_MINUS_VAR: coinrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: coinrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: coinrates_index_label
+
+pbufrates:
+  DEPEND_0: epoch
+  DEPEND_1: pbufrates_index
+  CATDESC: Standard pbufrates Count Rates
+  DELTA_PLUS_VAR: pbufrates_stat_uncert_plus
+  DELTA_MINUS_VAR: pbufrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: pbufrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: pbufrates_index_label
+
+l2fgrates:
+  DEPEND_0: epoch
+  DEPEND_1: l2fgrates_index
+  CATDESC: Standard l2fgrates Count Rates
+  DELTA_PLUS_VAR: l2fgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: l2fgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: l2fgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: l2fgrates_index_label
+
+l2bgrates:
+  DEPEND_0: epoch
+  DEPEND_1: l2bgrates_index
+  CATDESC: Standard l2bgrates Count Rates
+  DELTA_PLUS_VAR: l2bgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: l2bgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: l2bgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: l2bgrates_index_label
+
+l3fgrates:
+  DEPEND_0: epoch
+  DEPEND_1: l3fgrates_index
+  CATDESC: Standard l3fgrates Count Rates
+  DELTA_PLUS_VAR: l3fgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: l3fgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: l3fgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: l3fgrates_index_label
+
+l3bgrates:
+  DEPEND_0: epoch
+  DEPEND_1: l3bgrates_index
+  CATDESC: Standard l3bgrates Count Rates
+  DELTA_PLUS_VAR: l3bgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: l3bgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: l3bgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: l3bgrates_index_label
+
+penfgrates:
+  DEPEND_0: epoch
+  DEPEND_1: penfgrates_index
+  CATDESC: Standard penfgrates Count Rates
+  DELTA_PLUS_VAR: penfgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: penfgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: penfgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: penfgrates_index_label
+
+penbgrates:
+  DEPEND_0: epoch
+  DEPEND_1: penbgrates_index
+  CATDESC: Standard penbgrates Count Rates
+  DELTA_PLUS_VAR: penbgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: penbgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: penbgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: penbgrates_index_label
+
+ialirtrates:
+  DEPEND_0: epoch
+  DEPEND_1: ialirtrates_index
+  CATDESC: Standard ialirtrates Count Rates
+  DELTA_PLUS_VAR: ialirtrates_stat_uncert_plus
+  DELTA_MINUS_VAR: ialirtrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: ialirtrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: ialirtrates_index_label
+
+l4fgrates:
+  DEPEND_0: epoch
+  DEPEND_1: l4fgrates_index
+  CATDESC: Standard l4fgrates Count Rates
+  DELTA_PLUS_VAR: l4fgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: l4fgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: l4fgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: l4fgrates_index_label
+
+l4bgrates:
+  DEPEND_0: epoch
+  DEPEND_1: l4bgrates_index
+  CATDESC: Standard l4bgrates Count Rates
+  DELTA_PLUS_VAR: l4bgrates_stat_uncert_plus
+  DELTA_MINUS_VAR: l4bgrates_stat_uncert_minus
+  DISPLAY_TYPE: time_series
+  FIELDNAM: l4bgrates_count_rate
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+  LABL_PTR_1: l4bgrates_index_label
+
+sngrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  CATDESC: Plus Uncertainty for sngrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: sngrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
+
+coinrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: coinrates_index
+  CATDESC: Plus Uncertainty for coinrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: coinrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: coinrates_index_label
+
+pbufrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: pbufrates_index
+  CATDESC: Plus Uncertainty for pbufrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: pbufrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: pbufrates_index_label
+
+l2fgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: l2fgrates_index
+  CATDESC: Plus Uncertainty for l2fgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l2fgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l2fgrates_index_label
+
+l2bgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: l2bgrates_index
+  CATDESC: Plus Uncertainty for l2bgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l2bgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l2bgrates_index_label
+
+l3fgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: l3fgrates_index
+  CATDESC: Plus Uncertainty for l3fgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l3fgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l3fgrates_index_label
+
+l3bgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: l3bgrates_index
+  CATDESC: Plus Uncertainty for l3bgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l3bgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l3bgrates_index_label
+
+penfgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: penfgrates_index
+  CATDESC: Plus Uncertainty for penfgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: penfgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: penfgrates_index_label
+
+penbgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: penbgrates_index
+  CATDESC: Plus Uncertainty for penbgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: penbgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: penbgrates_index_label
+
+ialirtrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: ialirtrates_index
+  CATDESC: Plus Uncertainty for ialirtrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ialirtrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: ialirtrates_index_label
+
+l4fgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: l4fgrates_index
+  CATDESC: Plus Uncertainty for l4fgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l4fgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l4fgrates_index_label
+
+l4bgrates_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: l4bgrates_index
+  CATDESC: Plus Uncertainty for l4bgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l4bgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l4bgrates_index_label
+
+sngrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  CATDESC: Minus Uncertainty for sngrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: sngrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
+
+coinrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: coinrates_index
+  CATDESC: Minus Uncertainty for coinrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: coinrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: coinrates_index_label
+
+pbufrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: pbufrates_index
+  CATDESC: Minus Uncertainty for pbufrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: pbufrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: pbufrates_index_label
+
+l2fgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: l2fgrates_index
+  CATDESC: Minus Uncertainty for l2fgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l2fgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l2fgrates_index_label
+
+l2bgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: l2bgrates_index
+  CATDESC: Minus Uncertainty for l2bgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l2bgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l2bgrates_index_label
+
+l3fgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: l3fgrates_index
+  CATDESC: Minus Uncertainty for l3fgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l3fgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l3fgrates_index_label
+
+l3bgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: l3bgrates_index
+  CATDESC: Minus Uncertainty for l3bgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l3bgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l3bgrates_index_label
+
+penfgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: penfgrates_index
+  CATDESC: Minus Uncertainty for penfgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: penfgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: penfgrates_index_label
+
+penbgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: penbgrates_index
+  CATDESC: Minus Uncertainty for penbgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: penbgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: penbgrates_index_label
+
+ialirtrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: ialirtrates_index
+  CATDESC: Minus Uncertainty for ialirtrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ialirtrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: ialirtrates_index_label
+
+l4fgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: l4fgrates_index
+  CATDESC: Minus Uncertainty for l4fgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l4fgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l4fgrates_index_label
+
+l4bgrates_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: l4bgrates_index
+  CATDESC: Minus Uncertainty for l4bgrates Count Rates
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: l4bgrates_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Count Rate"
+  UNITS: "counts / livetime fraction"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+  LABL_PTR_1: l4bgrates_index_label
+
+#Particle variable attributes
+
+h_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for H Summed
+  DELTA_PLUS_VAR: h_energy_delta_plus
+  DELTA_MINUS_VAR: h_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: h_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+he3_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for He3 Summed
+  DELTA_PLUS_VAR: he3_energy_delta_plus
+  DELTA_MINUS_VAR: he3_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he3_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+he4_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for He4 Summed
+  DELTA_PLUS_VAR: he4_energy_delta_plus
+  DELTA_MINUS_VAR: he4_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he4_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+he_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for He Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP:
+  VAR_TYPE: support_data
+
+c_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for C Summed
+  DELTA_PLUS_VAR: c_energy_delta_plus
+  DELTA_MINUS_VAR: c_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: c_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+n_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for N Summed
+  DELTA_PLUS_VAR: n_energy_delta_plus
+  DELTA_MINUS_VAR: n_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: n_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+o_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for O Summed
+  DELTA_PLUS_VAR: o_energy_delta_plus
+  DELTA_MINUS_VAR: o_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: o_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+ne_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Ne Summed
+  DELTA_PLUS_VAR: ne_energy_delta_plus
+  DELTA_MINUS_VAR: ne_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ne_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+na_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Na Summed
+  DELTA_PLUS_VAR: na_energy_delta_plus
+  DELTA_MINUS_VAR: na_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: na_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+mg_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Mg Summed
+  DELTA_PLUS_VAR: mg_energy_delta_plus
+  DELTA_MINUS_VAR: mg_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: mg_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+al_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Al Summed
+  DELTA_PLUS_VAR: al_energy_delta_plus
+  DELTA_MINUS_VAR: al_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: al_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+si_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Si Summed
+  DELTA_PLUS_VAR: si_energy_delta_plus
+  DELTA_MINUS_VAR: si_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: si_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+s_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for S Summed
+  DELTA_PLUS_VAR: s_energy_delta_plus
+  DELTA_MINUS_VAR: s_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: s_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+ar_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Ar Summed
+  DELTA_PLUS_VAR: ar_energy_delta_plus
+  DELTA_MINUS_VAR: ar_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ar_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+ca_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Ca Summed
+  DELTA_PLUS_VAR: ca_energy_delta_plus
+  DELTA_MINUS_VAR: ca_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ca_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+fe_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Fe Summed
+  DELTA_PLUS_VAR: fe_energy_delta_plus
+  DELTA_MINUS_VAR: fe_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: fe_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+ni_energy_mean:
+  CATDESC: Geometric mean energy per nuc. for Ni Summed
+  DELTA_PLUS_VAR: ni_energy_delta_plus
+  DELTA_MINUS_VAR: ni_energy_delta_minus
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ni_energy
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  VAR_TYPE: support_data
+
+h:
+  DEPEND_0: epoch
+  DEPEND_1: h_energy_mean
+  CATDESC: H Summed Omnidirectionl Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: h_stat_uncert_plus
+  DELTA_MINUS_VAR: h_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: h_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "H count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+he3:
+  DEPEND_0: epoch
+  DEPEND_1: he3_energy_mean
+  CATDESC: He3 Summed Omnidirectionl Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: he3_stat_uncert_plus
+  DELTA_MINUS_VAR: he3_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: he3_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "He3 count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+he4:
+  DEPEND_0: epoch
+  DEPEND_1: he4_energy_mean
+  CATDESC: He4 Summed Omnidirectionl Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: he4_stat_uncert_plus
+  DELTA_MINUS_VAR: he4_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: he4_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "He4 count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+he:
+  DEPEND_0: epoch
+  DEPEND_1: he4_energy_mean
+  CATDESC: He (total) Summed Omnidirectionl Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: he_stat_uncert_plus
+  DELTA_MINUS_VAR: he_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: he_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "He count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+c:
+  DEPEND_0: epoch
+  DEPEND_1: c_energy_mean
+  CATDESC: C Summed Omnidirectionl Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: c_stat_uncert_plus
+  DELTA_MINUS_VAR: c_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: c_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "C count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+n:
+  DEPEND_0: epoch
+  DEPEND_1: n_energy_mean
+  CATDESC: N Summed Omnidirectionl Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: n_stat_uncert_plus
+  DELTA_MINUS_VAR: n_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: n_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "N count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+o:
+  DEPEND_0: epoch
+  DEPEND_1: o_energy_mean
+  CATDESC: O Summed Omnidirectionl Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: o_stat_uncert_plus
+  DELTA_MINUS_VAR: o_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: o_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "O count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+ne:
+  DEPEND_0: epoch
+  DEPEND_1: ne_energy_mean
+  CATDESC: Ne Summed Omnidirectionl Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: ne_stat_uncert_plus
+  DELTA_MINUS_VAR: ne_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: ne_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Ne count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+na:
+  DEPEND_0: epoch
+  DEPEND_1: na_energy_mean
+  CATDESC: Na Summed Omnidirectionl Count Rates in 2 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: na_stat_uncert_plus
+  DELTA_MINUS_VAR: na_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: na_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Na count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+mg:
+  DEPEND_0: epoch
+  DEPEND_1: mg_energy_mean
+  CATDESC: Mg Summed Omnidirectionl Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: mg_stat_uncert_plus
+  DELTA_MINUS_VAR: mg_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: mg_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Mg count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+al:
+  DEPEND_0: epoch
+  DEPEND_1: al_energy_mean
+  CATDESC: Al Summed Omnidirectionl Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: al_stat_uncert_plus
+  DELTA_MINUS_VAR: al_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: al_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Al count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+si:
+  DEPEND_0: epoch
+  DEPEND_1: si_energy_mean
+  CATDESC: Si Summed Omnidirectionl Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: si_stat_uncert_plus
+  DELTA_MINUS_VAR: si_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: si_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Si count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+s:
+  DEPEND_0: epoch
+  DEPEND_1: s_energy_mean
+  CATDESC: S Summed Omnidirectionl Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: s_stat_uncert_plus
+  DELTA_MINUS_VAR: s_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: s_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "S count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+ar:
+  DEPEND_0: epoch
+  DEPEND_1: ar_energy_mean
+  CATDESC: Ar Summed Omnidirectionl Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: ar_stat_uncert_plus
+  DELTA_MINUS_VAR: ar_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: ar_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Ar count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+ca:
+  DEPEND_0: epoch
+  DEPEND_1: ca_energy_mean
+  CATDESC: Ca Summed Omnidirectionl Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: ca_stat_uncert_plus
+  DELTA_MINUS_VAR: ca_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: ca_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Ca count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+fe:
+  DEPEND_0: epoch
+  DEPEND_1: fe_energy_mean
+  CATDESC: Fe Summed Omnidirectionl Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: fe_stat_uncert_plus
+  DELTA_MINUS_VAR: fe_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: fe_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Fe count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+ni:
+  DEPEND_0: epoch
+  DEPEND_1: ni_energy_mean
+  CATDESC: Ni Summed Omnidirectionl Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_PLUS_VAR: ni_stat_uncert_plus
+  DELTA_MINUS_VAR: ni_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: ni_count_rate_summed
+  FORMAT: F15.3
+  LABLAXIS: "Ni count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+h_energy_delta_plus:
+  DEPEND_0: h_energy_mean
+  CATDESC: H energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: h_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+h_energy_delta_minus:
+  DEPEND_0: h_energy_mean
+  CATDESC: H energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: h_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+he3_energy_delta_plus:
+  DEPEND_0: he3_energy_mean
+  CATDESC: He3 energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he3_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+he3_energy_delta_minus:
+  DEPEND_0: he3_energy_mean
+  CATDESC: He3 energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he3_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+he4_energy_delta_plus:
+  DEPEND_0: he4_energy_mean
+  CATDESC: He4 energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he4_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+he4_energy_delta_minus:
+  DEPEND_0: he4_energy_mean
+  CATDESC: He4 energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he4_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+c_energy_delta_plus:
+  DEPEND_0: c_energy_mean
+  CATDESC: C energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: c_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+c_energy_delta_minus:
+  DEPEND_0: c_energy_mean
+  CATDESC: C energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: c_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+n_energy_delta_plus:
+  DEPEND_0: n_energy_mean
+  CATDESC: N energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: n_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+n_energy_delta_minus:
+  DEPEND_0: n_energy_mean
+  CATDESC: N energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: n_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+o_energy_delta_plus:
+  DEPEND_0: o_energy_mean
+  CATDESC: O energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: o_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+o_energy_delta_minus:
+  DEPEND_0: o_energy_mean
+  CATDESC: O energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: o_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ne_energy_delta_plus:
+  DEPEND_0: ne_energy_mean
+  CATDESC: Ne energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ne_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ne_energy_delta_minus:
+  DEPEND_0: ne_energy_mean
+  CATDESC: Ne energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ne_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+na_energy_delta_plus:
+  DEPEND_0: na_energy_mean
+  CATDESC: Na energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: na_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+na_energy_delta_minus:
+  DEPEND_0: na_energy_mean
+  CATDESC: Na energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: na_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+mg_energy_delta_plus:
+  DEPEND_0: mg_energy_mean
+  CATDESC: Mg energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: mg_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+mg_energy_delta_minus:
+  DEPEND_0: mg_energy_mean
+  CATDESC: Mg energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: mg_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+al_energy_delta_plus:
+  DEPEND_0: al_energy_mean
+  CATDESC: Al energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: al_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+al_energy_delta_minus:
+  DEPEND_0: al_energy_mean
+  CATDESC: Al energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: al_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+si_energy_delta_plus:
+  DEPEND_0: si_energy_mean
+  CATDESC: Si energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: si_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+si_energy_delta_minus:
+  DEPEND_0: si_energy_mean
+  CATDESC: Si energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: si_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+s_energy_delta_plus:
+  DEPEND_0: s_energy_mean
+  CATDESC: S energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: s_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+s_energy_delta_minus:
+  DEPEND_0: s_energy_mean
+  CATDESC: S energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: s_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ar_energy_delta_plus:
+  DEPEND_0: ar_energy_mean
+  CATDESC: Ar energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ar_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ar_energy_delta_minus:
+  DEPEND_0: ar_energy_mean
+  CATDESC: Ar energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ar_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ca_energy_delta_plus:
+  DEPEND_0: ca_energy_mean
+  CATDESC: Ca energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ca_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ca_energy_delta_minus:
+  DEPEND_0: ca_energy_mean
+  CATDESC: Ca energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ca_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+fe_energy_delta_plus:
+  DEPEND_0: fe_energy_mean
+  CATDESC: Fe energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: fe_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+fe_energy_delta_minus:
+  DEPEND_0: fe_energy_mean
+  CATDESC: Fe energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: fe_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ni_energy_delta_plus:
+  DEPEND_0: ni_energy_mean
+  CATDESC: Ni energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ni_energy_delta_plus
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+ni_energy_delta_minus:
+  DEPEND_0: ni_energy_mean
+  CATDESC: Ni energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ni_energy_min
+  FORMAT: F5.1
+  LABLAXIS: "Energy"
+  UNITS: "MeV/nuc"
+  VALIDMIN: 0
+  VALIDMAX: 1000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 1000
+  VAR_TYPE: support_data
+
+h_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: h_energy_mean
+  CATDESC: Plus uncertainty for H Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: h_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "H count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+h_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: h_energy_mean
+  CATDESC: Minus uncertainty for H Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: h_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "H count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+he3_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: he3_energy_mean
+  CATDESC: Plus uncertainty for He3 Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he3_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "He3 count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+he3_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: he3_energy_mean
+  CATDESC: Minus uncertainty for He3 Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he3_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "He3 count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+he4_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: he4_energy_mean
+  CATDESC: Plus uncertainty for He4 Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he4_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "He4 count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+he4_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: he4_energy_mean
+  CATDESC: Minus uncertainty for He4 Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he4_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "He4 count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+he_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: he4_energy_mean
+  CATDESC: Plus uncertainty for He Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "He count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+he_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: he4_energy_mean
+  CATDESC: Minus uncertainty for He Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: he_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "He count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+c_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: c_energy_mean
+  CATDESC: Plus uncertainty for C Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: c_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "C count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+c_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: c_energy_mean
+  CATDESC: Minus uncertainty for C Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: c_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "C count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+n_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: n_energy_mean
+  CATDESC: Plus uncertainty for N Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: n_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "N count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+n_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: n_energy_mean
+  CATDESC: Minus uncertainty for N Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: n_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "N count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+o_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: o_energy_mean
+  CATDESC: Plus uncertainty for O Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: o_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "O count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+o_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: o_energy_mean
+  CATDESC: Minus uncertainty for O Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: o_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "O count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ne_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: ne_energy_mean
+  CATDESC: Plus uncertainty for Ne Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ne_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ne count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ne_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: ne_energy_mean
+  CATDESC: Minus uncertainty for Ne Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ne_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ne count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+na_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: na_energy_mean
+  CATDESC: Plus uncertainty for Na Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: na_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Na count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+na_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: na_energy_mean
+  CATDESC: Minus uncertainty for Na Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: na_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Na count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+mg_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: mg_energy_mean
+  CATDESC: Plus uncertainty for Mg Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: mg_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Mg count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+mg_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: mg_energy_mean
+  CATDESC: Minus uncertainty for Mg Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: mg_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Mg count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+al_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: al_energy_mean
+  CATDESC: Plus uncertainty for Al Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: al_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Al count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+al_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: al_energy_mean
+  CATDESC: Minus uncertainty for Al Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: al_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Al count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+si_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: si_energy_mean
+  CATDESC: Plus uncertainty for Si Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: si_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Si count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+si_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: si_energy_mean
+  CATDESC: Minus uncertainty for Si Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: si_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Si count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+s_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: s_energy_mean
+  CATDESC: Plus uncertainty for S Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: s_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "S count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+s_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: s_energy_mean
+  CATDESC: Minus uncertainty for S Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: s_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "S count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ar_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: ar_energy_mean
+  CATDESC: Plus uncertainty for Ar Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ar_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ar count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ar_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: ar_energy_mean
+  CATDESC: Minus uncertainty for Ar Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ar_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ar count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ca_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: ca_energy_mean
+  CATDESC: Plus uncertainty for Ca Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ca_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ca count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ca_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: ca_energy_mean
+  CATDESC: Minus uncertainty for Ca Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ca_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ca count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+fe_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: fe_energy_mean
+  CATDESC: Plus uncertainty for Fe Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: fe_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Fe count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+fe_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: fe_energy_mean
+  CATDESC: Minus uncertainty for Fe Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: fe_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Fe count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ni_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: ni_energy_mean
+  CATDESC: Plus uncertainty for Ni Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ni_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ni count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+ni_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: ni_energy_mean
+  CATDESC: Minus uncertainty for Ni Summed
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: ni_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "Ni count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+# TODO: spreadsheet has no row for he_energy_delta_plus/minus — need to be confirmed
+
+#Sectored-only particles
+cno:
+  DEPEND_0: epoch
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  CATDESC: C, N, O Macropixel Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_PLUS_VAR: cno_stat_uncert_plus
+  DELTA_MINUS_VAR: cno_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: cno_count_rate_sectored
+  FORMAT: F15.3
+  LABLAXIS: "CNO count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+nemgsi:
+  DEPEND_0: epoch
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  CATDESC: Ne, Mg, Si Sectored Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_PLUS_VAR: nemgsi_stat_uncert_plus
+  DELTA_MINUS_VAR: nemgsi_stat_uncert_minus
+  DISPLAY_TYPE: spectrogram
+  FIELDNAM: nemgsi_count_rate_sectored
+  FORMAT: F15.3
+  LABLAXIS: "NeMgSi count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: data
+
+cno_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  CATDESC: Plus uncertainty for C, N, O Sectored
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: cno_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "CNO count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+cno_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  CATDESC: Minus uncertainty for C, N, O Sectored
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: cno_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "CNO count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+nemgsi_stat_uncert_plus:
+  DEPEND_0: epoch
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  CATDESC: Plus uncertainty for Ne, Mg, Si Sectored
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: nemgsi_plus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "NeMgSi count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
+
+nemgsi_stat_uncert_minus:
+  DEPEND_0: epoch
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  CATDESC: Minus uncertainty for Ne, Mg, Si Sectored
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: nemgsi_minus_uncertainty
+  FORMAT: F15.3
+  LABLAXIS: "NeMgSi count rate"
+  UNITS: "1 / integration time"
+  VALIDMIN: 0
+  VALIDMAX: 10000000000
+  FILLVAL: -1e+31
+  SCALETYP: log
+  SCALEMIN: 0.0001
+  SCALEMAX: 10000000000
+  VAR_TYPE: support_data
 
