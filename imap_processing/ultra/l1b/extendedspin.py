@@ -76,6 +76,13 @@ def calculate_extendedspin(
     spin_number = priority_1_de_dataset["spin"].values[has_spin_mask]
     de_energy = priority_1_de_dataset["energy"].values[has_spin_mask]
 
+    # check if there are no valid spins.
+    if spin_number.size == 0:
+        raise ValueError(
+            "All Spins are invalid. Please ensure that the l1a aux dataset "
+            "has the correct spin information."
+        )
+
     extendedspin_dict = {}
     rates_qf, spin, energy_bin_geometric_mean, n_sigma_per_energy = flag_rates(
         spin_number,
