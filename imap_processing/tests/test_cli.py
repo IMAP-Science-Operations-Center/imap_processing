@@ -722,6 +722,114 @@ def test_spacecraft_pointing_kernel(
     assert call_args[2] == 5
 
 
+@mock.patch(
+    "imap_processing.cli.pointing_frame.generate_pointing_attitude_kernel",
+    autospec=True,
+)
+def test_spacecraft_pointing_kernel_version_from_dependency(
+    mock_spacecraft_pointing, mock_instrument_dependencies
+):
+    """Test that a pointing-attitude entry in the dependency version map is
+    used, taking its minor version over the fallback --version."""
+
+    dependency_files_str = (
+        '[{"type": "spice","files": ["naif0012.tls", '
+        '"imap_sclk_0005.tsc", "imap_2024_100_2024_111_05.ah.bc"]}]'
+    )
+    dependency_str = json.dumps(
+        {
+            "dependency": json.loads(dependency_files_str),
+            "version": {
+                "pointing-attitude": {"major_version": None, "minor_version": 7}
+            },
+        }
+    )
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(dependency_files_str)
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mock_spacecraft_pointing.return_value = [
+        Path("imap_dps_2024_100_2024_111_007.ah.bc")
+    ]
+    mocks["mock_write_cdf"].side_effect = ["/path/to/file0"]
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    # Fallback --version ("v005") differs from the dependency version map's
+    # minor_version (7), so this confirms the batch-provided Version wins.
+    instrument = Spacecraft(
+        "l1a", "pointing-attitude", dependency_str, "20240410", "12345", "v005", False
+    )
+
+    instrument.process()
+    assert mock_spacecraft_pointing.call_count == 1
+    call_args = mock_spacecraft_pointing.call_args[0]
+    assert call_args[1] == "20240410"
+    assert call_args[2] == 7
+
+
+@mock.patch(
+    "imap_processing.cli.pointing_frame.generate_pointing_attitude_kernel",
+    autospec=True,
+)
+def test_spacecraft_pointing_kernel_no_start_date(
+    mock_spacecraft_pointing, mock_instrument_dependencies
+):
+    """Test coverage for cli.Spacecraft class when only repointing is provided"""
+
+    dependency_str = (
+        '[{"type": "spice","files": ["naif0012.tls", '
+        '"imap_sclk_0005.tsc", "imap_2024_100_2024_111_05.ah.bc"]}]'
+    )
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(dependency_str)
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    # start_date is a valid CLI-only alternative to repointing, so it can be
+    # None here.
+    instrument = Spacecraft(
+        "l1a", "pointing-attitude", dependency_str, None, "12345", "v005", False
+    )
+
+    with pytest.raises(ValueError, match="start_date must be provided"):
+        instrument.process()
+    assert mock_spacecraft_pointing.call_count == 0
+
+
+@mock.patch(
+    "imap_processing.cli.pointing_frame.generate_pointing_attitude_kernel",
+    autospec=True,
+)
+def test_spacecraft_pointing_kernel_no_version(
+    mock_spacecraft_pointing, mock_instrument_dependencies
+):
+    """Test coverage for cli.Spacecraft class when no version can be resolved"""
+
+    dependency_str = (
+        '[{"type": "spice","files": ["naif0012.tls", '
+        '"imap_sclk_0005.tsc", "imap_2024_100_2024_111_05.ah.bc"]}]'
+    )
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(dependency_str)
+    mocks = mock_instrument_dependencies
+    mocks["mock_query"].return_value = [{"file_path": "/path/to/file0"}]
+    mocks["mock_download"].return_value = "file0"
+    mocks["mock_pre_processing"].return_value = input_collection
+
+    # No version block for "pointing-attitude" in the dependency JSON, and no
+    # fallback --version, matches argparse's default of None.
+    instrument = Spacecraft(
+        "l1a", "pointing-attitude", dependency_str, "20240410", None, None, False
+    )
+
+    with pytest.raises(ValueError, match="No version provided"):
+        instrument.process()
+    assert mock_spacecraft_pointing.call_count == 0
+
+
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
 def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1a data level"""
