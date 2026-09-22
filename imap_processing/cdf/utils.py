@@ -18,7 +18,6 @@ from cdflib.xarray.cdf_to_xarray import ISTP_TO_XARRAY_ATTRS
 from imap_data_access.file_validation import Version
 
 import imap_processing
-from imap_processing._version import __version__, __version_tuple__  # noqa: F401
 from imap_processing.spice.time import TTJ2000_EPOCH
 
 logger = logging.getLogger(__name__)
@@ -198,7 +197,7 @@ def write_cdf(
     # The Logical_file_id is always the name of the file without the extension
     dataset.attrs["Logical_file_id"] = file_path.stem
     # Add the processing version to the dataset attributes
-    dataset.attrs["ground_software_version"] = imap_processing._version.__version__
+    dataset.attrs["ground_software_version"] = imap_processing.__version__
     dataset.attrs["Generation_date"] = datetime.datetime.now(
         datetime.timezone.utc
     ).strftime("%Y%m%d")

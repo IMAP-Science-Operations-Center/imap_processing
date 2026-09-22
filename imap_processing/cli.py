@@ -39,7 +39,6 @@ from imap_data_access.processing_input import (
 )
 
 import imap_processing
-from imap_processing._version import __version__, __version_tuple__  # noqa: F401
 from imap_processing.ancillary.ancillary_dataset_combiner import (
     GlowsAncillaryCombiner,
     MagAncillaryCombiner,
@@ -540,7 +539,7 @@ class ProcessInstrument(ABC):
         3. Post-processing actions such as uploading files to the IMAP SDC.
         4. Final cleanup actions.
         """
-        logger.info(f"IMAP Processing Version: {imap_processing._version.__version__}")
+        logger.info(f"IMAP Processing Version: {imap_processing.__version__}")
         logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
         logger.info("Beginning preprocessing (download dependencies)")
         dependencies = self.pre_processing()
@@ -551,7 +550,7 @@ class ProcessInstrument(ABC):
         self.cleanup()
         logger.info("Processing complete")
         # Log version again for truncated or unusually large logs
-        logger.info(f"IMAP Processing Version: {imap_processing._version.__version__}")
+        logger.info(f"IMAP Processing Version: {imap_processing.__version__}")
 
     def pre_processing(self) -> ProcessingInputCollection:
         """
