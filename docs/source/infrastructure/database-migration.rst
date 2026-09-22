@@ -24,11 +24,21 @@ Docs: https://alembic.sqlalchemy.org/en/latest/index.html
 A) DEV Migration + Testing (Steps 1–6)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. **Make your changes to the models**
+1. **Check current DB status**
+
+   .. code-block:: bash
+
+       alembic history -r current:heads --indicate-current
+
+   This will show the current revision and the latest revision. If they are the same, the database is up to date.
+   If current is behind head, the database is out of date and needs to be upgraded. Run step 5 (upgrade) and return
+   to this step to verify the database is now up to date.
+
+2. **Make your changes to the models**
 
    Make your desired changes to the models in ``sds_data_manager/lambda_code/SDSCode/database/models.py``.
 
-2. **Create a revision (DEV ONLY)**
+3. **Create a revision (DEV ONLY)**
 
    This compares the database RDS instance in aws to the DEV schema and generates a migration file with ``upgrade`` and ``downgrade``.
 
@@ -46,7 +56,7 @@ A) DEV Migration + Testing (Steps 1–6)
    detect all changes. See what it misses here:
    https://alembic.sqlalchemy.org/en/latest/autogenerate.html#what-does-autogenerate-detect-and-what-does-it-not-detect
 
-3. **Preview the SQL (Dry Run)**
+4. **Preview the SQL (Dry Run)**
 
    To see the SQL that would be run without actually applying it:
 
@@ -56,21 +66,24 @@ A) DEV Migration + Testing (Steps 1–6)
 
        alembic upgrade head --sql
 
-4. **Apply migration to DEV**
+
+5. **Apply migration to DEV**
 
    .. code-block:: bash
 
        export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
 
-       alembic current
+       alembic history -r current:heads --indicate-current
        alembic upgrade head
 
-5. **Test on DEV**
+6. **Test on DEV**
 
-   Test your changes thoroughly to ensure the migration works as expected. Connect to the database on DataGrip and
-    verify the schema changes.
+   Test your changes thoroughly to ensure the migration works as expected. Connect to the
+   database on `DataGrip <https://www.jetbrains.com/datagrip/?source=google&medium=cpc&campaign=AMER_en_US-PST+MST_DataGrip_Branded&term=datagrip&content=555122603916&gad_source=1&gad_campaignid=15034927867&gbraid=0AAAAADloJziE0fBXtiDrMDrmOCG1CxzLp&gclid=Cj0KCQjwzsjVBhC3ARIsALnMv4kfraIb88HpZmXWzt5fVj_fO7PTa5KxD365VKl7LEs4pGCUcVC6CnwaAl-HEALw_wcB>`_ and
+   verify the schema changes.
 
-6. **Downgrade DEV to verify downgrade path**
+
+7. **Downgrade DEV to verify downgrade path**
 
    .. code-block:: bash
 
@@ -78,14 +91,19 @@ A) DEV Migration + Testing (Steps 1–6)
 
        alembic downgrade -1
 
-   Make sure the downgrade works as expected.
+   Make sure the downgrade works as expected. Once verified, re-apply the migration to DEV:
+
+    .. code-block:: bash
+
+         export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
+         alembic upgrade head
 
 B) PROD Verification + Deployment (Steps 7–10)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-7. **Commit and push migration file + code changes**
+8. **Commit and push migration file + code changes**
 
-8. **Open PR, review, approve, merge**
+9. **Open PR, review, approve, merge**
 
    First re-check DEV after merge:
 
@@ -93,10 +111,10 @@ B) PROD Verification + Deployment (Steps 7–10)
 
        export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
 
-       alembic current
+       alembic history -r current:heads --indicate-current
        alembic upgrade head
 
-   Then repeat **Step 3 (Dry Run)**, but on PROD:
+   Then repeat **Step 4 (Dry Run)**, but on PROD:
 
    .. warning::
 
@@ -158,10 +176,17 @@ We have different databases for DEV and PROD, so you will need to set the ``DATA
 running any Alembic commands.
 
 To find the credentials:
-1. Log into AWS account (dev or prod)
+
+1. Log into AWS account (dev or prod) **Make sure the region is us-west-2**
 2. Go to **Secrets Manager** → **Secrets** → ``sdp-database-cred``
 3. Click **Retrieve secret value**
-4. Construct the URL from those values
+
+.. image:: ../_static/secrets_manager_console.png
+
+4. Construct the URL from the secret values (username, password, host, port, database_name)
+
+.. image:: ../_static/construct_database_url.png
+
 5. Verify the URL points to the intended RDS instance (DEV vs PROD)
 
 Export the URL:
