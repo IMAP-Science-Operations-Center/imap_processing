@@ -304,7 +304,6 @@ def get_deadtime_ratios_by_spin_phase(
         # Get timestamps at the start of each spin (sector 0)
         spin_start_indices = np.where(sector_indices == 0)[0]
         met_time = sectored_rates["shcoarse"].values[spin_start_indices]
-        print("any warnings?")
         spin_ds = get_spin_info(aux_dataset, met_time)
         # Repeat the spin duration for each of the 15 sectors.
         # Sectors are all within a spin so each one corresponds to the same spin
