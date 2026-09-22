@@ -1055,8 +1055,23 @@ def get_spin_info(aux_dataset: xr.Dataset, de_event_met: NDArray) -> xr.Dataset:
     -------
     spin_info_per_event : xarray.Dataset
         Spin information for each event.
+
+    Raises
+    ------
+    ValueError
+        If none of the events fall within the aux dataset's time range. This
+        indicates a mismatched or missing aux dataset rather than a handful of
+        boundary events, so it is not safe to silently proceed.
     """
     start_inds, missing_events = get_spin_start_indices(aux_dataset, de_event_met)
+    if de_event_met.size > 0 and np.all(missing_events):
+        raise ValueError(
+            "No events fall within the aux_dataset time range "
+            f"({aux_dataset['timespinstart'].values[0]} - "
+            f"{aux_dataset['timespinstart'].values[-1]}"
+            f" + {UltraConstants.NOMINAL_SPIN_PERIOD_SEC}). "
+            "Please check the aux dataset and direct event MET values."
+        )
     # Initialize spin info dataset
     spin_info_per_event = xr.Dataset()
     # Create dict of var name lookups

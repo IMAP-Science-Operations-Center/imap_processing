@@ -208,9 +208,10 @@ def test_get_deadtime_interpolator(use_fake_spin_data_for_time, aux_dataset):
     deadtime_ratios = xr.DataArray(
         np.random.uniform(0.1, 1.0, num_deadtimes), dims=["epoch"]
     )
+    met_in_range = aux_dataset["timespinstart"].values[0]
     sectored_rates_ds = xr.Dataset(
         {"epoch": ("epoch", np.ones_like(deadtime_ratios))},
-        {"shcoarse": ("epoch", np.ones_like(deadtime_ratios))},
+        {"shcoarse": ("epoch", np.full_like(deadtime_ratios, met_in_range))},
     )
     with mock.patch(
         "imap_processing.ultra.l1c.ultra_l1c_pset_bins.get_deadtime_ratios",
