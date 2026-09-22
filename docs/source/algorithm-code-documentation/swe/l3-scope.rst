@@ -173,6 +173,12 @@ External inputs L3 needs that this repository never loads
    * - **Ultra HK**
      - Deflector voltage state, to flag times when the break-point finder is
        unreliable.
+   * - **SWE** ``config``
+     - An SDC ancillary file of L3 tuning constants: geometric fractions, the
+       pitch angle / gyrophase / energy bin definitions, the in-versus-out
+       energy index, the core/halo breakpoint initial guess and similar.
+       Delivered to the SDC under the ``config`` descriptor, but read only by
+       the L3 repository.
 
 If you are asked to add L3 here
 -------------------------------

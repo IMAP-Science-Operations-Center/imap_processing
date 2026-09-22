@@ -27,8 +27,8 @@ What L2 actually reads
      - ``lut-notes``
      - ``swapi_l2.solve_full_sweep_energy``
 
-Both are loaded through ``swapi_utils.read_swapi_lut_table(path)``, which is a
-thin ``pd.read_csv`` plus one important cleanup:
+Both L2 tables are loaded through ``swapi_utils.read_swapi_lut_table(path)``,
+which is a thin ``pd.read_csv`` plus one important cleanup:
 
 .. code-block:: python
 
@@ -48,6 +48,75 @@ literal ``"Solve"`` strings.
    The CSVs are read with a UTF-8 BOM, so the first column name is
    ``"﻿timestamp"``, not ``"timestamp"``. Pandas handles it; a hand-rolled
    ``csv.DictReader`` will not.
+
+.. _swapi-l3-descriptors:
+
+What the SDC holds but this repository never reads
+---------------------------------------------------
+
+SWAPI delivers a further **thirteen** ancillary files to the SDC. All of them
+are inputs to the SWAPI team's L3 container (:ref:`swapi-l3-scope`), and none
+of them appear anywhere in this codebase. Their descriptors are recorded here
+because the algorithm document refers to most of them only by the symbol they
+carry, and that mapping is otherwise written down nowhere.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 20 46
+
+   * - SDC descriptor
+     - Symbol
+     - Purpose
+   * - ``central-effective-area``
+     - :math:`\mathcal{A}_0^s(V)`
+     - Central effective area vs ESA voltage.
+       :ref:`swapi-instrument-response`.
+   * - ``passband-fit-coefficients``
+     - :math:`P_r(v/v_0, \theta, V)`
+     - Energy-angle passband, one set for the sunglasses region and one for the
+       open aperture. :ref:`swapi-instrument-response`.
+   * - ``azimuthal-transmission``
+     - :math:`T(\phi)`
+     - Azimuthal transmission. :ref:`swapi-instrument-response`.
+   * - ``instrument-response-lut``
+     - n/a
+     - The three functions above combined into the tabulated response that the
+       L3 forward model evaluates directly.
+   * - ``efficiency-lut``
+     - :math:`\varepsilon_H`, :math:`\varepsilon_{He}`
+     - Time-varying detection efficiency. :ref:`swapi-efficiency-lut`.
+   * - ``energy-gf-sw-lut``
+     - :math:`G(E/q)`
+     - Energy-dependent geometric factor, solar wind.
+   * - ``energy-gf-pui-lut``
+     - :math:`G(E/q)`
+     - Energy-dependent geometric factor, pickup ions.
+   * - ``density-of-neutral-helium-lut``
+     - :math:`n_{\mathrm{He}}`
+     - Hot-model interstellar neutral helium density, the source population for
+       the L3 pickup helium fit.
+   * - ``helium-inflow-vector``
+     - n/a
+     - Interstellar neutral helium inflow vector.
+   * - ``hydrogen-inflow-vector``
+     - n/a
+     - Interstellar neutral hydrogen inflow vector.
+   * - ``proton-density-temperature-lut``
+     - n/a
+     - **Unidentified.**
+   * - ``alpha-density-temperature-lut``
+     - n/a
+     - **Unidentified.**
+   * - ``clock-angle-and-flow-deflection-lut``
+     - n/a
+     - **Unidentified.**
+
+.. warning::
+
+   The last three have no counterpart in any section of the algorithm document
+   summarised on these pages, and nothing in the L2-to-L3 contract explains
+   them. Ask the SWAPI team what they contain rather than inferring it from the
+   descriptor names.
 
 .. _swapi-esa-unit-conversion-adp:
 
@@ -215,6 +284,8 @@ The absolute efficiency is computed from the three counters:
 which is independent of individual detector performance and aging
 (Funsten et al. 2005).
 
+.. _swapi-efficiency-lut:
+
 The efficiency LUT
 ^^^^^^^^^^^^^^^^^^
 
@@ -246,7 +317,9 @@ increase of the ratio at low energies has not been accounted for.
 He\ :sup:`+` and He\ :sup:`2+` are assumed to have the same efficiency.
 
 **[CODE]** No efficiency table is read anywhere in this repository. It is an
-L3 input.
+L3 input, delivered to the SDC under the ``efficiency-lut`` descriptor.
+
+.. _swapi-instrument-response:
 
 Instrument response CSVs
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -279,7 +352,9 @@ Instrument response CSVs
 Normalizations of :math:`\mathcal{A}_0^s` and :math:`P_r` are aligned at
 :math:`\theta = 0` and :math:`k^{*} = 1.89` eV/V/e.
 
-**[CODE]** None of these files exist in this repository.
+**[CODE]** None of these files are read here. They are delivered to the SDC as
+``central-effective-area``, ``passband-fit-coefficients`` and
+``azimuthal-transmission`` - see :ref:`swapi-l3-descriptors`.
 
 The gain test LUT
 -----------------

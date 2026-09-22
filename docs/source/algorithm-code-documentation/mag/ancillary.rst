@@ -11,6 +11,13 @@ any property of the data inside** - all validity information lives in the file's
 data or metadata. It is also explicit that **if two calibration files are valid
 for the same data point, the most recently generated file wins**.
 
+The IMAP magnetometer requires dynamic calibration to remove the magnetic field 
+of the spacecraft. The calibration matrices should be applied based on sensor 
+and range and the offsets added based on sensor and range. The gradiometer factor 
+should be used to calculate time varying offsets via gradiometry during the 
+calibration process, and the spin averaging factors should be used to calculate 
+time varying offsets.
+
 How ancillary files are loaded
 ------------------------------
 
@@ -43,7 +50,8 @@ Consumed by :ref:`mag-l1b` and by the I-ALiRT path.
 
 Derived from **ground calibration** at the Magnetsrode facility of TU
 Braunschweig, folding together the nominal scale factor, the gain (sigma) and
-orthogonality (omega) matrix, and the MF -> URF rotation.
+orthogonality (omega) matrix, and the Measurement Frame -> Unit Reference Frame 
+rotation.
 
 .. list-table::
    :header-rows: 1

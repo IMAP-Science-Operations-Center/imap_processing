@@ -36,6 +36,17 @@ Representative copies of all three CSVs live in
 files, but the **column names and shapes are the contract** and the code will
 break on anything else.
 
+.. note::
+
+   SWE also delivers a fourth ancillary file under the ``config`` descriptor.
+   It holds the tunable constants of the **L3** algorithms - geometric
+   fractions, pitch angle, gyrophase and energy bin definitions,
+   ``in_vs_out_energy_index``, ``core_halo_breakpoint_initial_guess`` and about
+   a dozen similar values. **Nothing in this repository reads it**, because SWE
+   L3 is produced elsewhere (:ref:`swe-l3-scope`). It is mentioned here only so
+   that finding it in a dependency list or an archive manifest does not look
+   like a missing L1B or L2 input.
+
 .. _swe-esa-lut:
 
 ESA lookup table (``esa-lut``)

@@ -205,7 +205,9 @@ things that would have to change on our side of the boundary, in rough order:
    would need implementing, because L3's flags assume L2 data is already clean.
 4. The response-function ancillary files (central effective area, passbands,
    azimuthal transmission), the efficiency table and the interstellar-neutral
-   LUTs would all need SDC ingest paths - none exist.
+   LUTs would all need ingest paths here. The files themselves are delivered to
+   the SDC and their descriptors are listed in :ref:`swapi-l3-descriptors`, but
+   nothing in this repository reads any of them.
 5. SPICE geometry would need wiring in: per-ESA-step SWAPI-to-RTN rotation
    matrices and spacecraft velocity in the solar inertial frame.
 6. New logical sources and descriptors (``1m-sw-p``, ``1m-sw-a``,
