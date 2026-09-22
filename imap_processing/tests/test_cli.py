@@ -717,6 +717,9 @@ def test_spacecraft_pointing_kernel(
 
     instrument.process()
     assert mock_spacecraft_pointing.call_count == 1
+    call_args = mock_spacecraft_pointing.call_args[0]
+    assert call_args[1] == "20240410"
+    assert call_args[2] == 5
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")

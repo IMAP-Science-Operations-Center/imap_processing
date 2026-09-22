@@ -1803,8 +1803,14 @@ class Spacecraft(ProcessInstrument):
                 data_type=SPICESource.SPICE.value
             )
             ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
+            resolved_version = self._resolve_version(self.descriptor)
+            minor_version = (
+                resolved_version.minor
+                if isinstance(resolved_version, Version)
+                else int(resolved_version.lstrip("v"))
+            )
             pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
-                ah_paths
+                ah_paths, self.start_date, minor_version
             )
             processed_dataset.extend(pointing_kernel_paths)
         else:
