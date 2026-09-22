@@ -91,7 +91,12 @@ A) DEV Migration + Testing (Steps 1–6)
 
        alembic downgrade -1
 
-   Make sure the downgrade works as expected.
+   Make sure the downgrade works as expected. Once verified, re-apply the migration to DEV:
+
+    .. code-block:: bash
+
+         export DATABASE_URL="postgresql://user_name:password@host:5432/db_name"
+         alembic upgrade head
 
 B) PROD Verification + Deployment (Steps 7–10)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,7 +114,7 @@ B) PROD Verification + Deployment (Steps 7–10)
        alembic history -r current:heads --indicate-current
        alembic upgrade head
 
-   Then repeat **Step 3 (Dry Run)**, but on PROD:
+   Then repeat **Step 4 (Dry Run)**, but on PROD:
 
    .. warning::
 
