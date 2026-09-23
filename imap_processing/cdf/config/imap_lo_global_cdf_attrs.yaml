@@ -130,4 +130,4 @@ imap_lo_l2_enamap:
     <<: *instrument_base
     Data_type: L2_{descriptor}>Level-2 Intensity Map for Lo
     Logical_source: imap_lo_l2_{descriptor}
-    Logical_source_description: IMAP-Lo Instrument Level-2 Intensity Map Data for Lo
+    Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-2 Intensity Map Data for Lo
