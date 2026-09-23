@@ -104,7 +104,7 @@ def lo_l2(
     A map is likewise made in the ESA mode its descriptor names, HiRes for an
     "l" map such as "l090" and HiThr for a "t" map such as "t090", and its
     inputs are filtered down to the pointings flown in that mode in the same
-    pre-processing step.
+    pre-processing step. A combined map is made in HiRes.
 
     Parameters
     ----------
@@ -162,11 +162,7 @@ def lo_l2(
 
     pointings = _complete_pointings(sci_dependencies)
 
-    esa_mode = c.ESA_MODES.get(map_descriptor.instrument)
-    if esa_mode is None:
-        # Every pointing of a map is taken in the same ESA mode, so the last one
-        # sets the energy response the whole map is binned in.
-        esa_mode = get_esa_mode(pointings[max(pointings)][2]) if pointings else 0
+    esa_mode = c.ESA_MODES[map_descriptor.instrument]
     logger.info(
         f"Building {descriptor} from {len(pointings)} pointings in ESA mode {esa_mode}"
     )

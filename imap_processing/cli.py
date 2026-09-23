@@ -1405,13 +1405,10 @@ class Lo(ProcessInstrument):
         if isinstance(map_descriptor.sensor, int):
             kept = self._pointings_at_pivot_angle(dependencies, map_descriptor.sensor)
 
-        # Filter by ESA mode, if applicable.
-        map_esa_mode = LoConstants.ESA_MODES.get(map_descriptor.instrument)
-        if map_esa_mode is not None:
-            kept = self._pointings_in_esa_mode(dependencies, map_esa_mode, kept)
-
-        if kept is None:
-            return dependencies
+        # Every Lo map is made in one ESA mode, combined maps included.
+        kept = self._pointings_in_esa_mode(
+            dependencies, LoConstants.ESA_MODES[map_descriptor.instrument], kept
+        )
 
         filtered_dependencies = ProcessingInputCollection()
         for processing_input in dependencies.get_processing_inputs():

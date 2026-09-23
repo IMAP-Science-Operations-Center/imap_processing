@@ -138,8 +138,9 @@ class LoConstants:
 
     # The ESA mode a map is made in, as its instrument descriptor names it:
     # HiRes for an "l" map such as "l090", and HiThr for a "t" map such as
-    # "t090". A combined "ilo" map names no ESA mode.
+    # "t090". A combined "ilo" map names no ESA mode, and is made in HiRes.
     ESA_MODES: ClassVar[dict[MappableInstrumentShortName, int]] = {
+        MappableInstrumentShortName.LO: ESA_MODE_CODES["HiRes"],
         MappableInstrumentShortName.LO_HI_RES: ESA_MODE_CODES["HiRes"],
         MappableInstrumentShortName.LO_HI_THROUGHPUT: ESA_MODE_CODES["HiThr"],
     }
