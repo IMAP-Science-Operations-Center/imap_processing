@@ -73,6 +73,8 @@ COMBINED_DESCRIPTOR = "ilo-enansnbs-h-sf-nsp-full-hae-6deg-3mo"
 COMBINED_RAM_DESCRIPTOR = "ilo-enansnbs-h-sf-nsp-ram-hae-6deg-3mo"
 COMBINED_MASK_DESCRIPTOR = "ilo-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
 
+HI_THR_DESCRIPTOR = "t090-enansnbs-h-sf-nsp-full-hae-6deg-3mo"
+
 # The pivot angles a combined map is built from in these tests.
 COMBINED_PIVOTS = (75.0, 90.0, 105.0)
 
@@ -152,7 +154,7 @@ def product_attrs(repointing, product):
     }
 
 
-def make_pointing(repointing=100, pivot=PIVOT, seed=42):
+def make_pointing(repointing=100, pivot=PIVOT, seed=42, esa_mode=0):
     """Build the three synthetic L1B inputs of one pointing.
 
     The in-window epochs carry modest counts and exposure; the out-of-window
@@ -180,7 +182,7 @@ def make_pointing(repointing=100, pivot=PIVOT, seed=42):
             # correction from the hydrogen counts the uncorrected map reports.
             "o_counts": (["epoch", "esa_step", "spin_bin_6"], counts),
             "exposure_time_6deg": (["epoch", "esa_step", "spin_bin_6"], exposure),
-            "esa_mode": ("epoch", np.zeros(mets.size, dtype=int)),
+            "esa_mode": ("epoch", np.full(mets.size, esa_mode, dtype=int)),
         },
         coords={"epoch": met_to_ttj2000ns(mets)},
         attrs=product_attrs(repointing, "histrates"),
@@ -581,6 +583,53 @@ class TestCombinedMap:
 
         with pytest.raises(ValueError, match=r"no mask tuning for the \[60\]"):
             lo_l2(as_dependencies(untuned), anc_dependencies, COMBINED_MASK_DESCRIPTOR)
+
+
+@pytest.fixture
+def pointings_in_each_esa_mode():
+    """One synthetic pointing flown in HiRes, and another in HiThr."""
+    return {
+        0: make_pointing(repointing=100, seed=1, esa_mode=0),
+        1: make_pointing(repointing=101, seed=2, esa_mode=1),
+    }
+
+
+class TestEsaMode:
+    """A map is binned in the ESA mode it names."""
+
+    @pytest.mark.parametrize(
+        ("descriptor", "esa_mode"), [(FULL_DESCRIPTOR, 0), (HI_THR_DESCRIPTOR, 1)]
+    )
+    def test_the_map_is_binned_in_its_esa_mode(
+        self, one_pointing, anc_dependencies, descriptor, esa_mode
+    ):
+        """An "l" map is binned in HiRes and a "t" map in HiThr."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (dataset,) = lo_l2(
+                as_dependencies(one_pointing), anc_dependencies, descriptor
+            )
+
+        np.testing.assert_allclose(dataset["energy"].values, ESA_ENERGIES[esa_mode])
+
+    def test_a_combined_map_takes_its_esa_mode_from_its_pointings(
+        self, pointings_in_each_esa_mode, anc_dependencies
+    ):
+        """An "ilo" map names no ESA mode, and takes the last pointing's."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (dataset,) = lo_l2(
+                as_dependencies(*pointings_in_each_esa_mode.values()),
+                anc_dependencies,
+                COMBINED_DESCRIPTOR,
+            )
+
+        # Repointing 101, the last, is the HiThr pointing
+        np.testing.assert_allclose(dataset["energy"].values, ESA_ENERGIES[1])
 
 
 class TestMapStructure:

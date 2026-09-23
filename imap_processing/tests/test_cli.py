@@ -559,6 +559,7 @@ def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_lo
         xr.Dataset({"pivot": ("epoch", [90.1])}),
         # A neighbouring pivot angle, which belongs on its own map
         xr.Dataset({"pivot": ("epoch", [75.0])}),
+        xr.Dataset({"esa_mode": ("epoch", [0])}),
     ]
 
     instrument = Lo(
@@ -578,8 +579,12 @@ def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_lo
         [str(file_path.filename) for file_path in processing_input.imap_file_paths]
         for processing_input in result.get_processing_inputs()
     ] == [[goodtimes[0]], [histrates[0]], [bgrates[0]], [ancillary]]
-    # Only the goodtimes files are loaded, to read their pivot angle
-    assert mock_load_cdf.call_count == 2
+    # The goodtimes are loaded to read their pivot angle, and then only the
+    # histrates of the pointing at that pivot angle, to read its ESA mode
+    assert [call.args[0].name for call in mock_load_cdf.call_args_list] == [
+        *goodtimes,
+        histrates[0],
+    ]
 
 
 @mock.patch("imap_processing.cli.load_cdf")

@@ -485,7 +485,7 @@ def set_esa_mode(
     # Check that there is only one ESA mode in the sweep table for the pointing
     if len(pointing_sweep_df["ESA_Mode"].unique()) == 1:
         # Update the ESA mode strings to be 0 for HiRes and 1 for HiThr
-        esa_mode = pointing_sweep_df["ESA_Mode"].map({"HiRes": 0, "HiThr": 1}).values[0]
+        esa_mode = pointing_sweep_df["ESA_Mode"].map(c.ESA_MODE_CODES).values[0]
         # Repeat the ESA mode for each direct event in the pointing
         esa_mode_array: np.ndarray = np.repeat(esa_mode, len(l1b_science["epoch"]))
     else:
