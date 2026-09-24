@@ -34,7 +34,6 @@ from imap_processing.ultra.l1c.l1c_lookup_utils import (
 )
 
 # TODO: add species binning.
-FILLVAL_FLOAT32 = -1.0e31
 
 logger = logging.getLogger(__name__)
 

@@ -43,6 +43,12 @@ class UltraConstants:
         SSD-specific correction to DMIN for time-of-flight normalization
     """
 
+    # Define fillvals
+    FILLVAL_UINT8 = 255
+    FILLVAL_UINT16 = 65535
+    FILLVAL_UINT32 = 4294967295
+    FILLVAL_FLOAT = -1.0e31
+
     NOMINAL_SPIN_PERIOD_SEC: float = 15.0
 
     D_SLIT_FOIL: float = 3.39

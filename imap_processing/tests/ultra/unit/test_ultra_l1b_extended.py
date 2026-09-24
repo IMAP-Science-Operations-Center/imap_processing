@@ -11,7 +11,6 @@ from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_angular_profiles
 from imap_processing.ultra.l1b.ultra_l1b_extended import (
-    FILLVAL_FLOAT32,
     CoinType,
     StartType,
     StopType,
@@ -611,8 +610,8 @@ def test_get_event_times_out_of_range(
 
     # Check events that dont have aux data coverage. These should be fill vals
     # and the quality flag array should indicate an AUXOUTLIER flag.
-    assert event_times[0] == FILLVAL_FLOAT32
-    assert spin_starts[0] == FILLVAL_FLOAT32
+    assert event_times[0] == UltraConstants.FILLVAL_FLOAT
+    assert spin_starts[0] == UltraConstants.FILLVAL_FLOAT
     assert quality_flags[0] == ImapDEOutliersUltraFlags.AUXOUTLIER.value
     assert np.all(quality_flags[1:] == ImapDEOutliersUltraFlags.NONE.value)
 

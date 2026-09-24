@@ -8,7 +8,6 @@ from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.constants import UltraConstants
-from imap_processing.ultra.l1b.de import FILLVAL_FLOAT32
 from imap_processing.ultra.l1b.ultra_l1b import ultra_l1b
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
@@ -200,7 +199,7 @@ def test_cdf_de_flags(
     l1b_de_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
     # All valid events should be flagged as DURINGREPOINT since the repoint data does
     # not cover any of the event times
-    valid_events = l1b_de_dataset[0]["event_times"] != FILLVAL_FLOAT32
+    valid_events = l1b_de_dataset[0]["event_times"] != UltraConstants.FILLVAL_FLOAT
     flags = l1b_de_dataset[0]["quality_outliers"].values[valid_events]
     assert np.all((flags & ImapDEOutliersUltraFlags.DURINGREPOINT.value) != 0)
 

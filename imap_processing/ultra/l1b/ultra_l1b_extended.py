@@ -29,10 +29,6 @@ from imap_processing.ultra.l1b.lookup_utils import (
 
 logger = logging.getLogger(__name__)
 
-FILLVAL_UINT8 = 255
-FILLVAL_FLOAT32 = -1.0e31
-FILLVAL_FLOAT64 = -1.0e31
-
 
 class StartType(Enum):
     """Start Type: 1=Left, 2=Right."""
@@ -544,9 +540,9 @@ def get_de_velocity(
     v_y = -delta_v[:, 1] / tof * 1e3
     v_z = -delta_v[:, 2] / tof * 1e3
 
-    v_x[tof < 0] = FILLVAL_FLOAT32  # used as fillvals
-    v_y[tof < 0] = FILLVAL_FLOAT32
-    v_z[tof < 0] = FILLVAL_FLOAT32
+    v_x[tof < 0] = UltraConstants.FILLVAL_FLOAT  # used as fillvals
+    v_y[tof < 0] = UltraConstants.FILLVAL_FLOAT
+    v_z[tof < 0] = UltraConstants.FILLVAL_FLOAT
 
     velocities = np.vstack((v_x, v_y, v_z)).T
 
@@ -645,7 +641,7 @@ def get_de_energy_kev(
     valid_velocity = np.isfinite(v2)
     valid_mask = index_hydrogen & valid_velocity
 
-    energy = np.full_like(v2, FILLVAL_FLOAT32)
+    energy = np.full_like(v2, UltraConstants.FILLVAL_FLOAT)
 
     # TODO: we will calculate the energies of the different species here.
     # 1/2 mv^2 in Joules, convert to keV
@@ -1023,9 +1019,11 @@ def get_event_times(
     )
     quality_flags[missing_mask] = ImapDEOutliersUltraFlags.AUXOUTLIER.value
 
-    out_event_times = np.full(event_times.shape, FILLVAL_FLOAT32, dtype=np.float64)
+    out_event_times = np.full(
+        event_times.shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float64
+    )
     out_spin_start_times = np.full(
-        spin_start_times.shape, FILLVAL_FLOAT32, dtype=np.float64
+        spin_start_times.shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float64
     )
     out_event_times[~missing_mask] = ttj2000ns_to_et(
         met_to_ttj2000ns(event_times[~missing_mask])
@@ -1130,8 +1128,10 @@ def interpolate_fwhm(
     phi_vals = interp_phi((energy, phi_inst))
     theta_vals = interp_theta((energy, theta_inst))
 
-    phi_interp = np.where(np.isnan(phi_vals), FILLVAL_FLOAT32, phi_vals)
-    theta_interp = np.where(np.isnan(theta_vals), FILLVAL_FLOAT32, theta_vals)
+    phi_interp = np.where(np.isnan(phi_vals), UltraConstants.FILLVAL_FLOAT, phi_vals)
+    theta_interp = np.where(
+        np.isnan(theta_vals), UltraConstants.FILLVAL_FLOAT, theta_vals
+    )
 
     return phi_interp, theta_interp
 
@@ -1169,8 +1169,10 @@ def get_fwhm(
     theta_interp : NDArray
         Interpolated theta FWHM values.
     """
-    phi_interp = np.full_like(phi_inst, FILLVAL_FLOAT64, dtype=np.float64)
-    theta_interp = np.full_like(theta_inst, FILLVAL_FLOAT64, dtype=np.float64)
+    phi_interp = np.full_like(phi_inst, UltraConstants.FILLVAL_FLOAT, dtype=np.float64)
+    theta_interp = np.full_like(
+        theta_inst, UltraConstants.FILLVAL_FLOAT, dtype=np.float64
+    )
     lt_table = get_angular_profiles("left", sensor, ancillary_files)
     rt_table = get_angular_profiles("right", sensor, ancillary_files)
 
@@ -1234,7 +1236,7 @@ def get_efficiency_interpolator(
         (theta_vals, phi_vals, energy_vals),
         efficiency_grid,
         bounds_error=False,
-        fill_value=FILLVAL_FLOAT32,
+        fill_value=UltraConstants.FILLVAL_FLOAT,
     )
 
     return interpolator, theta_min_max, phi_min_max, energy_min_max
@@ -1323,7 +1325,7 @@ def determine_ebin_pulse_height(
     # PH event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type="PH")
 
-    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    ebins = np.full(path_length.shape, UltraConstants.FILLVAL_UINT8, dtype=np.uint8)
     valid = backtofvalid & coinphvalid
     ebins[valid] = get_ebins(
         "l1b-tofxph", energy[valid], ctof[valid], ebins[valid], ancillary_files
@@ -1376,7 +1378,7 @@ def determine_ebin_ssd(
     # SSD event TOF normalization to Z axis
     ctof, _ = get_ctof(tof, path_length, type="SSD")
 
-    ebins = np.full(path_length.shape, FILLVAL_UINT8, dtype=np.uint8)
+    ebins = np.full(path_length.shape, UltraConstants.FILLVAL_UINT8, dtype=np.uint8)
     steep_path_length = get_image_params("PathSteepThresh", sensor, ancillary_files)
     medium_path_length = get_image_params("PathMediumThresh", sensor, ancillary_files)
 

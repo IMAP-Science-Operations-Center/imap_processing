@@ -13,6 +13,7 @@ from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.time import (
     et_to_met,
 )
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import get_geometric_factor
 from imap_processing.ultra.l1b.ultra_l1b_annotated import (
     get_annotated_particle_velocity,
@@ -44,10 +45,6 @@ from imap_processing.ultra.l1b.ultra_l1b_extended import (
     is_coin_ph_valid,
 )
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
-
-FILLVAL_UINT8 = 255
-FILLVAL_UINT32 = 4294967295
-FILLVAL_FLOAT32 = -1.0e31
 
 
 def calculate_de(
@@ -106,7 +103,7 @@ def calculate_de(
             for key, dataset_key in zip(keys, dataset_keys, strict=False)
         }
     )
-    valid_mask = de_dataset["start_type"].data != FILLVAL_UINT8
+    valid_mask = de_dataset["start_type"].data != UltraConstants.FILLVAL_UINT8
     ph_mask = np.isin(
         de_dataset["stop_type"].data, [StopType.Top.value, StopType.Bottom.value]
     )
@@ -117,72 +114,86 @@ def calculate_de(
     ssd_indices = np.nonzero(valid_mask & ssd_mask)[0]
     # Instantiate arrays
     xf: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     yf: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     xb: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     yb: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     xc: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
-    d: np.ndarray = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64)
-    r: np.ndarray = np.full(len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32)
+    d: np.ndarray = np.full(
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float64
+    )
+    r: np.ndarray = np.full(
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
     phi: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     theta: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     tof: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     etof: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     ctof: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     tof_energy: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     magnitude_v: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     energy: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
-    e_bin: np.ndarray = np.full(len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8)
+    e_bin: np.ndarray = np.full(
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_UINT8, dtype=np.uint8
+    )
     e_bin_l1a: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_UINT8, dtype=np.uint8
     )
     species_bin: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_UINT8, dtype=np.uint8
     )
     t2: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float32
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
     )
     event_times: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float64
     )
     spin_starts: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_FLOAT32, dtype=np.float64
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_FLOAT, dtype=np.float64
     )
     shape = (len(de_dataset["epoch"]), 3)
-    sc_velocity: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    sc_dps_velocity: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    helio_velocity: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    velocities: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    v_hat: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
-    r_hat: np.ndarray = np.full(shape, FILLVAL_FLOAT32, dtype=np.float32)
+    sc_velocity: np.ndarray = np.full(
+        shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    sc_dps_velocity: np.ndarray = np.full(
+        shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    helio_velocity: np.ndarray = np.full(
+        shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    velocities: np.ndarray = np.full(
+        shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    v_hat: np.ndarray = np.full(shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float32)
+    r_hat: np.ndarray = np.full(shape, UltraConstants.FILLVAL_FLOAT, dtype=np.float32)
 
     start_type: np.ndarray = np.full(
-        len(de_dataset["epoch"]), FILLVAL_UINT8, dtype=np.uint8
+        len(de_dataset["epoch"]), UltraConstants.FILLVAL_UINT8, dtype=np.uint8
     )
     quality_flags = np.full(
         de_dataset["epoch"].shape, ImapDEOutliersUltraFlags.NONE.value, dtype=np.uint16
@@ -214,7 +225,7 @@ def calculate_de(
 
     spin_number = spin_ds.spin_number.data
     spin_missing_mask = np.isnan(spin_number)
-    spin_number[spin_missing_mask] = FILLVAL_UINT32
+    spin_number[spin_missing_mask] = UltraConstants.FILLVAL_UINT32
     de_dict["spin"] = spin_number.astype(np.uint32)
     de_dict["event_times"] = event_times.astype(np.float64)
     # Pulse height
@@ -361,7 +372,7 @@ def calculate_de(
     de_dict["tof_energy"] = tof_energy
     de_dict["energy"] = energy
     de_dict["computed_ebin"] = e_bin
-    valid_ebin = de_dataset["bin"].values != FILLVAL_UINT32
+    valid_ebin = de_dataset["bin"].values != UltraConstants.FILLVAL_UINT32
     e_bin_l1a[valid_ebin] = de_dataset["bin"].values[valid_ebin]
     de_dict["ebin"] = e_bin_l1a
     de_dict["species"] = species_bin
@@ -370,7 +381,7 @@ def calculate_de(
     ultra_frame = getattr(SpiceFrame, f"IMAP_ULTRA_{sensor}")
 
     # Account for counts=0 (event times have FILL value)
-    valid_events = (event_times != FILLVAL_FLOAT32).copy()
+    valid_events = (event_times != UltraConstants.FILLVAL_FLOAT).copy()
     if repoint_id is not None:
         # Check all valid event times to see which are in the pointing
         in_pointing = calculate_events_in_pointing(
