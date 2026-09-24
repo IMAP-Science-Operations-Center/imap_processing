@@ -1798,12 +1798,28 @@ class Spacecraft(ProcessInstrument):
             datasets = list(quaternions.process_quaternions(input_files[0]))
             processed_dataset.extend(datasets)
         elif self.descriptor == "pointing-attitude":
+            if self.start_date is None:
+                raise ValueError(
+                    "start_date must be provided for pointing-attitude processing."
+                )
             spice_inputs = dependencies.get_file_paths(
                 data_type=SPICESource.SPICE.value
             )
             ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
+            resolved_version = self._resolve_version(self.descriptor)
+            if resolved_version is None:
+                raise ValueError(
+                    "No version provided for pointing-attitude processing. "
+                    "Provide a version for the 'pointing-attitude' descriptor in "
+                    "the dependency JSON's version block, or a fallback --version."
+                )
+            minor_version = (
+                resolved_version.minor
+                if isinstance(resolved_version, Version)
+                else int(resolved_version.lstrip("v"))
+            )
             pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
-                ah_paths
+                ah_paths, self.start_date, minor_version
             )
             processed_dataset.extend(pointing_kernel_paths)
         else:
