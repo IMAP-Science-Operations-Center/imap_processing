@@ -125,7 +125,8 @@ def test_dsn(furnish_kernels):
         )
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
-        assert 40.6 == output["total_coverage_percent"]
+        # Mopra's fixed daily allocation now contributes to total coverage.
+        assert 56.6 == output["total_coverage_percent"]
 
 
 @patch("imap_processing.ialirt.generate_coverage.et_to_utc")
@@ -181,3 +182,20 @@ def test_create_schedule_mask(mock_et_to_utc):
     )
 
     np.testing.assert_array_equal(mask, expected)
+
+
+@pytest.mark.external_kernel
+def test_mopra_coverage(furnish_kernels):
+    """
+    Test that Mopra's fixed daily allocation (20:45-00:30 UTC) is applied.
+    """
+    kernels = ["naif0012.tls", "pck00011.tpc", "de440s.bsp", "imap_spk_demo.bsp"]
+
+    with furnish_kernels(kernels):
+        coverage_dict, _ = generate_coverage("2026-09-22T00:00:00Z")
+
+    mopra_times = coverage_dict["Mopra"]
+
+    assert "2026-09-22T20:45:00.000" in mopra_times
+    assert "2026-09-22T00:30:00.000" in mopra_times
+    assert "2026-09-22T12:00:00.000" not in mopra_times
