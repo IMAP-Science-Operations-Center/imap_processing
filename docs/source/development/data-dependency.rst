@@ -201,6 +201,22 @@ frequently, and processing jobs should not be triggered when these files are upd
 Setting this to false allows for more controlled processing and may require additional
 review before updating these types of dependencies.
 
+Require_coverage (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Default:** ``false``
+
+Whether the files found for this upstream dependency must cover the whole date range of
+the product before a processing job can begin. If set to true and the files on hand leave
+part of the date range uncovered, the job is skipped as missing dependencies. A later file
+for this dependency re-triggers the job, so the dependency must keep ``trigger_job`` true.
+
+Only ``spin`` dependencies currently honor this flag. Coverage is judged from the dates in
+the spin filenames, so it is only appropriate for daily partitions. For example, a daily
+job handed a spin file that ends partway through its day would otherwise fail on query
+times outside the spin data range; with this flag it waits for the next spin file.
+
+
 [Past_days, Future_days] (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -241,12 +257,14 @@ The YAML config has the following structure:
          descriptor,
          required(bool),
          trigger_job(bool),
+         require_coverage(bool),
          [past_days, future_days]
        - source,
          data_type,
          descriptor,
          required(bool),
          trigger_job(bool),
+         require_coverage(bool),
          [past_days, future_days]
        ....
      outputs:
