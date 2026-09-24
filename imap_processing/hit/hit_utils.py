@@ -353,6 +353,7 @@ def add_energy_variables(
     particle: str,
     energy_min_values: np.ndarray,
     energy_max_values: np.ndarray,
+    attr_mgr: ImapCdfAttributes | None = None,
 ) -> xr.Dataset:
     """
     Add energy min and max variables to the dataset.
@@ -367,6 +368,15 @@ def add_energy_variables(
         The minimum energy values for each energy range.
     energy_max_values : np.ndarray
         The maximum energy values for each energy range.
+    attr_mgr : ImapCdfAttributes, optional
+        The attribute manager used to look up CDF attributes for the
+        energy coordinate and its uncertainty variables. These are
+        coordinates rather than plain data variables, so callers whose
+        processing pipeline only assigns attributes to data_vars (such as
+        L1B's process_science_data) need to pass this in so the attrs get
+        set here instead. If not provided, no attrs are set on these
+        variables here (e.g. L1A sets them separately in a later,
+        unified attribute-assignment pass via add_cdf_attributes).
 
     Returns
     -------
@@ -379,20 +389,42 @@ def add_energy_variables(
         np.mean(np.array([energy_min_values, energy_max_values]), axis=0), 3
     ).astype(np.float32)
 
+    def _attrs(var_name: str) -> dict:
+        """
+        Look up CDF attributes for a variable, or return empty if unset.
+
+        Parameters
+        ----------
+            var_name : str
+                The variable name to look up in the attribute manager.
+
+        Returns
+        -------
+            dict
+                The variable's CDF attributes, or an empty dict if `attr_mgr`
+                was not provided.
+        """
+        if attr_mgr is None:
+            return {}
+        return attr_mgr.get_variable_attributes(var_name, check_schema=False)
+
     updated_ds[f"{particle}_energy_mean"] = xr.DataArray(
         data=energy_mean,
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_mean",
+        attrs=_attrs(f"{particle}_energy_mean"),
     )
     updated_ds[f"{particle}_energy_delta_minus"] = xr.DataArray(
         data=np.array(energy_mean - np.array(energy_min_values), dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_delta_minus",
+        attrs=_attrs(f"{particle}_energy_delta_minus"),
     )
     updated_ds[f"{particle}_energy_delta_plus"] = xr.DataArray(
         data=np.array(energy_max_values - energy_mean, dtype=np.float32),
         dims=[f"{particle}_energy_mean"],
         name=f"{particle}_energy_delta_plus",
+        attrs=_attrs(f"{particle}_energy_delta_plus"),
     )
     return updated_ds
 
@@ -402,6 +434,7 @@ def add_summed_particle_data_to_dataset(
     source_dataset: xr.Dataset,
     particle: str,
     energy_ranges: list,
+    attr_mgr: ImapCdfAttributes | None = None,
 ) -> xr.Dataset:
     """
     Add summed particle data to the dataset.
@@ -416,6 +449,10 @@ def add_summed_particle_data_to_dataset(
         The particle name.
     energy_ranges : list
         A list of energy range dictionaries for the particle.
+    attr_mgr : ImapCdfAttributes, optional
+        The attribute manager used to set CDF attributes on the energy
+        coordinate variables added for this particle. If not provided,
+        no attrs are set on those coordinate variables here.
 
     Returns
     -------
@@ -453,6 +490,6 @@ def add_summed_particle_data_to_dataset(
         energy_max[i] = energy_range_dict["energy_max"]
 
     # Add energy variables
-    ds = add_energy_variables(ds, particle, energy_min, energy_max)
+    ds = add_energy_variables(ds, particle, energy_min, energy_max, attr_mgr)
 
     return ds
