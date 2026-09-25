@@ -1172,9 +1172,13 @@ def fit_impact(
        Lunar Atmosphere and Dust Environment Explorer (LADEE) mission, Space Sci. Rev.,
        185(1–4), 93–113, doi:10.1007/s11214-014-0118-7.
     """
-    exponent_1 = 1.0 - np.exp(-(time - time_of_impact) / rise_time)
-    exponent_2 = np.exp(-(time - time_of_impact) / discharge_time)
-    return constant_offset + np.heaviside(time - time_of_impact, 0) * (
+    time_since_impact = time - time_of_impact
+    elapsed_time = np.maximum(time_since_impact, 0.0)
+
+    exponent_1 = 1.0 - np.exp(-elapsed_time / rise_time)
+    exponent_2 = np.exp(-elapsed_time / discharge_time)
+
+    return constant_offset + np.heaviside(time_since_impact, 0) * (
         amplitude * exponent_1 * exponent_2
     )
 
