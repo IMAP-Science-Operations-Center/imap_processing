@@ -1321,14 +1321,59 @@ class Lo(ProcessInstrument):
 
         return at_pivot_angle
 
+    @staticmethod
+    def _pointings_in_esa_mode(
+        dependencies: ProcessingInputCollection,
+        map_esa_mode: int,
+        repointings: set[int] | None,
+    ) -> set[int]:
+        """
+        Find the pointings that were flown in the ESA mode of a map.
+
+        Parameters
+        ----------
+        dependencies : ProcessingInputCollection
+            Dependencies to process.
+        map_esa_mode : int
+            The ESA mode of the map being made, 0 for HiRes and 1 for HiThr.
+        repointings : set[int] | None
+            The repointings to consider, or None to consider every one.
+
+        Returns
+        -------
+        set[int]
+            The repointings flown in the map's ESA mode.
+        """
+        in_esa_mode = set()
+        for histrates_path in dependencies.get_file_paths(
+            source="lo", descriptor="histrates"
+        ):
+            repointing = imap_data_access.ScienceFilePath(
+                histrates_path.name
+            ).repointing
+            if repointings is not None and repointing not in repointings:
+                continue
+
+            esa_mode = lo_l2.get_esa_mode(load_cdf(histrates_path))
+            if esa_mode == map_esa_mode:
+                in_esa_mode.add(repointing)
+            else:
+                logger.info(
+                    f"Dropping repoint{repointing}, its ESA mode {esa_mode} is not "
+                    f"the ESA mode {map_esa_mode} of the map."
+                )
+
+        return in_esa_mode
+
     def pre_processing(self) -> ProcessingInputCollection:
         """
         Complete pre-processing.
 
         Extends the base pre-processing by dropping, for map products, the Lo
         science inputs of the pointings that were not taken at the pivot angle
-        of the map being made. A pointing is dropped whole: its goodtimes give
-        the pivot angle, and its other inputs go with them.
+        of the map being made, or not flown in its ESA mode. A pointing is
+        dropped whole: its goodtimes give the pivot angle and its histrates the
+        ESA mode, and its other inputs go with them.
 
         Filtering here, rather than during processing, keeps the `Parents`
         attribute of the produced map limited to the files it was made from.
@@ -1343,20 +1388,27 @@ class Lo(ProcessInstrument):
             return dependencies
 
         try:
-            map_pivot_angle = MapDescriptor.from_string(self.descriptor).sensor
+            map_descriptor = MapDescriptor.from_string(self.descriptor)
         except ValueError:
-            # Not a map product, so there is no pivot angle to select inputs with
+            # Not a map product, so there is nothing to select inputs with
             logger.info(
-                f"Not filtering inputs by pivot angle, {self.descriptor} is not a "
-                f"map descriptor."
+                f"Not filtering inputs by pivot angle or ESA mode, "
+                f"{self.descriptor} is not a map descriptor."
             )
             return dependencies
 
-        if not isinstance(map_pivot_angle, int):
-            # A map of no particular pivot angle, e.g. "ilo-ena-h-sf-nsp-ram-..."
-            return dependencies
+        # The repointings the map is made from, None while nothing has selected
+        # them.
+        kept: set[int] | None = None
+        # A map of no particular pivot angle, e.g. "ilo-ena-h-sf-nsp-...", is not
+        # filtered by one.
+        if isinstance(map_descriptor.sensor, int):
+            kept = self._pointings_at_pivot_angle(dependencies, map_descriptor.sensor)
 
-        at_pivot_angle = self._pointings_at_pivot_angle(dependencies, map_pivot_angle)
+        # Every Lo map is made in one ESA mode, combined maps included.
+        kept = self._pointings_in_esa_mode(
+            dependencies, LoConstants.ESA_MODES[map_descriptor.instrument], kept
+        )
 
         filtered_dependencies = ProcessingInputCollection()
         for processing_input in dependencies.get_processing_inputs():
@@ -1370,7 +1422,7 @@ class Lo(ProcessInstrument):
             kept_filenames = [
                 str(imap_file_path.filename)
                 for imap_file_path in processing_input.imap_file_paths
-                if imap_file_path.repointing in at_pivot_angle
+                if imap_file_path.repointing in kept
             ]
             if kept_filenames:
                 filtered_dependencies.add(type(processing_input)(*kept_filenames))

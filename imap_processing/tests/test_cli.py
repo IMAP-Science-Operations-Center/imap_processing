@@ -559,6 +559,7 @@ def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_lo
         xr.Dataset({"pivot": ("epoch", [90.1])}),
         # A neighbouring pivot angle, which belongs on its own map
         xr.Dataset({"pivot": ("epoch", [75.0])}),
+        xr.Dataset({"esa_mode": ("epoch", [0])}),
     ]
 
     instrument = Lo(
@@ -578,8 +579,12 @@ def test_lo_pre_processing_pivot_angle_filter(mock_super_pre_processing, mock_lo
         [str(file_path.filename) for file_path in processing_input.imap_file_paths]
         for processing_input in result.get_processing_inputs()
     ] == [[goodtimes[0]], [histrates[0]], [bgrates[0]], [ancillary]]
-    # Only the goodtimes files are loaded, to read their pivot angle
-    assert mock_load_cdf.call_count == 2
+    # The goodtimes are loaded to read their pivot angle, and then only the
+    # histrates of the pointing at that pivot angle, to read its ESA mode
+    assert [call.args[0].name for call in mock_load_cdf.call_args_list] == [
+        *goodtimes,
+        histrates[0],
+    ]
 
 
 @mock.patch("imap_processing.cli.load_cdf")
@@ -608,6 +613,11 @@ def test_lo_pre_processing_combined_map_keeps_every_pivot_angle(
         AncillaryInput(ancillary),
     )
     mock_super_pre_processing.return_value = base_collection
+    # Both pointings are in HiRes, which a combined map is made in
+    mock_load_cdf.side_effect = [
+        xr.Dataset({"esa_mode": ("epoch", [0])}),
+        xr.Dataset({"esa_mode": ("epoch", [0])}),
+    ]
 
     instrument = Lo(
         "l2",
@@ -626,8 +636,9 @@ def test_lo_pre_processing_combined_map_keeps_every_pivot_angle(
         [str(file_path.filename) for file_path in processing_input.imap_file_paths]
         for processing_input in result.get_processing_inputs()
     ] == [goodtimes, histrates, bgrates, [ancillary]]
-    # No goodtimes are read, there being no pivot angle to select them by
-    assert mock_load_cdf.call_count == 0
+    # No goodtimes are read, there being no pivot angle to select them by, but
+    # the histrates are, for the ESA mode
+    assert [call.args[0].name for call in mock_load_cdf.call_args_list] == histrates
 
 
 @mock.patch("imap_processing.cli.load_cdf")

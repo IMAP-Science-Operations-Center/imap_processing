@@ -73,6 +73,8 @@ COMBINED_DESCRIPTOR = "ilo-enansnbs-h-sf-nsp-full-hae-6deg-3mo"
 COMBINED_RAM_DESCRIPTOR = "ilo-enansnbs-h-sf-nsp-ram-hae-6deg-3mo"
 COMBINED_MASK_DESCRIPTOR = "ilo-enansnbsmsk-h-sf-nsp-full-hae-6deg-3mo"
 
+HI_THR_DESCRIPTOR = "t090-enansnbs-h-sf-nsp-full-hae-6deg-3mo"
+
 # The pivot angles a combined map is built from in these tests.
 COMBINED_PIVOTS = (75.0, 90.0, 105.0)
 
@@ -581,6 +583,28 @@ class TestCombinedMap:
 
         with pytest.raises(ValueError, match=r"no mask tuning for the \[60\]"):
             lo_l2(as_dependencies(untuned), anc_dependencies, COMBINED_MASK_DESCRIPTOR)
+
+
+class TestEsaMode:
+    """A map is binned in the ESA mode it names."""
+
+    @pytest.mark.parametrize(
+        ("descriptor", "esa_mode"),
+        [(FULL_DESCRIPTOR, 0), (HI_THR_DESCRIPTOR, 1), (COMBINED_DESCRIPTOR, 0)],
+    )
+    def test_the_map_is_binned_in_its_esa_mode(
+        self, one_pointing, anc_dependencies, descriptor, esa_mode
+    ):
+        """An "l" map is binned in HiRes, a "t" map in HiThr, and "ilo" in HiRes."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (dataset,) = lo_l2(
+                as_dependencies(one_pointing), anc_dependencies, descriptor
+            )
+
+        np.testing.assert_allclose(dataset["energy"].values, ESA_ENERGIES[esa_mode])
 
 
 class TestMapStructure:
