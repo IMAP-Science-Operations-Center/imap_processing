@@ -513,3 +513,65 @@ def build_energy_bins(
     energy_bin_geometric_means = np.sqrt(energy_bin_edges[:-1] * energy_bin_edges[1:])
 
     return intervals, energy_midpoints, energy_bin_geometric_means
+
+
+def get_de_product_name(repoint: str, sensor: int, ancillary_files: dict) -> str:
+    """
+    Get the name of the de product to use for processing.
+
+    This will be either the raw de product or a priority 1-4 de product, depending on
+    the pointing and data level.
+
+    Note: Currently the lookup tables are identical between ultra45 and ultra90,
+    but this function accounts for the possibility of them being different in the
+    future.
+
+    Parameters
+    ----------
+    repoint : str
+        The repointing ID in the format "repointXXXXX" where XXXXX is the repointing
+        number.
+    sensor : int
+        Sensor number, either 45 or 90.
+    ancillary_files : dict
+            Ancillary files containing the lookup tables to determine which DE product
+            to use based on the repointing ID.
+
+    Returns
+    -------
+    de_product_name : str
+        Name of the de product to use for processing.
+    """
+    # load the lookup table.
+    # The lookup table will have columns for repointing_id_start, repointing_id_end,
+    # and de_product. If repointing_id_end is NaN that indicates that the de_product
+    # should be used for all repoint IDs greater than or equal to repointing_id_start.
+    file_name = f"l1c-{sensor}sensor-de-product-lookup"
+    de_lookup = pd.read_csv(ancillary_files[file_name])
+    repoint_id = int(repoint.replace("repoint", ""))
+    # Filter the dataset to find where the current repoint ID falls within the
+    # repointing_id_start and repointing_id_end range. OR if repointing_id_end is NaN,
+    # then just check if repoint_id is greater than or equal to repointing_id_start
+    repoint_row = de_lookup[
+        (de_lookup["repointing_id_start"] <= repoint_id)
+        & (
+            (de_lookup["repointing_id_end"] > repoint_id)
+            | (pd.isna(de_lookup["repointing_id_end"]))
+        )
+    ]
+    if repoint_row.empty:
+        raise ValueError(
+            f"No DE product found for repoint ID {repoint_id} in {file_name}"
+        )
+    if len(repoint_row) > 1:
+        raise ValueError(
+            f"Multiple DE products found for repoint ID {repoint_id} using "
+            f"ancillary file {file_name}. Check that the "
+            f"repointing_id_start and repointing_id_end values are correct"
+            f" and not overlapping."
+        )
+    product = repoint_row["de_product"].values[0]
+    logger.info(
+        f"Using DE product {product} for repoint ID {repoint_id} based on lookup table"
+    )
+    return product
