@@ -79,7 +79,6 @@ def calculate_extendedspin(
     spin_tbin_edges = get_binned_spins_edges(
         spin, spin_period, spin_starttime, spin_bin_size
     )
-
     # Calculate goodtime quality flags.
     # The culling algorithms should be called in the following order
     # 1. Low voltage
@@ -96,8 +95,8 @@ def calculate_extendedspin(
     energy_ranges = get_binned_energy_ranges(intervals)
     energy_bin_flags = get_energy_range_flags(energy_ranges)
 
-    # Get valid event counts per energy range and spin bin, shared across all of
-    # the culling steps below.
+    # Get valid events and counts at each spin bin for the
+    # designated culling channel.
     de_counts_summary = get_valid_de_count_summary(
         de_dataset,
         energy_ranges,
