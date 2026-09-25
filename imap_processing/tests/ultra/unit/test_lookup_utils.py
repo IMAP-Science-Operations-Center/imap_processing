@@ -1,3 +1,4 @@
+import datetime
 from unittest import mock
 
 import numpy as np
@@ -7,9 +8,9 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
+    ExtendedSpinConfig,
     get_angular_profiles,
     get_back_position,
-    get_de_product_name,
     get_ebins,
     get_energy_efficiencies,
     get_energy_norm,
@@ -219,78 +220,14 @@ def test_get_scattering_thresholds(ancillary_files):
     assert thresholds[(20.0, np.inf)] == 4.0
 
 
-def test_get_de_product_name_no_repoint():
-    """Tests function get_de_product_name when the lookup is missing the repoint."""
-    ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
-    }
-    with mock.patch(
-        "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
-    ) as mock_read_csv:
-        mock_read_csv.return_value = pd.DataFrame(
-            {
-                "repointing_id_start": [1, 2],
-                "repointing_id_end": [3, 4],
-                "de_product": [
-                    "imap_ultra_l1b_45sensor-de",
-                    "imap_ultra_l1b_45sensor-priority-1-de",
-                ],
-            }
-        )
-        with pytest.raises(ValueError, match="No DE product found for repoint ID 0"):
-            get_de_product_name("repoint00000", 45, "l1b", ancillary_files)
+def test_extended_config_class():
+    """Tests the ExtendedSpinConfig class."""
+    config_path = (
+        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
+    )
+    config = ExtendedSpinConfig.from_csv(config_path, 128)
 
-
-def test_get_de_product_name_multiple_products():
-    """Tests function get_de_product_name when the lookup is ambiguous."""
-    ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
-    }
-    with mock.patch(
-        "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
-    ) as mock_read_csv:
-        mock_read_csv.return_value = pd.DataFrame(
-            {
-                "repointing_id_start": [2, 2],
-                "repointing_id_end": [3, 4],
-                "de_product": [
-                    "imap_ultra_l1b_45sensor-de",
-                    "imap_ultra_l1b_45sensor-priority-1-de",
-                ],
-            }
-        )
-        with pytest.raises(ValueError, match="Multiple DE products found"):
-            get_de_product_name("repoint00002", 45, "l1b", ancillary_files)
-
-
-def test_get_de_product_name():
-    """Tests function get_de_product_name."""
-    ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
-    }
-    with mock.patch(
-        "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
-    ) as mock_read_csv:
-        mock_read_csv.return_value = pd.DataFrame(
-            {
-                "repointing_id_start": [0, 2, 4],
-                "repointing_id_end": [1, 4, np.nan],
-                "de_product": [
-                    "imap_ultra_l1b_45sensor-de",
-                    "imap_ultra_l1b_45sensor-priority-1-de",
-                    "imap_ultra_l1b_45sensor-priority-2-de",
-                ],
-            }
-        )
-        # Test with a repoint in the future. Should return the priority 2 de product
-        # since the last repoint range does not have an end and should be assumed to
-        # cover all future repoints.
-        de_product = get_de_product_name("repoint00100", 45, "l1b", ancillary_files)
-        assert de_product == "imap_ultra_l1b_45sensor-priority-2-de"
-
-        # Test with valid repoint that falls in the second range.
-        de_product = get_de_product_name("repoint00003", 45, "l1b", ancillary_files)
-        assert de_product == "imap_ultra_l1b_45sensor-priority-1-de"
+    assert config.priority == "p0"
+    assert config.calibration == "c1"
+    assert config.thresholds == {0: 96.5, 1: 80.5, 2: 8.5, 3: 10.5, 4: 3.5}
+    assert config.date == datetime.datetime(2026, 1, 22)

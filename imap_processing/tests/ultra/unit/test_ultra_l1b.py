@@ -229,7 +229,7 @@ def test_ultra_l1b_extendedspin(
 
     ancillary_files = {
         "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+        / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
@@ -264,7 +264,7 @@ def test_cdf_extendedspin(
 
     ancillary_files = {
         "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+        / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
     """Tests that CDF file is created and contains same attributes as xarray."""
@@ -304,7 +304,7 @@ def test_cdf_goodtimes(
 
     ancillary_files = {
         "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+        / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 
@@ -348,7 +348,7 @@ def test_cdf_badtimes(
 
     ancillary_files = {
         "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+        / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
     l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
 

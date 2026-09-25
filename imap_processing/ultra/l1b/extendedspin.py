@@ -79,6 +79,7 @@ def calculate_extendedspin(
     spin_tbin_edges = get_binned_spins_edges(
         spin, spin_period, spin_starttime, spin_bin_size
     )
+
     # Calculate goodtime quality flags.
     # The culling algorithms should be called in the following order
     # 1. Low voltage
