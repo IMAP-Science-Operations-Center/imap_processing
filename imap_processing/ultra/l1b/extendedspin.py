@@ -22,6 +22,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_energy_histogram,
     get_energy_range_flags,
     get_pulses_per_spin,
+    get_valid_de_count_summary,
 )
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
@@ -86,21 +87,31 @@ def calculate_extendedspin(
     # 4. Upstream ion (with second set of energy channels)
     # 5. Spectral cull
     # 6. Statistical outliers (energy dependent)
+
     voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
     # Get energy bins used at l1c
     intervals, _, _ = build_energy_bins()
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
     energy_bin_flags = get_energy_range_flags(energy_ranges)
+
+    # Get valid events and counts at each spin bin for the
+    # designated culling channel.
+    de_counts_summary = get_valid_de_count_summary(
+        de_dataset,
+        energy_ranges,
+        spin_tbin_edges,
+        instrument_id,
+    )
+
     # Calculate the high energy quality flags
     energy_thresholds = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS
     high_energy_qf = flag_high_energy(
-        de_dataset,
+        de_counts_summary,
         spin_tbin_edges,
         energy_ranges,
         voltage_qf,
         energy_thresholds,
-        instrument_id,
     )
     # For the following culls, mask the spins that have already been flagged for
     # low voltage
@@ -108,37 +119,27 @@ def calculate_extendedspin(
         voltage_qf[np.newaxis, :], len(energy_ranges) - 1, axis=0
     )  # Shape (n_energy_bins, n_spins_bins)
     upstream_ion_qf_1 = flag_upstream_ion(
-        de_dataset,
-        spin_tbin_edges,
+        de_counts_summary,
         energy_ranges,
         mask,
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
-        instrument_id,
     )
     upstream_ion_qf_2 = flag_upstream_ion(
-        de_dataset,
-        spin_tbin_edges,
+        de_counts_summary,
         energy_ranges,
         mask,
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_2,
-        instrument_id,
     )
     spectral_qf = flag_spectral_events(
-        de_dataset,
-        spin_tbin_edges,
+        de_counts_summary,
         energy_ranges,
         UltraConstants.SPECTRAL_ENERGY_CHANNELS,
-        instrument_id,
     )
     # Update mask to include high energy,  upstream ion flags and spectral flags
     # before flagging statistical outliers
     mask = mask | upstream_ion_qf_1 | upstream_ion_qf_2 | spectral_qf | high_energy_qf
     stat_outliers_qf, _, _, _ = flag_statistical_outliers(
-        de_dataset,
-        spin_tbin_edges,
-        energy_ranges,
-        mask,
-        instrument_id,
+        de_counts_summary, spin_tbin_edges, energy_ranges, mask
     )
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
