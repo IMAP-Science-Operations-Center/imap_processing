@@ -375,6 +375,19 @@ def test_check_source_sequence_counter(caplog):
     assert "Found [2] gap(s) in source sequence counter for APID 1234" in caplog.text
 
 
+@pytest.mark.filterwarnings("error::RuntimeWarning")
+def test_check_source_sequence_counter_unsigned_rollover(caplog):
+    """Test _check_source_sequence_counter with unsigned counters that roll over."""
+    data_vars = {
+        "src_seq_ctr": (["epoch"], np.array([10221, 4933, 4934], dtype=np.uint16)),
+    }
+    ds = xr.Dataset(data_vars=data_vars)
+
+    utils._check_source_sequence_counter(ds, apid=1188)
+
+    assert "(11095 total missing packets)" in caplog.text
+
+
 def test_extract_data_dict():
     """Test extract_data_dict function."""
     data_vars = {
