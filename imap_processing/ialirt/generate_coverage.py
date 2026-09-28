@@ -87,7 +87,7 @@ def generate_coverage(  # noqa: PLR0912
     uksa: list | None = None,
 ) -> tuple[dict, dict]:
     """
-    Build the output dictionary containing coverage and outage time for each station.
+    Build the output dictionary containing coverage and outage time for station.
 
     Parameters
     ----------
