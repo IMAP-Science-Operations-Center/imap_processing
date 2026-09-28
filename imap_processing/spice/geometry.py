@@ -49,6 +49,7 @@ class SpiceFrame(IntEnum):
     IMAP_LO_BASE = -43100
     IMAP_LO = -43101
     IMAP_LO_STAR_SENSOR = -43102
+    IMAP_LO_INSTR = -43103
     IMAP_HI_45 = -43150
     IMAP_HI_90 = -43151
     IMAP_ULTRA_45 = -43200
@@ -221,7 +222,7 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
         The spin phase offset from the spacecraft to the instrument.
     """
     phase_offset_lookup = {
-        # Phase offset values based on imap_130.tf frame kernel
+        # Phase offset values based on imap_140.tf frame kernel
         # See docstring notes for details on how these values were determined.
         SpiceFrame.IMAP_LO: 60 / 360,  # (330 + 90) % 360 = 60
         SpiceFrame.IMAP_HI_45: 344.8264 / 360,  # 255 + 90 = 345

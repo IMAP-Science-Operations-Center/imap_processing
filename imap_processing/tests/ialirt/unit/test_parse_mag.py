@@ -506,7 +506,7 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
 
     kernels = [
         "imap_science_120.tf",
-        "imap_130.tf",
+        "imap_140.tf",
         "naif0012.tls",
         "de440s.bsp",
         "imap_spk_demo.bsp",
@@ -640,7 +640,7 @@ def test_process_packet(
     """Test the process_packet function."""
     kernels = [
         "imap_science_120.tf",
-        "imap_130.tf",
+        "imap_140.tf",
         "naif0012.tls",
         "de440s.bsp",
         "imap_recon_od005_20250925_20251014_v01.bsp",
