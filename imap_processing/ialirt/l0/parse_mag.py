@@ -483,9 +483,11 @@ def transform_to_inertial(
     sc_spin_phase_rad : numpy.ndarray
         Spin phase for 4 packets 0 to 2π radians, shape (4).
     sc_inertial_right : numpy.ndarray
-        Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
+        Inertial right ascension in IMAP_ECLIPMOD for 4 packets 0 to 2π
+        radians, shape (4).
     sc_inertial_decline : numpy.ndarray
-        Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
+        Inertial declination in IMAP_ECLIPMOD for 4 packets -π/2 to π/2
+        radians, shape (4).
     attitude_time : np.ndarray
         Timestamps for all packets in ttj2000ns.
     target_time : float
@@ -531,7 +533,7 @@ def transform_to_inertial(
         target_time,
     )
 
-    # Transform each into ECLIPJ2000
+    # Transform each into IMAP_ECLIPMOD
     inertial_vector = transform_instrument_vectors_to_inertial(
         np.asarray(mag_vector).reshape(1, 3),
         np.array([spin_phase_deg]),
@@ -571,13 +573,13 @@ def transform_to_frames(
     et_target_time = ttj2000ns_to_et(target_time)
 
     gse_vector = frame_transform(
-        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_GSE
+        et_target_time, inertial_vector, SpiceFrame.IMAP_ECLIPMOD, SpiceFrame.IMAP_GSE
     )
     gsm_vector = frame_transform(
-        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_GSM
+        et_target_time, inertial_vector, SpiceFrame.IMAP_ECLIPMOD, SpiceFrame.IMAP_GSM
     )
     rtn_vector = frame_transform(
-        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_RTN
+        et_target_time, inertial_vector, SpiceFrame.IMAP_ECLIPMOD, SpiceFrame.IMAP_RTN
     )
 
     return gse_vector, gsm_vector, rtn_vector
