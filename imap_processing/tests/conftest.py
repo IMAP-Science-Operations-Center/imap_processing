@@ -15,7 +15,9 @@ import spiceypy
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf
+from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice import config as spice_config
+from imap_processing.spice.geometry import SpiceFrame
 from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
 from imap_processing.tests.external_test_data_config import EXTERNAL_TEST_DATA
 
@@ -207,6 +209,55 @@ def furnish_kernels(spice_test_data_path):
             yield pool
 
     return furnish_kernels
+
+
+@pytest.fixture
+def lo_pivot_ck(tmp_path, spice_test_data_path):
+    """
+    Return a function that writes a CK holding a constant IMAP-Lo pivot angle.
+
+    Examples
+    --------
+    >>> def test_lo_pointing(lo_pivot_ck, furnish_kernels):
+    >>>     ck_path = lo_pivot_ck(pivot_angle=75.0)
+    >>>     with furnish_kernels(["naif0012.tls", "imap_sclk_0036.tsc",
+    >>>                           "imap_140.tf", ck_path]):
+    >>>         result = spicey_function()
+    """
+
+    def write_lo_pivot_ck(
+        pivot_angle: float = 90.0,
+        start_utc: str = "2026-09-09T00:00:00",
+        end_utc: str = "2026-09-10T00:00:00",
+    ) -> Path:
+        ck_path = tmp_path / f"imap_lo_pivot_{pivot_angle:g}deg.bc"
+        ck_path.unlink(missing_ok=True)
+        kernels = ["naif0012.tls", "imap_sclk_0036.tsc", "imap_140.tf"]
+        with spiceypy.KernelPool([str(spice_test_data_path / k) for k in kernels]):
+            start = spiceypy.sce2c(IMAP_SC_ID, spiceypy.str2et(start_utc))
+            end = spiceypy.sce2c(IMAP_SC_ID, spiceypy.str2et(end_utc))
+            # Rotate by pivot_angle along axis 1 (X axis)
+            quat = spiceypy.m2q(spiceypy.rotate(np.deg2rad(pivot_angle), 1))
+            handle = spiceypy.ckopn(str(ck_path), "IMAP-Lo pivot test CK", 0)
+            spiceypy.ckw03(
+                handle,
+                start,
+                end,
+                SpiceFrame.IMAP_LO.value,
+                SpiceFrame.IMAP_LO_BASE.name,
+                False,  # no angular velocity
+                f"Constant pivot {pivot_angle:g} deg",
+                2,
+                [start, end],
+                [quat, quat],
+                np.zeros((2, 3)),  # angular velocities; ignored
+                1,  # one interpolation interval covering the whole segment
+                [start],
+            )
+            spiceypy.ckcls(handle)
+        return ck_path
+
+    return write_lo_pivot_ck
 
 
 @pytest.fixture
@@ -474,7 +525,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
         "naif0012.tls",
         "imap_spk_demo.bsp",
         "sim_1yr_imap_attitude.bc",
-        "imap_130.tf",
+        "imap_140.tf",
         "de440s.bsp",
         "imap_science_120.tf",
         "sim_1yr_imap_pointing_frame.bc",
@@ -485,7 +536,7 @@ def imap_ena_sim_metakernel(furnish_kernels, _download_kernels):
 
 @pytest.fixture
 def imap_ialirt_sim_metakernel(furnish_kernels):
-    kernels = ["imap_130.tf"]
+    kernels = ["imap_140.tf"]
     with furnish_kernels(kernels) as k:
         yield k
 

@@ -141,7 +141,7 @@ def test_ecliptic_coords_computation(furnish_kernels):
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_science_120.tf",
         "sim_1yr_imap_pointing_frame.bc",
     ]
