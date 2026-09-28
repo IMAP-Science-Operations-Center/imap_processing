@@ -348,9 +348,9 @@ def calibrate_and_offset_vectors(
 
 
 def apply_gradiometry_correction(
-    mago_vectors_eclipj2000: np.ndarray,
+    mago_vectors_eclipmod: np.ndarray,
     mago_time_data: np.ndarray,
-    magi_vectors_eclipj2000: np.ndarray,
+    magi_vectors_eclipmod: np.ndarray,
     magi_time_data: np.ndarray,
     gradiometer_factor: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -359,12 +359,12 @@ def apply_gradiometry_correction(
 
     Parameters
     ----------
-    mago_vectors_eclipj2000 : np.ndarray
-        MAGo vectors in inertial frame, shape (N, 3).
+    mago_vectors_eclipmod : np.ndarray
+        MAGo vectors in the IMAP_ECLIPMOD frame, shape (N, 3).
     mago_time_data : np.ndarray
         Time for primary sensor, shape (N, 3).
-    magi_vectors_eclipj2000 : np.ndarray
-        MAGi vectors in inertial frame, shape (M, 3).
+    magi_vectors_eclipmod : np.ndarray
+        MAGi vectors in the IMAP_ECLIPMOD frame, shape (M, 3).
     magi_time_data : np.ndarray
         Time for secondary sensor, shape (N, 3).
     gradiometer_factor : np.ndarray
@@ -378,13 +378,13 @@ def apply_gradiometry_correction(
         Magnitude of corrected MAGo vectors, shape (N,).
     """
     gradiometry_offsets = MagL1d.calculate_gradiometry_offsets(
-        mago_vectors_eclipj2000,
+        mago_vectors_eclipmod,
         mago_time_data,
-        magi_vectors_eclipj2000,
+        magi_vectors_eclipmod,
         magi_time_data,
     )
     mago_corrected = MagL1d.apply_gradiometry_offsets(
-        gradiometry_offsets, mago_vectors_eclipj2000, gradiometer_factor
+        gradiometry_offsets, mago_vectors_eclipmod, gradiometer_factor
     )
     magnitude = np.linalg.norm(mago_corrected, axis=-1).squeeze()
 
@@ -476,16 +476,18 @@ def transform_to_inertial(
     instrument_frame: SpiceFrame,
 ) -> np.ndarray:
     """
-    Transform vector to ECLIPJ2000.
+    Transform vector to IMAP_ECLIPMOD.
 
     Parameters
     ----------
     sc_spin_phase_rad : numpy.ndarray
         Spin phase for 4 packets 0 to 2π radians, shape (4).
     sc_inertial_right : numpy.ndarray
-        Inertial right ascension for 4 packets 0 to 2π radians, shape (4).
+        Inertial right ascension in IMAP_ECLIPMOD for 4 packets 0 to 2π
+        radians, shape (4).
     sc_inertial_decline : numpy.ndarray
-        Inertial declination for 4 packets -π/2 to π/2 radians, shape (4).
+        Inertial declination in IMAP_ECLIPMOD for 4 packets -π/2 to π/2
+        radians, shape (4).
     attitude_time : np.ndarray
         Timestamps for all packets in ttj2000ns.
     target_time : float
@@ -500,7 +502,7 @@ def transform_to_inertial(
     Returns
     -------
     inertial_vector : np.ndarray
-        Transformed vector in the ECLIPJ2000 frame, shape (3,).
+        Transformed vector in the IMAP_ECLIPMOD frame, shape (3,).
 
     Notes
     -----
@@ -531,7 +533,7 @@ def transform_to_inertial(
         target_time,
     )
 
-    # Transform each into ECLIPJ2000
+    # Transform each into IMAP_ECLIPMOD
     inertial_vector = transform_instrument_vectors_to_inertial(
         np.asarray(mag_vector).reshape(1, 3),
         np.array([spin_phase_deg]),
@@ -557,7 +559,7 @@ def transform_to_frames(
         Will be primary_epoch (mago vector).
         Example: time_data['primary_epoch'].
     inertial_vector : np.ndarray
-        Transformed vector in the ECLIPJ2000 frame, shape (3,).
+        Transformed vector in the IMAP_ECLIPMOD frame, shape (3,).
 
     Returns
     -------
@@ -571,13 +573,13 @@ def transform_to_frames(
     et_target_time = ttj2000ns_to_et(target_time)
 
     gse_vector = frame_transform(
-        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_GSE
+        et_target_time, inertial_vector, SpiceFrame.IMAP_ECLIPMOD, SpiceFrame.IMAP_GSE
     )
     gsm_vector = frame_transform(
-        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_GSM
+        et_target_time, inertial_vector, SpiceFrame.IMAP_ECLIPMOD, SpiceFrame.IMAP_GSM
     )
     rtn_vector = frame_transform(
-        et_target_time, inertial_vector, SpiceFrame.ECLIPJ2000, SpiceFrame.IMAP_RTN
+        et_target_time, inertial_vector, SpiceFrame.IMAP_ECLIPMOD, SpiceFrame.IMAP_RTN
     )
 
     return gse_vector, gsm_vector, rtn_vector
@@ -698,7 +700,7 @@ def process_packet(
             updated_vector_magi, magi_calibration, offsets, is_magi=True
         )
 
-        # Convert to ECLIPJ2000 frame.
+        # Convert to IMAP_ECLIPMOD frame.
         mago_inertial_vector = transform_to_inertial(
             sc_spin_phase_rad.values,
             sc_inertial_right.values,
