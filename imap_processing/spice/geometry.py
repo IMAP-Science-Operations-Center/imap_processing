@@ -78,6 +78,8 @@ class SpiceFrame(IntEnum):
     IMAP_GSE = -43916
     IMAP_GSM = -43917
     IMAP_SMD = -43918
+    IMAP_ECLIPMOD = -43950
+    IMAP_EQUAMOD = -43951
     IMAP_RTN = -43920
     IMAP_HCI = -43921  # HGI_J2K
     IMAP_HCD = -43922  # HGI_D

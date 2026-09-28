@@ -27,7 +27,7 @@ from imap_processing.spice.geometry import (
 
 def test_spice_frame_enum(furnish_kernels):
     """Test that the SpiceFrame enum values match imap frames kernel."""
-    with furnish_kernels(["imap_140.tf", "imap_science_120.tf"]):
+    with furnish_kernels(["imap_140.tf", "imap_science_130.tf"]):
         for frame in SpiceFrame:
             assert frame.value == spiceypy.namfrm(frame.name)
 
