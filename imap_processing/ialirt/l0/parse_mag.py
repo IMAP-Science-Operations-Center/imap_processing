@@ -348,9 +348,9 @@ def calibrate_and_offset_vectors(
 
 
 def apply_gradiometry_correction(
-    mago_vectors_eclipj2000: np.ndarray,
+    mago_vectors_eclipmod: np.ndarray,
     mago_time_data: np.ndarray,
-    magi_vectors_eclipj2000: np.ndarray,
+    magi_vectors_eclipmod: np.ndarray,
     magi_time_data: np.ndarray,
     gradiometer_factor: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -359,12 +359,12 @@ def apply_gradiometry_correction(
 
     Parameters
     ----------
-    mago_vectors_eclipj2000 : np.ndarray
-        MAGo vectors in inertial frame, shape (N, 3).
+    mago_vectors_eclipmod : np.ndarray
+        MAGo vectors in the IMAP_ECLIPMOD frame, shape (N, 3).
     mago_time_data : np.ndarray
         Time for primary sensor, shape (N, 3).
-    magi_vectors_eclipj2000 : np.ndarray
-        MAGi vectors in inertial frame, shape (M, 3).
+    magi_vectors_eclipmod : np.ndarray
+        MAGi vectors in the IMAP_ECLIPMOD frame, shape (M, 3).
     magi_time_data : np.ndarray
         Time for secondary sensor, shape (N, 3).
     gradiometer_factor : np.ndarray
@@ -378,13 +378,13 @@ def apply_gradiometry_correction(
         Magnitude of corrected MAGo vectors, shape (N,).
     """
     gradiometry_offsets = MagL1d.calculate_gradiometry_offsets(
-        mago_vectors_eclipj2000,
+        mago_vectors_eclipmod,
         mago_time_data,
-        magi_vectors_eclipj2000,
+        magi_vectors_eclipmod,
         magi_time_data,
     )
     mago_corrected = MagL1d.apply_gradiometry_offsets(
-        gradiometry_offsets, mago_vectors_eclipj2000, gradiometer_factor
+        gradiometry_offsets, mago_vectors_eclipmod, gradiometer_factor
     )
     magnitude = np.linalg.norm(mago_corrected, axis=-1).squeeze()
 
@@ -476,7 +476,7 @@ def transform_to_inertial(
     instrument_frame: SpiceFrame,
 ) -> np.ndarray:
     """
-    Transform vector to ECLIPJ2000.
+    Transform vector to IMAP_ECLIPMOD.
 
     Parameters
     ----------
@@ -502,7 +502,7 @@ def transform_to_inertial(
     Returns
     -------
     inertial_vector : np.ndarray
-        Transformed vector in the ECLIPJ2000 frame, shape (3,).
+        Transformed vector in the IMAP_ECLIPMOD frame, shape (3,).
 
     Notes
     -----
@@ -559,7 +559,7 @@ def transform_to_frames(
         Will be primary_epoch (mago vector).
         Example: time_data['primary_epoch'].
     inertial_vector : np.ndarray
-        Transformed vector in the ECLIPJ2000 frame, shape (3,).
+        Transformed vector in the IMAP_ECLIPMOD frame, shape (3,).
 
     Returns
     -------
@@ -700,7 +700,7 @@ def process_packet(
             updated_vector_magi, magi_calibration, offsets, is_magi=True
         )
 
-        # Convert to ECLIPJ2000 frame.
+        # Convert to IMAP_ECLIPMOD frame.
         mago_inertial_vector = transform_to_inertial(
             sc_spin_phase_rad.values,
             sc_inertial_right.values,
