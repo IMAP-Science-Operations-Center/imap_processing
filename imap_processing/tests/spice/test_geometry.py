@@ -88,6 +88,31 @@ def test_get_instrument_mounting_az_el(
 
 
 @pytest.mark.parametrize(
+    "instrument, atol",
+    [
+        (SpiceFrame.IMAP_LO_INSTR, 1e-8),  # identity offset from IMAP_LO
+        (SpiceFrame.IMAP_LO_STAR_SENSOR, 0.75),  # measured offset of ~0.36 deg
+    ],
+)
+@pytest.mark.parametrize("pivot_angle", [60.0, 90.0, 120.0])
+def test_get_instrument_mounting_az_el_lo_pivot(
+    instrument, atol, pivot_angle, lo_pivot_ck, furnish_kernels
+):
+    """Test the Lo sensors' az/el, which depend on the pivot angle."""
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+        "imap_140.tf",
+        lo_pivot_ck(pivot_angle),
+    ]
+    with furnish_kernels(kernels):
+        et = spiceypy.str2et("2026-09-09T12:00:00")
+        result = get_instrument_mounting_az_el(instrument, et)
+        # The pivot tilts the boresight in elevation; azimuth stays at 60 deg
+        np.testing.assert_allclose(result, (60, 90 - pivot_angle), atol=atol)
+
+
+@pytest.mark.parametrize(
     "instrument",
     [
         # Expected spin-phase offsets based on 7516-0011_drw.pdf
