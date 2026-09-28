@@ -206,132 +206,264 @@ imap_ultra_l1b_45sensor-de:
     Data_type: L1B_45Sensor-DE>Level-1B Direct Events for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-de:
     <<: *instrument_base
     Data_type: L1B_90Sensor-DE>Level-1B Direct Events for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_45sensor-priority-1-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_1_DE>Level-1B Priority 1 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-1-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 1 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-priority-1-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_1_DE>Level-1B Priority 1 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-1-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 1 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_45sensor-priority-2-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_2_DE>Level-1B Priority 2 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-2-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 2 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-priority-2-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_2_DE>Level-1B Priority 2 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-2-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 2 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_45sensor-priority-3-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_3_DE>Level-1B Priority 3 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-3-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 3 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-priority-3-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_3_DE>Level-1B Priority 3 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-3-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 3 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_45sensor-priority-4-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_4_DE>Level-1B Priority 4 Direct Event
     Logical_source: imap_ultra_l1b_45sensor-priority-4-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 4 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-priority-4-de:
     <<: *instrument_base
     Data_type: L1B_PRIORITY_4_DE>Level-1B Priority 4 Direct Event
     Logical_source: imap_ultra_l1b_90sensor-priority-4-de
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Priority 4 Direct Event Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_45sensor-extendedspin:
     <<: *instrument_base
     Data_type: L1B_45Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-extendedspin
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Extended Spin Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-extendedspin:
     <<: *instrument_base
     Data_type: L1B_90Sensor-ExtendedSpin>Level-1B Extended Spin for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-extendedspin
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Extended Spin Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_45sensor-goodtimes:
     <<: *instrument_base
     Data_type: L1B_45Sensor-Goodtimes>Level-1B Goodtimes for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-goodtimes
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Goodtimes Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-goodtimes:
     <<: *instrument_base
     Data_type: L1B_90Sensor-Goodtimes>Level-1B Goodtimes for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-goodtimes
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Goodtimes Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_45sensor-badtimes:
     <<: *instrument_base
     Data_type: L1B_45Sensor-Badtimes>Level-1B Badtimes for Ultra45
     Logical_source: imap_ultra_l1b_45sensor-badtimes
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Badtimes Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1b_90sensor-badtimes:
     <<: *instrument_base
     Data_type: L1B_90Sensor-Badtimes>Level-1B Badtimes for Ultra90
     Logical_source: imap_ultra_l1b_90sensor-badtimes
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1B Badtimes Data
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1c_45sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-spacecraftpset
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1c_90sensor-spacecraftpset:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-spacecraftpset
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1c_45sensor-spacecraftpset-nonproton:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-spacecraftpset-nonproton
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1c_90sensor-spacecraftpset-nonproton:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-spacecraftpset-nonproton
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1C Spacecraft Pointing Set Grid for Non-Proton Species
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1c_45sensor-heliopset:
     <<: *instrument_base
     Data_type: L1C_45Sensor-PSET>Level-1C Pointing Set Grid for Ultra45
     Logical_source: imap_ultra_l1c_45sensor-heliopset
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1c_90sensor-heliopset:
     <<: *instrument_base
     Data_type: L1C_90Sensor-PSET>Level-1C Pointing Set Grid for Ultra90
     Logical_source: imap_ultra_l1c_90sensor-heliopset
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-1C Heliosphere Pointing Set Grid
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_ultra_l1c_45sensor-histogram:
     <<: *instrument_base
@@ -507,3 +639,9 @@ imap_ultra_l2_enamap:
     Data_type: L2_u{sensor}-ena-h-{inertial_frame_short_name}-nsp-full-hae-{resolution_string}-{duration}>Level-2 ENA Intensity Map for Ultra{sensor}
     Logical_source: imap_ultra_l2_u{sensor}-ena-h-{inertial_frame_short_name}-nsp-full-hae-{resolution_string}-{duration}
     Logical_source_description: IMAP Mission IMAP-Ultra Instrument Level-2 ENA Intensity Map Data for Ultra{sensor} on {tiling} tiling in {inertial_frame_long_name} frame over {duration} duration
+    MODS:
+      - >-
+        Major version 1, Aug. 1, 2026 - Initial release.
+      - >-
+        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.

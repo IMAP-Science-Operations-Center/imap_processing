@@ -30,6 +30,12 @@ imap_glows_l1b_hist:
   Data_type: L1B_hist>Level-1B histogram
   Logical_source: imap_glows_l1b_hist
   Logical_source_description: IMAP Mission GLOWS Instrument Level-1B Histogram Data
+  MODS:
+    - >-
+      Major version 1, Aug. 1, 2026 - Initial release.
+    - >-
+      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_glows_l1b_de:
   <<: *instrument_base
@@ -42,3 +48,9 @@ imap_glows_l2_hist:
   Data_type: L2_hist>Level-2 histogram
   Logical_source: imap_glows_l2_hist
   Logical_source_description: IMAP Mission GLOWS Instrument Level-2 Histogram Data
+  MODS:
+    - >-
+      Major version 1, Aug. 1, 2026 - Initial release.
+    - >-
+      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
