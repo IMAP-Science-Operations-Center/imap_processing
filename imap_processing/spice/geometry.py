@@ -97,6 +97,7 @@ BORESIGHT_LOOKUP = {
     SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
     SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
     SpiceFrame.IMAP_LO_STAR_SENSOR: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO_INSTR: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),

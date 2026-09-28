@@ -561,11 +561,10 @@ def test_lo_instr_frame_matches_lo_instrument_pointing(
         "imap_140.tf",
         lo_pivot_ck(pivot_angle),
     ]
-    boresight = np.array([0, -1, 0])
     with furnish_kernels(kernels):
         et = spiceypy.str2et("2026-09-09T12:00:00")
-        boresight_sc = frame_transform(
-            et, boresight, SpiceFrame.IMAP_LO_INSTR, SpiceFrame.IMAP_SPACECRAFT
+        boresight_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO_INSTR, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
         expected = lo_instrument_pointing(
             et, pivot_angle, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
@@ -575,11 +574,11 @@ def test_lo_instr_frame_matches_lo_instrument_pointing(
         # Outside the CK coverage there is no pivot, so no path to the spacecraft
         et_outside = spiceypy.str2et("2026-09-11T00:00:00")
         with pytest.raises(spiceypy.utils.exceptions.SpiceNOFRAMECONNECT):
-            frame_transform(
+            instrument_pointing(
                 et_outside,
-                boresight,
                 SpiceFrame.IMAP_LO_INSTR,
                 SpiceFrame.IMAP_SPACECRAFT,
+                cartesian=True,
             )
 
 
