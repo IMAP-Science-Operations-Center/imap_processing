@@ -88,15 +88,15 @@ def test_get_instrument_mounting_az_el(
 
 
 @pytest.mark.parametrize(
-    "instrument, atol",
+    "instrument",
     [
-        (SpiceFrame.IMAP_LO_INSTR, 1e-8),  # identity offset from IMAP_LO
-        (SpiceFrame.IMAP_LO_STAR_SENSOR, 0.75),  # measured offset of ~0.36 deg
+        SpiceFrame.IMAP_LO_INSTR,  # measured offset of ~0.16 deg from IMAP_LO
+        SpiceFrame.IMAP_LO_STAR_SENSOR,  # measured offset of ~0.33 deg from IMAP_LO
     ],
 )
 @pytest.mark.parametrize("pivot_angle", [60.0, 90.0, 120.0])
 def test_get_instrument_mounting_az_el_lo_pivot(
-    instrument, atol, pivot_angle, lo_pivot_ck, furnish_kernels
+    instrument, pivot_angle, lo_pivot_ck, furnish_kernels
 ):
     """Test the Lo sensors' az/el, which depend on the pivot angle."""
     kernels = [
@@ -108,8 +108,9 @@ def test_get_instrument_mounting_az_el_lo_pivot(
     with furnish_kernels(kernels):
         et = spiceypy.str2et("2026-09-09T12:00:00")
         result = get_instrument_mounting_az_el(instrument, et)
-        # The pivot tilts the boresight in elevation; azimuth stays at 60 deg
-        np.testing.assert_allclose(result, (60, 90 - pivot_angle), atol=atol)
+        # The pivot tilts the boresight in elevation; azimuth stays near 60 deg.
+        # Allow for 0.75 degrees of mounting error, as for the fixed instruments.
+        np.testing.assert_allclose(result, (60, 90 - pivot_angle), atol=0.75)
 
 
 @pytest.mark.parametrize(
@@ -575,7 +576,7 @@ def test_lo_instrument_pointing_pivot_angle(pivot_angle, expected, furnish_kerne
 
 
 @pytest.mark.parametrize("pivot_angle", [60.0, 90.0, 120.0])
-def test_lo_instr_frame_matches_lo_instrument_pointing(
+def test_lo_instr_frame_vs_lo_instrument_pointing(
     pivot_angle, lo_pivot_ck, furnish_kernels
 ):
     """Test the IMAP_LO_INSTR frame chain against the hand-applied pivot."""
@@ -588,13 +589,20 @@ def test_lo_instr_frame_matches_lo_instrument_pointing(
     ]
     with furnish_kernels(kernels):
         et = spiceypy.str2et("2026-09-09T12:00:00")
-        boresight_sc = instrument_pointing(
-            et, SpiceFrame.IMAP_LO_INSTR, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
-        )
-        expected = lo_instrument_pointing(
+        nominal_sc = lo_instrument_pointing(
             et, pivot_angle, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
-        np.testing.assert_allclose(boresight_sc, expected, atol=1e-12)
+        # The pivot platform frame (from the CK) matches the hand-applied pivot
+        lo_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        )
+        np.testing.assert_allclose(lo_sc, nominal_sc, atol=1e-12)
+
+        # The instrument adds a small measured offset (~0.16 deg) to the platform
+        instr_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO_INSTR, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        )
+        np.testing.assert_allclose(instr_sc, nominal_sc, atol=0.005)
 
         # Outside the CK coverage there is no pivot, so no path to the spacecraft
         et_outside = spiceypy.str2et("2026-09-11T00:00:00")
