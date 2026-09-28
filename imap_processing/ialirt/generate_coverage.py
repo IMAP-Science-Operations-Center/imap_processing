@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 ALL_STATIONS = [
     "Kiel",
+    "Mopra",
     "DSS-24",
     "DSS-25",
     "DSS-26",
@@ -167,9 +168,20 @@ def generate_coverage(  # noqa: PLR0912
     mopra_mask = create_schedule_mask(mopra_evening, time_range) | create_schedule_mask(
         mopra_morning, time_range
     )
+
+    mopra_outage_mask: np.ndarray = np.zeros(time_range.shape, dtype=bool)
+    if outages and "Mopra" in outages:
+        for start, end in outages["Mopra"]:
+            start_et = str_to_et(start)
+            end_et = str_to_et(end)
+            mopra_outage_mask |= (time_range >= start_et) & (time_range <= end_et)
+
+    mopra_mask[mopra_outage_mask] = False
+    # DSN contacts block Mopra
+    mopra_mask[dsn_outage_mask] = False
     total_visible_mask |= mopra_mask
     coverage_dict["Mopra"] = et_to_utc(time_range[mopra_mask], format_str="ISOC")
-    outage_dict["Mopra"] = np.array([], dtype="<U23")
+    outage_dict["Mopra"] = et_to_utc(time_range[mopra_outage_mask], format_str="ISOC")
 
     # --- DSN Stations ---
     if dsn:
