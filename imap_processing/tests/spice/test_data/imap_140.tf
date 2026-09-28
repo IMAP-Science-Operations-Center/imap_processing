@@ -35,21 +35,21 @@ Version and Date
 
    \begindata
 
-   TEXT_KERNEL_ID += 'IMAP_FRAMES V1.4.0 2026-SEP-28 FK'
-
+   TEXT_KERNEL_ID += 'IMAP_FRAMES V1.4.0 2026-07-08 FK'
+   
    \begintext
+   
 
-
-   Version 1.4.0 -- Sep 28, 2026 -- Tim Plummer
-
-      Added IMAP_LO_INSTR (-43103), a fixed frame under IMAP_LO for the
-      IMAP-Lo ENA sensor.
+   Version 1.4.0 -- July 8, 2026 -- Lillian Nguyen
+   
+      Corrections to Lo frames.
+      Text-only correction to spacecraft CK relative frame.
 
    Version 1.3.0 -- Nov 13, 2025 -- Lillian Nguyen
    
       Inserted a nominal base frame for MAG.
       Corrected frame name to ID mapping for HI-90, ULTRA-90, MAG-O.
-	  (Note: Release version number 1.1.0 was inadvertently skipped.)
+      (Note: Release version number 1.1.0 was inadvertently skipped.)
 
    Version 1.2.0 -- Oct 21, 2025 -- Lillian Nguyen
    
@@ -145,6 +145,8 @@ References
        
    23. IMAP CODICE MICD, Drawing No. 268503001, Rev. C, Southwest Research
        Institute
+       
+   24. "LoFrames.pptx", Lillian Nguyen JHU/APL, July 6, 2026
        
 
 Contact Information
@@ -292,8 +294,8 @@ IMAP NAIF ID Codes -- Definitions
       NAIF_BODY_NAME   += ( 'IMAP_LO_STAR_SENSOR' )
       NAIF_BODY_CODE   += ( -43102               )
 
-      NAIF_BODY_NAME   += ( 'IMAP_LO_INSTR'      )
-      NAIF_BODY_CODE   += ( -43103               )
+      NAIF_BODY_NAME   += ( 'IMAP_LO_INSTR' )
+      NAIF_BODY_CODE   += ( -43103          )
 
       NAIF_BODY_NAME   += ( 'IMAP_HI_45' )
       NAIF_BODY_CODE   += ( -43150       )
@@ -410,7 +412,7 @@ IMAP NAIF ID Codes -- Definitions
       
       Spacecraft (000-099)
       --------------------------
-      IMAP_SPACECRAFT               J2000              CK        -43000
+      IMAP_SPACECRAFT               ECLIPJ2000         CK        -43000
       IMAP_THRUSTER_A1              IMAP_SPACECRAFT    FIXED     -43010
       IMAP_THRUSTER_A2              IMAP_SPACECRAFT    FIXED     -43011
       IMAP_THRUSTER_A3              IMAP_SPACECRAFT    FIXED     -43012
@@ -503,7 +505,7 @@ IMAP Frame Tree
 
    The diagram below illustrates the IMAP frame hierarchy:
    
-   J2000
+   ECLIPJ2000
       |
       |<---ck
       |
@@ -1907,9 +1909,9 @@ IMAP-Lo Frames
                       -----------
 
 
-                             IMAP-Lo Local Frame
+                             IMAP-Lo Base Frame (X', Y', Z')
 
-                 Pivot           +Z' axis
+                 Pivot           -Y' axis
                     Angle             |
                             ,.~'^ ^ ^-|
                         .-'`          |
@@ -1932,76 +1934,54 @@ IMAP-Lo Frames
                    .~ '` `.                 .'    .`      ^~.
              .~ '`         ' .         _ .'     .`            ^~.
        .~ '`                   ` '.''``      ,.`             +X' axis
-    -Y' axis                       `-.,,, . `             
+    -Z' axis                       `-.,,, . `             
 
+
+   The IMAP-Lo base frame, IMAP_LO_BASE, is defined for convenience
+   such that the -Y' axis of the frame is the nominal instrument 
+   boresight at 0 degree pivot angle, and the +X' axis of the frame 
+   is the pivot axis [24]. This aligns the base frame's -Z' axis with 
+   the nominal Lo boresight when the pivot angle is 90 degrees.
    
-   The local IMAP-Lo base frame is defined so the sensor pivots about
-   the +X' axis. When the pivot angle is 90 deg, the boresight is aligned
-   with the local -Y' axis. The +Z' axis, from which the pivot angle is
-   measured, aligns with the spacecraft +Z axis at pivot angle 0.
+   A diagram in the spacecraft X-Y plane illustrating the location of 
+   the IMAP-Lo assembly is shown below, with the base frame coordinate
+   axes labeled (X', Y', and Z').
    
-   The nominal boresight look-direction is defined in [6] for the 
-   azimuth-elevation (deg):
    
-      LO (azim, elev) = ( +330, -90 to +30 )
-                           
-   At 0 deg elevation (90 deg polar angle), the boresight direction and
-   primary axis in the spacecraft frame of reference is:
+                                 -Z' = Lo boresight at 90 degree pivot           
+             +X'                .   
+                ' .    ^       . 
+                    ' .|      . . 
+                    . '|' .  .   '.
+                . '    |    ' .    '
+              '        |IMAP-Lo '   ' 60 deg
+             ' -.      |      .- '   ' 
+             |    `- . | .- '    |   '
+    <------------------o-------------'----->  X
+             |    . -' | `- .    |             sc
+              .-'      |      `- .     
+               '       |        '     
+                 ' .   |    . `   
+                     '.|. '     
+                       |   
+                       |
+                       v
+                        -Y
+                          SC
+                          
+   The spacecraft frame can be rotated into the base frame with the 
+   following matrix product: 
+   
+      xrot(-90) * zrot(150)
+      
+   The inverse takes vectors from the base frame to the spacecraft frame:
+   
+                                      -1
+      v    = ( xrot(-90) * zrot(150) )    * v
+       sc                                    base
        
-      D = -Y' = [ -cos(0) x sin(330), cos(0) x cos(330), sin(0) ] 
+   This rotation is captured in the definition below.
    
-   The secondary axis is the +X' local axis, perpendicular to both
-   the boresight direction D and the spacecraft -Z axis:
-
-      S = +X' = D x -Z = Y' x [ 0, 0, 1 ]
-      
-   The tertiary axis is:
-      
-      N = D x S = Y' x ( Y' x [ 0, 0, 1 ] )
-
-   The rotation matrix formed using the column vectors is:
-   
-      R = [ +S, -D, +N ] 
- 
-   From the spacecraft MICD[6], the single-precision rotation matrices
-   orienting IMAP-Lo on the spacecraft:
-  
-      [X]      [  -0.866025  -0.500000   0.000000  ] [X']
-      [Y]    = [   0.500000  -0.866025   0.000000  ] [Y']
-      [Z]S/C   [   0.000000   0.000000   1.000000  ] [Z']IMAP-Lo   
-   
-   consistent with calculating the matrix R to single precision.
-
-   For reference, the ZYZ intrinsic Euler angles orienting X'Y'Z' in
-   the spacecraft XYZ coordinate system are (deg):
-  
-      IMAP-Lo: (A, B, Y)  =  (  150.000,   0.000,  0.000  )
-
-   Using the formulas described in the Euler angles section above, the
-   rotation matrix generated from these Euler angles is consistent with
-   the rotation matrix using the azimuth/elevation look direction.
-   
-   
-   IMAP-Lo Orientation
-   ---------------------------------------------------------------------
-   
-   The orientation of IMAP-Lo must be specified in a separate C-kernel.
-   To facilitate this specification, a base frame representing the fixed
-   transformation of the local X'Y'Z' frame to the spacecraft frame has
-   been provided.
-   
-   The C-kernel will simply specify transformation within the
-   local IMAP-Lo frame, and be generated using only the pivot angle.
-   The implementation of this is outside the scope of this kernel.
-     
-   The IMAP-Lo base frame is defined such that
-      -Y is the IMAP-Lo look direction at 0 degree pivot angle (nominally
-         aligned with the S/C +Z axis)
-      +X is the pivot angle, measured from 0 degrees.
- 
-   The rotation taking vectors from the IMAP-Lo base frame to the
-   S/C frame is defined below.
-     
    \begindata
 
    FRAME_IMAP_LO_BASE          = -43100
@@ -2011,23 +1991,23 @@ IMAP-Lo Frames
    FRAME_-43100_CENTER         = -43
    TKFRAME_-43100_RELATIVE     = 'IMAP_SPACECRAFT'
    TKFRAME_-43100_SPEC         = 'MATRIX'
-   TKFRAME_-43100_MATRIX       = ( -0.86602540378443865,
-                                    0.50000000000000000,
-                                    0.00000000000000000,
-                                    0.00000000000000000,
-                                    0.00000000000000000,
-                                   -1.00000000000000000,
-                                   -0.50000000000000000,
-                                   -0.86602540378443865,
-                                    0.00000000000000000)
+   TKFRAME_-43100_MATRIX       = (-0.866025403784439,
+                                   0.500000000000000,
+                                   0.000000000000000,
+                                   0.000000000000000,
+                                   0.000000000000000,
+                                  -1.000000000000000,
+                                  -0.500000000000000,
+                                  -0.866025403784439,
+                                   0.000000000000000)
                                     
    \begintext
-
-   The IMAP-Lo frame describes the articulation of the pivot and is
-   captured in a SPICE C-Kernel (CK) file [1]. The IMAP-Lo CK frame
-   rotates the base frame about its +X axis by the pivot angle shown
-   in the diagram above.
-
+   
+   The IMAP_LO frame describes the articulation of the pivot and is
+   captured in a SPICE C-Kernel (CK) file [1]. IMAP_LO is a time-
+   varying frame that rotates the base frame about its +X axis by 
+   the pivot angle.
+   
    \begindata
    
    FRAME_IMAP_LO               = -43101
@@ -2038,10 +2018,17 @@ IMAP-Lo Frames
    
    \begintext
    
-   The IMAP-Lo star sensor frame is nominally aligned with the IMAP-Lo
-   frame. The offset is determined from the measured alignments [17] and
-   is captured in the definition below.
-
+   Both the star sensor and the Lo instrument are mounted on the 
+   gimbal as shown in the diagram above. Measurements of the boresight 
+   direction of each of the star sensor and Lo are reported in [17]. 
+   Both instruments have their coordinate frame defined such that -Y
+   is the boresight, and +X is aligned with the gimbal axis. 
+   
+   Both the IMAP-Lo star sensor and the Lo instrument are nominally 
+   aligned with the IMAP_LO frame. The offsets are determined by fitting
+   the measured alignments [17, 24] and are captured in the definitions 
+   below.
+   
    \begindata
    
    FRAME_IMAP_LO_STAR_SENSOR   = -43102
@@ -2051,33 +2038,32 @@ IMAP-Lo Frames
    FRAME_-43102_CENTER         = -43
    TKFRAME_-43102_RELATIVE     = 'IMAP_LO'
    TKFRAME_-43102_SPEC         = 'MATRIX'
-   TKFRAME_-43102_MATRIX       = ( 0.999991181093041,
-                                  -0.004199686195312,
-                                  -0.000019287445755,
-                                   0.004199730484764,
-                                   0.999980635401645,
-                                   0.004592503193045,
-                                   0.000000000000000,
-                                  -0.004592543694261,
-                                   0.999989454215601 )
-
-   \begintext
-
-   The IMAP-Lo instrument (ENA sensor) frame is nominally aligned with the IMAP-Lo
-   frame.
-
-   \begindata
-
+   TKFRAME_-43102_MATRIX       = (0.999995434072797,
+                                 -0.002063820950652,
+                                 -0.000010988727911,
+                                  0.002063854916666,
+                                  0.999983542441197,
+                                  0.005324370343177,
+                                  0.000000000000000,
+                                 -0.005324370343177,
+                                  0.999983542441197)
+   
    FRAME_IMAP_LO_INSTR         = -43103
    FRAME_-43103_NAME           = 'IMAP_LO_INSTR'
    FRAME_-43103_CLASS          = 4
-   FRAME_-43103_CLASS_ID       = -43103
+   FRAME_-43103_CLASS_ID       = -43103   
    FRAME_-43103_CENTER         = -43
    TKFRAME_-43103_RELATIVE     = 'IMAP_LO'
    TKFRAME_-43103_SPEC         = 'MATRIX'
-   TKFRAME_-43103_MATRIX       = ( 1.0, 0.0, 0.0,
-                                   0.0, 1.0, 0.0,
-                                   0.0, 0.0, 1.0 )
+   TKFRAME_-43103_MATRIX       = (0.999995126638117,
+                                  0.002135882053390,
+                                 -0.000003526627334,
+                                 -0.002135890169344,
+                                  0.999996200200567,
+                                 -0.001651127658297,
+                                  0.000000000000000,
+                                  0.001651127658297,
+                                  0.999996200200567)
 
    \begintext
 
