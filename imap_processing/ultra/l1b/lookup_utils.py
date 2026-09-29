@@ -691,10 +691,10 @@ def get_de_product_name(repoint: str, sensor: int, ancillary_files: dict) -> str
 class ExtendedSpinConfig:
     """Pointing dependent l1b culling configurations."""
 
-    thresholds: dict[int, float]
-    date: datetime.datetime
-    priority: str
-    calibration: str
+    thresholds: dict[int, float]  # energy thresholds for culling
+    date: datetime.datetime  # Date when configuration changed
+    priority: str  # Which de product to use priority 1-4 de or raw de. e.g. p0-p4
+    calibration: str  # Calibration label
 
     @classmethod
     def from_csv(cls, config_file_path: str, repointing: str) -> "ExtendedSpinConfig":
