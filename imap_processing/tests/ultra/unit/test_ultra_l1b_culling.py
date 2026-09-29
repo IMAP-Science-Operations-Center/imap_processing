@@ -744,10 +744,6 @@ def test_flag_high_energy():
     assert not np.any(quality_flags[:, 2])
 
 
-@mock.patch(
-    "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_CULL_CHANNEL",
-    4,
-)
 @pytest.mark.external_test_data
 def test_validate_high_energy_cull(setup_repoint_47_data):
     """Validate that high energy spins are correctly flagged"""
