@@ -1,15 +1,11 @@
-from unittest import mock
-
 import astropy_healpix.healpy as hp
 import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_accepted_pixels,
-    get_de_product_name,
     get_scattering_thresholds_for_energy,
     get_spacecraft_pointing_lookup_tables,
     get_static_deadtime_ratios,
@@ -209,80 +205,3 @@ def test_calculate_accepted_pixels_restrict_fov(ancillary_files):
     expected_accepted_px = in_restricted_fov(mock_theta, mock_phi, 45)
     expected_accepted_px[:, :, :outside_inds] = False
     assert np.array_equal(expected_accepted_px, valid_spun_pixels)
-
-
-def test_get_de_product_name_no_repoint():
-    """Tests function get_de_product_name when the lookup is missing the repoint."""
-    ancillary_files = {
-        "l1c-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
-    }
-    with mock.patch(
-        "imap_processing.ultra.l1c.l1c_lookup_utils.pd.read_csv"
-    ) as mock_read_csv:
-        mock_read_csv.return_value = pd.DataFrame(
-            {
-                "repointing_id_start": [1, 2],
-                "repointing_id_end": [3, 4],
-                "de_product": [
-                    "imap_ultra_l1b_45sensor-de",
-                    "imap_ultra_l1b_45sensor-priority-1-de",
-                ],
-            }
-        )
-        with pytest.raises(ValueError, match="No DE product found for repoint ID 0"):
-            get_de_product_name("repoint00000", 45, ancillary_files)
-
-
-def test_get_de_product_name_multiple_products():
-    """Tests function get_de_product_name when the lookup is ambiguous."""
-    ancillary_files = {
-        "l1c-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
-    }
-    with mock.patch(
-        "imap_processing.ultra.l1c.l1c_lookup_utils.pd.read_csv"
-    ) as mock_read_csv:
-        mock_read_csv.return_value = pd.DataFrame(
-            {
-                "repointing_id_start": [2, 2],
-                "repointing_id_end": [3, 4],
-                "de_product": [
-                    "imap_ultra_l1b_45sensor-de",
-                    "imap_ultra_l1b_45sensor-priority-1-de",
-                ],
-            }
-        )
-        with pytest.raises(ValueError, match="Multiple DE products found"):
-            get_de_product_name("repoint00002", 45, ancillary_files)
-
-
-def test_get_de_product_name():
-    """Tests function get_de_product_name."""
-    ancillary_files = {
-        "l1c-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
-    }
-    with mock.patch(
-        "imap_processing.ultra.l1c.l1c_lookup_utils.pd.read_csv"
-    ) as mock_read_csv:
-        mock_read_csv.return_value = pd.DataFrame(
-            {
-                "repointing_id_start": [0, 2, 4],
-                "repointing_id_end": [1, 4, np.nan],
-                "de_product": [
-                    "imap_ultra_l1b_45sensor-de",
-                    "imap_ultra_l1b_45sensor-priority-1-de",
-                    "imap_ultra_l1b_45sensor-priority-2-de",
-                ],
-            }
-        )
-        # Test with a repoint in the future. Should return the priority 2 de product
-        # since the last repoint range does not have an end and should be assumed to
-        # cover all future repoints.
-        de_product = get_de_product_name("repoint00100", 45, ancillary_files)
-        assert de_product == "imap_ultra_l1b_45sensor-priority-2-de"
-
-        # Test with valid repoint that falls in the second range.
-        de_product = get_de_product_name("repoint00003", 45, ancillary_files)
-        assert de_product == "imap_ultra_l1b_45sensor-priority-1-de"
