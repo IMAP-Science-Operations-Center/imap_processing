@@ -18,7 +18,11 @@ from imap_processing.cdf.utils import load_cdf
 from imap_processing.spice import IMAP_SC_ID
 from imap_processing.spice import config as spice_config
 from imap_processing.spice.geometry import SpiceFrame
-from imap_processing.spice.time import TTJ2000_EPOCH, met_to_ttj2000ns
+from imap_processing.spice.time import (
+    TICK_DURATION,
+    TTJ2000_EPOCH,
+    met_to_ttj2000ns,
+)
 from imap_processing.tests.external_test_data_config import EXTERNAL_TEST_DATA
 
 
@@ -239,20 +243,19 @@ def lo_pivot_ck(tmp_path, spice_test_data_path):
             # Rotate by pivot_angle along axis 1 (X axis)
             quat = spiceypy.m2q(spiceypy.rotate(np.deg2rad(pivot_angle), 1))
             handle = spiceypy.ckopn(str(ck_path), "IMAP-Lo pivot test CK", 0)
-            spiceypy.ckw03(
+            spiceypy.ckw02(
                 handle,
                 start,
                 end,
                 SpiceFrame.IMAP_LO.value,
                 SpiceFrame.IMAP_LO_BASE.name,
-                False,  # no angular velocity
                 f"Constant pivot {pivot_angle:g} deg",
-                2,
-                [start, end],
-                [quat, quat],
-                np.zeros((2, 3)),  # angular velocities; ignored
-                1,  # one interpolation interval covering the whole segment
-                [start],
+                1,  # one record covering the whole segment
+                np.array([start]),  # record start
+                np.array([end]),  # record stop
+                quat,
+                np.zeros(3),  # no rotation during the record
+                np.array([TICK_DURATION]),  # seconds per SCLK tick
             )
             spiceypy.ckcls(handle)
         return ck_path
