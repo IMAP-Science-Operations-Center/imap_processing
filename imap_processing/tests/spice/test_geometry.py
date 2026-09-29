@@ -575,11 +575,19 @@ def test_lo_instrument_pointing_pivot_angle(pivot_angle, expected, furnish_kerne
         np.testing.assert_allclose(np.linalg.norm(boresight_sc), 1.0, atol=1e-10)
 
 
+@pytest.mark.parametrize(
+    "sensor, atol",
+    [
+        # Unit-vector tolerances covering each sensor's measured offset from IMAP_LO
+        (SpiceFrame.IMAP_LO_INSTR, 0.005),  # ~0.16 deg offset
+        (SpiceFrame.IMAP_LO_STAR_SENSOR, 0.01),  # ~0.33 deg offset
+    ],
+)
 @pytest.mark.parametrize("pivot_angle", [60.0, 90.0, 120.0])
-def test_lo_instr_frame_vs_lo_instrument_pointing(
-    pivot_angle, lo_pivot_ck, furnish_kernels
+def test_lo_sensor_frame_vs_lo_instrument_pointing(
+    sensor, atol, pivot_angle, lo_pivot_ck, furnish_kernels
 ):
-    """Test the IMAP_LO_INSTR frame chain against the hand-applied pivot."""
+    """Test the Lo frames against the hand-applied pivot."""
     # The CK holds a constant pivot for IMAP_LO over 2026-09-09
     kernels = [
         "naif0012.tls",
@@ -598,20 +606,17 @@ def test_lo_instr_frame_vs_lo_instrument_pointing(
         )
         np.testing.assert_allclose(lo_sc, nominal_sc, atol=1e-12)
 
-        # The instrument adds a small measured offset (~0.16 deg) to the platform
-        instr_sc = instrument_pointing(
-            et, SpiceFrame.IMAP_LO_INSTR, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        # Each sensor adds a small measured offset to the platform
+        sensor_sc = instrument_pointing(
+            et, sensor, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
-        np.testing.assert_allclose(instr_sc, nominal_sc, atol=0.005)
+        np.testing.assert_allclose(sensor_sc, nominal_sc, atol=atol)
 
         # Outside the CK coverage there is no pivot, so no path to the spacecraft
         et_outside = spiceypy.str2et("2026-09-11T00:00:00")
         with pytest.raises(spiceypy.utils.exceptions.SpiceNOFRAMECONNECT):
             instrument_pointing(
-                et_outside,
-                SpiceFrame.IMAP_LO_INSTR,
-                SpiceFrame.IMAP_SPACECRAFT,
-                cartesian=True,
+                et_outside, sensor, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
             )
 
 
