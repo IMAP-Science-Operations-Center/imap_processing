@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from imap_processing import imap_module_directory
 from imap_processing.ultra.l1c.l1c_lookup_utils import (
     calculate_accepted_pixels,
     get_scattering_thresholds_for_energy,
@@ -12,8 +11,6 @@ from imap_processing.ultra.l1c.l1c_lookup_utils import (
     in_restricted_fov,
     mask_below_fwhm_scattering_threshold,
 )
-
-TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
 
 @pytest.mark.external_test_data
