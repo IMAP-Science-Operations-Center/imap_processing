@@ -760,6 +760,10 @@ def test_flag_high_energy():
     assert not np.any(quality_flags[:, 2])
 
 
+@mock.patch(
+    "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_CULL_CHANNEL",
+    4,
+)
 @pytest.mark.external_test_data
 def test_validate_high_energy_cull(setup_repoint_47_data):
     """Validate that high energy spins are correctly flagged"""
@@ -769,14 +773,16 @@ def test_validate_high_energy_cull(setup_repoint_47_data):
     expected_qf = pd.read_csv(
         TEST_PATH / "validate_high_energy_culling_results_repoint00047_v2.csv"
     ).to_numpy()
-    de_datasets, _, spin_tbin_edges, energy_ranges, de_counts_summary = (
-        setup_repoint_47_data
+    de_datasets, _, spin_tbin_edges, _, _ = setup_repoint_47_data
+    spin_config = ExtendedSpinConfig.from_csv(
+        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
+        "repoint00047",
     )
-    # # Get the energy ranges
-    # energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
-    # de_counts_summary = get_valid_de_count_summary(
-    #     de_ds, energy_ranges, spin_tbin_edges
-    # )
+    # Get the energy ranges
+    energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
+    de_counts_summary = get_valid_de_count_summary(
+        de_datasets, energy_ranges, spin_tbin_edges, spin_config
+    )
     high_energy_combined_spin_bin_radius = 3
     e_flags = flag_high_energy(
         de_counts_summary,
