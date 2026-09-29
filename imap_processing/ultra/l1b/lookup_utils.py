@@ -634,9 +634,7 @@ class ExtendedSpinConfig:
     calibration: str
 
     @classmethod
-    def from_csv(
-        cls, config_file_path: str, pointing_number: int
-    ) -> "ExtendedSpinConfig":
+    def from_csv(cls, config_file_path: str, repointing: str) -> "ExtendedSpinConfig":
         """
         Construct an ExtendedSpinConfig object from inputs.
 
@@ -644,7 +642,7 @@ class ExtendedSpinConfig:
         ----------
         config_file_path : str
             Path to the CSV file containing the configuration data.
-        pointing_number : int
+        repointing : str
             The current pointing number for which to retrieve the
              configuration.
 
@@ -654,10 +652,18 @@ class ExtendedSpinConfig:
             An instance of ExtendedSpinConfig with the thresholds, date,
              priority, and calibration values for the specified pointing number.
         """
+        repoint_int = int(repointing.replace("repoint", ""))
         df = pd.read_csv(config_file_path)
         # Get the first row where the pointing number is greater or equal
         # to the pointing number in the config file.
-        config = df[(df["pointing"] >= pointing_number)].iloc[0]
+        filtered_df = df[(df["pointing"] >= repoint_int)]
+        if filtered_df.empty:
+            raise ValueError(
+                f"The ancillary file: {config_file_path} contains no "
+                f"configurations for {repointing}"
+            )
+        config = filtered_df.iloc[0]
+        # Get the column names that contain "cullThresh"
         thresh_colnames = [col for col in df.columns if "cullThresh" in col]
         thresholds = {int(col.split("_")[-1]): config[col] for col in thresh_colnames}
         date = datetime.datetime.strptime(config["date"], "%m/%d/%y")

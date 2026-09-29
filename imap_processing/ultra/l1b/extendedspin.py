@@ -5,6 +5,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import ExtendedSpinConfig
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     count_rejected_events_per_spin,
     expand_bin_flags_to_spins,
@@ -33,7 +34,8 @@ FILLVAL_FLOAT32 = -1.0e31
 
 def calculate_extendedspin(
     dict_datasets: dict[str, xr.Dataset],
-    de_dataset: xr.Dataset,
+    de_dataset: dict[str, xr.Dataset],
+    extendedspin_conf: ExtendedSpinConfig,
     name: str,
     instrument_id: int,
 ) -> xr.Dataset:
@@ -46,6 +48,8 @@ def calculate_extendedspin(
         Dictionary containing all the datasets.
     de_dataset : xarray.Dataset
         Dataset containing the direct event data.
+    extendedspin_conf : ExtendedSpinConfig
+        Configurations for culling spins.
     name : str
         Name of the dataset.
     instrument_id : int
@@ -94,13 +98,13 @@ def calculate_extendedspin(
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
     energy_bin_flags = get_energy_range_flags(energy_ranges)
-
     # Get valid event counts per energy range and spin bin, shared across all of
     # the culling steps below.
     de_counts_summary = get_valid_de_count_summary(
         de_dataset,
         energy_ranges,
         spin_tbin_edges,
+        extendedspin_conf,
         instrument_id,
     )
 
