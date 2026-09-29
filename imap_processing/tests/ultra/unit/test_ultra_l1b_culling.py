@@ -40,6 +40,7 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_poisson_stats,
     get_pulses_per_spin,
     get_spin_data,
+    get_valid_de_count_summary,
     get_valid_earth_angle_events,
     get_valid_events_per_energy_range,
 )
@@ -668,10 +669,6 @@ def test_get_valid_events_per_energy_range_ultra45(mock_spkezr):
     "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_CULL_CHANNEL",
     2,
 )
-@mock.patch(
-    "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS",
-    None,
-)
 def test_flag_high_energy():
     """Tests flag_high_energy function."""
     # 7-18 is the culling energy bin and shown in the mock.patch above
@@ -703,13 +700,16 @@ def test_flag_high_energy():
     spin_tbin_edges = np.arange(
         start=0, stop=len(energy) + 1, step=4
     )  # create spin bins of 4 seconds
+    de_counts_summary = get_valid_de_count_summary(
+        de_dataset, energy_range_edges, spin_tbin_edges
+    )
     quality_flags = flag_high_energy(
-        de_dataset,
+        de_counts_summary,
         spin_tbin_edges,
         energy_range_edges,
         None,
         cull_thresholds,
-        90,
+        combine_spin_bin_radius=0,
     )
 
     # check shape
@@ -734,10 +734,6 @@ def test_flag_high_energy():
     "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_CULL_CHANNEL",
     4,
 )
-@mock.patch(
-    "imap_processing.ultra.l1b.ultra_l1b_culling.UltraConstants.HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS",
-    3,
-)
 @pytest.mark.external_test_data
 def test_validate_high_energy_cull(setup_repoint_47_data):
     """Validate that high energy spins are correctly flagged"""
@@ -750,8 +746,17 @@ def test_validate_high_energy_cull(setup_repoint_47_data):
     de_ds, _, spin_tbin_edges = setup_repoint_47_data
     # Get the energy ranges
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
+    de_counts_summary = get_valid_de_count_summary(
+        de_ds, energy_ranges, spin_tbin_edges
+    )
+    high_energy_combined_spin_bin_radius = 3
     e_flags = flag_high_energy(
-        de_ds, spin_tbin_edges, energy_ranges, None, mock_thresholds
+        de_counts_summary,
+        spin_tbin_edges,
+        energy_ranges,
+        None,
+        mock_thresholds,
+        combine_spin_bin_radius=high_energy_combined_spin_bin_radius,
     )
     np.testing.assert_array_equal(e_flags, ~expected_qf.astype(bool))
 
@@ -783,8 +788,14 @@ def test_flag_statistical_outliers():
     spin_tbin_edges = np.arange(
         start=0, stop=len(energy) + 1, step=spin_step
     )  # create spin bins of 7 seconds
-    quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
+    de_counts_summary = get_valid_de_count_summary(
         de_dataset,
+        energy_range_edges,
+        spin_tbin_edges,
+        90,
+    )
+    quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
+        de_counts_summary,
         spin_tbin_edges,
         energy_range_edges,
         np.zeros((len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool),
@@ -833,8 +844,14 @@ def test_flag_statistical_outliers_invalid_events():
         start=0, stop=len(energy) + 1, step=5
     )  # create spin bins of 5 seconds
     mask = np.ones((len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
-    quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
+    de_counts_summary = get_valid_de_count_summary(
         de_dataset,
+        energy_range_edges,
+        spin_tbin_edges,
+        90,
+    )
+    quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
+        de_counts_summary,
         spin_tbin_edges,
         energy_range_edges,
         mask,
@@ -884,9 +901,15 @@ def test_validate_stat_cull(setup_repoint_47_data):
     mask[0:2, 0:2] = (
         True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
     )
+    de_counts_summary = get_valid_de_count_summary(
+        de_ds,
+        energy_ranges,
+        spin_tbin_edges,
+        90,
+    )
     # ignored in the statistics calculation and flagging.
     flags, con, it, std = flag_statistical_outliers(
-        de_ds, spin_tbin_edges, energy_ranges, mask, 90
+        de_counts_summary, spin_tbin_edges, energy_ranges, mask
     )
     expected_qf = results_df.iloc[:, :-3].values.astype(bool)
     converge = results_df["converge"].values
@@ -934,13 +957,17 @@ def test_validate_upstream_ion_cull(setup_repoint_47_data):
     mask[0:2, 0:2] = (
         True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
     )
-    flags = flag_upstream_ion(
+    de_counts_summary = get_valid_de_count_summary(
         de_ds,
+        energy_ranges,
         spin_tbin_edges,
+        90,
+    )
+    flags = flag_upstream_ion(
+        de_counts_summary,
         energy_ranges,
         mask,
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
-        90,
     )
     # Combine the flags with the mask to get the final expected results since the
     # masked bins should be flagged as well.
@@ -955,18 +982,22 @@ def test_upstream_ion_cull_invalid_channels(setup_repoint_47_data):
     intervals, _, _ = build_energy_bins()
     energy_ranges = get_binned_energy_ranges(intervals)
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    de_counts_summary = get_valid_de_count_summary(
+        de_ds,
+        energy_ranges,
+        spin_tbin_edges,
+        90,
+    )
     with pytest.raises(
         ValueError,
         match="Channels provided for upstream ion flagging"
         " must be within the bounds of the energy ranges.",
     ):
         flag_upstream_ion(
-            de_ds,
-            spin_tbin_edges,
+            de_counts_summary,
             energy_ranges,
             mask,
             [5, 6, 7],  # Invalid channels that are out of bounds
-            90,
         )
 
 
@@ -984,12 +1015,17 @@ def test_validate_spectral_cull(setup_repoint_47_data):
     mask[0:2, 0:2] = (
         True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
     )
-    flags = flag_spectral_events(
+    de_counts_summary = get_valid_de_count_summary(
         de_ds,
+        energy_ranges,
         spin_tbin_edges,
+        90,
+    )
+
+    flags = flag_spectral_events(
+        de_counts_summary,
         energy_ranges,
         UltraConstants.SPECTRAL_ENERGY_CHANNELS,
-        90,
     )
     results = flags | mask
     np.testing.assert_array_equal(results, ~expected_results.astype(bool))
