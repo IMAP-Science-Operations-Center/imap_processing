@@ -70,9 +70,10 @@ def ultra_l1b(
             )
             output_datasets.append(de_dataset)
         # L1b extended data will be created if L1a hk, rates,
-        # aux, params, and l1b de data are available
+        # aux, params, and l1b de (raw and priority 1) data are available
         elif (
             f"imap_ultra_l1b_{instrument_id}sensor-de" in data_dict
+            and f"imap_ultra_l1b_{instrument_id}sensor-priority-1-de" in data_dict
             and f"imap_ultra_l1a_{instrument_id}sensor-rates" in data_dict
             and f"imap_ultra_l1a_{instrument_id}sensor-aux" in data_dict
             and f"imap_ultra_l1a_{instrument_id}sensor-params" in data_dict
@@ -81,8 +82,8 @@ def ultra_l1b(
             # Create dictionary of the de datasets
             # For now, only pass in priority 1 and raw de datasets.
             de_datasets = {
-                "p0": data_dict[f"imap_ultra_l1a_{instrument_id}sensor-de"],
-                "p1": data_dict[f"imap_ultra_l1a_{instrument_id}sensor-priority-1-de"],
+                "p0": data_dict[f"imap_ultra_l1b_{instrument_id}sensor-de"],
+                "p1": data_dict[f"imap_ultra_l1b_{instrument_id}sensor-priority-1-de"],
             }
             # Get the extended spin config from ancillary files.
             extended_spin_config_anc = ancillary_files[

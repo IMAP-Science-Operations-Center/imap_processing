@@ -228,7 +228,7 @@ def test_get_de_product_name_no_repoint():
         / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
     }
     with mock.patch(
-        "imap_processing.ultra.l1c.l1c_lookup_utils.pd.read_csv"
+        "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
     ) as mock_read_csv:
         mock_read_csv.return_value = pd.DataFrame(
             {
@@ -251,7 +251,7 @@ def test_get_de_product_name_multiple_products():
         / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
     }
     with mock.patch(
-        "imap_processing.ultra.l1c.l1c_lookup_utils.pd.read_csv"
+        "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
     ) as mock_read_csv:
         mock_read_csv.return_value = pd.DataFrame(
             {
@@ -274,7 +274,7 @@ def test_get_de_product_name():
         / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
     }
     with mock.patch(
-        "imap_processing.ultra.l1c.l1c_lookup_utils.pd.read_csv"
+        "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
     ) as mock_read_csv:
         mock_read_csv.return_value = pd.DataFrame(
             {
@@ -303,9 +303,9 @@ def test_extended_config_class():
     config_path = (
         TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     )
-    config = ExtendedSpinConfig.from_csv(config_path, 128)
+    config = ExtendedSpinConfig.from_csv(config_path, "repoint00128")
 
     assert config.priority == "p0"
-    assert config.calibration == "c1"
-    assert config.thresholds == {0: 96.5, 1: 80.5, 2: 8.5, 3: 10.5, 4: 3.5}
-    assert config.date == datetime.datetime(2026, 1, 22)
+    assert config.calibration == "c0"
+    assert config.thresholds == {0: 200, 1: 7.5, 2: 4.5, 3: 3.5, 4: 3.5}
+    assert config.date == datetime.datetime(2025, 11, 10)

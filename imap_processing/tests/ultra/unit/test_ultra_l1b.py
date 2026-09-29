@@ -159,7 +159,7 @@ def test_cdf_de(
     use_fake_spin_data_for_time(511000000, 511000000 + 86400 * 5)
     use_fake_repoint_data_for_time(np.arange(511000000, 511000000 + 86400 * 5, 86400))
 
-    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
+    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
 
     assert (
         l1b_de_dataset[0].attrs["Logical_source_description"]
@@ -197,7 +197,7 @@ def test_cdf_de_flags(
     # Use repoint data that will NOT cover the event times to test flag setting
     use_fake_repoint_data_for_time(np.arange(0, +86400 * 5, 86400))
 
-    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
+    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
     # All valid events should be flagged as DURINGREPOINT since the repoint data does
     # not cover any of the event times
     valid_events = l1b_de_dataset[0]["event_times"] != FILLVAL_FLOAT32
@@ -220,6 +220,7 @@ def test_ultra_l1b_extendedspin(
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1b_45sensor-priority-1-de",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
@@ -228,10 +229,10 @@ def test_ultra_l1b_extendedspin(
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
+        "l1b-45sensor-extendedspin-config": TEST_PATH
         / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
-    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
 
     assert len(l1b_extendedspin_dataset) == 1
     assert (
@@ -255,6 +256,7 @@ def test_cdf_extendedspin(
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1b_45sensor-priority-1-de",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
@@ -263,10 +265,10 @@ def test_cdf_extendedspin(
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
+        "l1b-45sensor-extendedspin-config": TEST_PATH
         / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
-    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
     """Tests that CDF file is created and contains same attributes as xarray."""
     l1b_extendedspin_dataset[0].attrs["Data_version"] = "999"
     l1b_extendedspin_dataset[0].attrs["Repointing"] = "repoint99999"
@@ -295,6 +297,7 @@ def test_cdf_goodtimes(
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1b_45sensor-priority-1-de",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
@@ -303,14 +306,15 @@ def test_cdf_goodtimes(
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
+        "l1b-45sensor-extendedspin-config": TEST_PATH
         / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
-    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
 
     goodtimes_dataset = ultra_l1b(
         {"imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0]},
         ancillary_files,
+        "repoint99999",
     )
     goodtimes_dataset[0].attrs["Data_version"] = "999"
     goodtimes_dataset[0].attrs["Repointing"] = "repoint99999"
@@ -339,6 +343,7 @@ def test_cdf_badtimes(
         key: l1b_de_dataset
         for key in [
             "imap_ultra_l1b_45sensor-de",
+            "imap_ultra_l1b_45sensor-priority-1-de",
             "imap_ultra_l1a_45sensor-params",
         ]
     }
@@ -347,15 +352,16 @@ def test_cdf_badtimes(
     data_dict["imap_ultra_l1b_45sensor-status"] = status_dataset
 
     ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
+        "l1b-45sensor-extendedspin-config": TEST_PATH
         / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
     }
-    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files)
+    l1b_extendedspin_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
 
     ancillary_files = {}
     goodtimes_dataset = ultra_l1b(
         {"imap_ultra_l1b_45sensor-extendedspin": l1b_extendedspin_dataset[0]},
         ancillary_files,
+        "repoint99999",
     )
 
     l1b_badtimes_dataset = ultra_l1b(
@@ -364,6 +370,7 @@ def test_cdf_badtimes(
             "imap_ultra_l1b_45sensor-goodtimes": goodtimes_dataset[0],
         },
         ancillary_files,
+        "repoint99999",
     )
     l1b_badtimes_dataset[0].attrs["Data_version"] = "999"
     l1b_badtimes_dataset[0].attrs["Repointing"] = "repoint99999"
@@ -385,7 +392,7 @@ def test_ultra_l1b_error(mock_data_l1a_rates_dict):
     with pytest.raises(
         ValueError, match="Data dictionary does not contain the expected keys."
     ):
-        ultra_l1b(mock_data_l1a_rates_dict, ancillary_files)
+        ultra_l1b(mock_data_l1a_rates_dict, ancillary_files, "repoint99999")
 
 
 @pytest.mark.external_test_data
@@ -410,7 +417,7 @@ def test_ultra_l1b_priority_de(
     data_dict["imap_ultra_l1a_45sensor-priority-1-de"] = de_dataset
     data_dict[aux_dataset.attrs["Logical_source"]] = aux_dataset
 
-    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files)
+    l1b_de_dataset = ultra_l1b(data_dict, ancillary_files, "repoint99999")
 
     assert l1b_de_dataset[0]
     assert (

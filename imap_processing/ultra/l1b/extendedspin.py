@@ -34,7 +34,7 @@ FILLVAL_FLOAT32 = -1.0e31
 
 def calculate_extendedspin(
     dict_datasets: dict[str, xr.Dataset],
-    de_dataset: dict[str, xr.Dataset],
+    de_datasets: dict[str, xr.Dataset],
     extendedspin_conf: ExtendedSpinConfig,
     name: str,
     instrument_id: int,
@@ -46,8 +46,9 @@ def calculate_extendedspin(
     ----------
     dict_datasets : dict
         Dictionary containing all the datasets.
-    de_dataset : xarray.Dataset
-        Dataset containing the direct event data.
+    de_datasets : dict[str, xarray.Dataset]
+        Dictionary of direct event datasets keyed by priority, e.g. "p0" for raw
+        de and "p1" for priority 1 de.
     extendedspin_conf : ExtendedSpinConfig
         Configurations for culling spins.
     name : str
@@ -63,6 +64,9 @@ def calculate_extendedspin(
     aux_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-aux"]
     rates_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-rates"]
     status_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-status"]
+    # Use the raw de for the spin level quantities since it contains all events.
+    # The energy dependent culling selects its de dataset per energy range.
+    de_dataset = de_datasets["p0"]
 
     extendedspin_dict = {}
     rates_qf, spin, energy_bin_geometric_mean, n_sigma_per_energy = flag_rates(
@@ -101,7 +105,7 @@ def calculate_extendedspin(
     # Get valid event counts per energy range and spin bin, shared across all of
     # the culling steps below.
     de_counts_summary = get_valid_de_count_summary(
-        de_dataset,
+        de_datasets,
         energy_ranges,
         spin_tbin_edges,
         extendedspin_conf,

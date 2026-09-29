@@ -717,13 +717,22 @@ class ExtendedSpinConfig:
         """
         repoint_int = int(repointing.replace("repoint", ""))
         df = pd.read_csv(config_file_path)
-        # Get the first row where the pointing number is greater or equal
-        # to the pointing number in the config file.
-        filtered_df = df[(df["pointing"] >= repoint_int)]
+        # Each row applies from its pointing number up to (but not including) the
+        # next row's pointing number. The last row applies to all later pointings.
+        pointings = np.append(df["pointing"].values, np.inf)
+        filtered_df = df[
+            ((repoint_int < pointings[1:]) & (repoint_int >= pointings[:-1]))
+        ]
         if filtered_df.empty:
             raise ValueError(
                 f"The ancillary file: {config_file_path} contains no "
                 f"configurations for {repointing}"
+            )
+        if filtered_df.shape[0] > 1:
+            raise ValueError(
+                f"The ancillary file: {config_file_path} contains multiple "
+                f"configurations for {repointing}. It should only contain one"
+                f" per pointing."
             )
         config = filtered_df.iloc[0]
         # Get the column names that contain "cullThresh"
