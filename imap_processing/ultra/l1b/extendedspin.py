@@ -66,7 +66,8 @@ def calculate_extendedspin(
     status_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-status"]
     # Use the raw de for the spin level quantities since it contains all events.
     # The energy dependent culling selects its de dataset per energy range.
-    de_dataset = de_datasets["p0"]
+    # TODO use priority 1.
+    de_dataset = de_datasets["p1"]
 
     extendedspin_dict = {}
     rates_qf, spin, energy_bin_geometric_mean, n_sigma_per_energy = flag_rates(
@@ -113,14 +114,12 @@ def calculate_extendedspin(
         instrument_id,
     )
 
-    # Calculate the high energy quality flags
-    energy_thresholds = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS
     high_energy_qf = flag_high_energy(
         de_counts_summary,
         spin_tbin_edges,
         energy_ranges,
+        extendedspin_conf.thresholds,
         voltage_qf,
-        energy_thresholds,
     )
     # For the following culls, mask the spins that have already been flagged for
     # low voltage

@@ -688,8 +688,8 @@ def flag_high_energy(
     de_counts_summary: np.ndarray,
     spin_tbin_edges: NDArray,
     energy_ranges: NDArray,
+    energy_thresholds: NDArray,
     mask: NDArray = None,
-    energy_thresholds: np.ndarray = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS,
     combine_spin_bin_radius: int = UltraConstants.HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS,
 ) -> NDArray:
     """
@@ -704,13 +704,13 @@ def flag_high_energy(
         Edges of the spin time bins.
     energy_ranges : numpy.ndarray
         Array of energy range edges.
+    energy_thresholds : numpy.ndarray
+        Array of count thresholds for flagging high energy events corresponding to
+         each energy range.
     mask : numpy.ndarray, optional
         Mask indicating which events to consider for high energy flagging
          (e.g., after low voltage culling). True indicates the spin bins that should
          NOT be considered for high energy flagging.
-    energy_thresholds : numpy.ndarray
-        Array of count thresholds for flagging high energy events corresponding to
-         each energy range.
     combine_spin_bin_radius : int
         Number of spin bins to combine on either side of the current bin to get a
         smoother estimate of the counts per bin (see ``combine_de_counts_summary``).

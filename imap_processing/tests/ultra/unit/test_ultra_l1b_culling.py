@@ -55,13 +55,21 @@ REPOINT_47_SPIN_CONFIG = ExtendedSpinConfig.from_csv(
 )
 
 
+# Get the ULTRA 90 extended spin config for this pointing
+repoint = "repoint00383"
+REPOINT_383_SPIN_CONFIG = ExtendedSpinConfig.from_csv(
+    TEST_PATH / "imap_ultra_l1b-90sensor-extendedspin-config_20251001_v001.csv", repoint
+)
+
+
 @pytest.fixture
-def setup_repoint_47_data():
-    """Fixture to set up data for validation test using repoint 47."""
-    de_df = pd.read_csv(TEST_PATH / "de_test_data_repoint00047.csv")
+def setup_repoint_383_data():
+    """Fixture to set up data for validation test using repoint 383 (ULTRA 90)."""
+    # The priority config for repoint 383 is p1, so only the priority 1 de is used.
+    de_df = pd.read_csv(TEST_PATH / "p1de_test_data_repoint00383.csv")
     de_ds = xr.Dataset(
         {
-            "de_event_met": ("epoch", de_df.event_times.values),
+            "de_event_met": ("epoch", de_df.de_event_met.values),
             "event_times": ("epoch", de_df.event_times.values),
             "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
             "quality_outliers": ("epoch", de_df.quality_outliers.values),
@@ -69,7 +77,7 @@ def setup_repoint_47_data():
             "ebin": ("epoch", de_df.ebin.values),
         }
     )
-    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
+    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00383.csv")
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
     spin_tbin_edges = get_binned_spins_edges(
         xspin.spin_number.values,
@@ -79,6 +87,7 @@ def setup_repoint_47_data():
     )
 
     de_datasets = {"p0": de_ds, "p1": de_ds}
+    spin_config = REPOINT_383_SPIN_CONFIG
 
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(build_energy_bins()[0])
@@ -511,13 +520,13 @@ def test_get_energy_and_spin_dependent_rejection_mask():
 def test_validate_voltage_cull():
     """Validate that low voltage spins are correctly flagged"""
     # read test data from csv files
-    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00047.csv")
+    xspin = pd.read_csv(TEST_PATH / "extendedspin_test_data_repoint00383.csv")
     validation_low_voltage_qf = np.loadtxt(
-        TEST_PATH / "voltage_culling_results_repoint00047.csv",
+        TEST_PATH / "voltage_culling_results_repoint00383_v1.csv",
         delimiter=",",
         dtype=np.uint16,
     )
-    status_df = pd.read_csv(TEST_PATH / "status_test_data_repoint00047.csv")
+    status_df = pd.read_csv(TEST_PATH / "status_test_data_repoint00383.csv")
     # build the status dataset including the variables needed for the low voltage flag
     status_ds = xr.Dataset(
         {
@@ -528,14 +537,13 @@ def test_validate_voltage_cull():
     )
     # Use constants from the code to ensure consistency with the actual culling code
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
-    lv_threshold = 3000
     spin_tbin_edges = get_binned_spins_edges(
         xspin.spin_number.values,
         xspin.spin_period.values,
         xspin.spin_start_time.values,
         spin_bin_size,
     )
-    lv_flags = flag_low_voltage(spin_tbin_edges, status_ds, lv_threshold)
+    lv_flags = flag_low_voltage(spin_tbin_edges, status_ds)
 
     assert np.array_equal(lv_flags, validation_low_voltage_qf)
 
@@ -721,8 +729,8 @@ def test_flag_high_energy():
         de_counts_summary,
         spin_tbin_edges,
         energy_range_edges,
-        None,
         cull_thresholds,
+        None,
         combine_spin_bin_radius=0,
     )
 
@@ -745,29 +753,18 @@ def test_flag_high_energy():
 
 
 @pytest.mark.external_test_data
-def test_validate_high_energy_cull(setup_repoint_47_data):
+def test_validate_high_energy_cull(setup_repoint_383_data):
     """Validate that high energy spins are correctly flagged"""
-    # Mock thresholds to match the test data (I used fake ones to create more
-    # complexity)
-    mock_thresholds = np.array([0.05, 1.5, 0.6, 119.2, 0.2]) * 20
     expected_qf = pd.read_csv(
-        TEST_PATH / "validate_high_energy_culling_results_repoint00047_v2.csv"
+        TEST_PATH / "validate_high_energy_culling_results_repoint00383_v1.csv"
     ).to_numpy()
-    de_datasets, _, spin_tbin_edges, _, _ = setup_repoint_47_data
-
-    # Get the energy ranges
-    energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
-    de_counts_summary = get_valid_de_count_summary(
-        de_datasets, energy_ranges, spin_tbin_edges, REPOINT_47_SPIN_CONFIG
-    )
-    high_energy_combined_spin_bin_radius = 3
+    _, _, spin_tbin_edges, energy_ranges, de_counts_summary = setup_repoint_383_data
     e_flags = flag_high_energy(
         de_counts_summary,
         spin_tbin_edges,
         energy_ranges,
+        REPOINT_383_SPIN_CONFIG.energy_thresholds,
         None,
-        mock_thresholds,
-        combine_spin_bin_radius=high_energy_combined_spin_bin_radius,
     )
     np.testing.assert_array_equal(e_flags, ~expected_qf.astype(bool))
 
@@ -903,23 +900,15 @@ def test_get_poisson_stats():
 
 
 @pytest.mark.external_test_data
-def test_validate_stat_cull(setup_repoint_47_data):
+def test_validate_stat_cull(setup_repoint_383_data):
     """Validate that statistical-outlier quality flags match expected results."""
     # read test data from csv files
     results_df = pd.read_csv(
-        TEST_PATH / "validate_stat_culling_results_repoint00047_v3.csv"
+        TEST_PATH / "validate_stat_culling_results_repoint00383_v1.csv"
     )
-    de_datasets, _, spin_tbin_edges, energy_ranges, de_counts_summary = (
-        setup_repoint_47_data
-    )
-
-    # Create a mask of flagged events to test that the stat cull algorithm
-    # properly ignores these. The test data was created using this exact mask as well.
+    _, _, spin_tbin_edges, energy_ranges, de_counts_summary = setup_repoint_383_data
+    # No spin bins flagged by previous steps
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
-    mask[0:2, 0:2] = (
-        True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
-    )
-    # ignored in the statistics calculation and flagging.
     flags, con, it, std = flag_statistical_outliers(
         de_counts_summary, spin_tbin_edges, energy_ranges, mask
     )
@@ -956,38 +945,34 @@ def test_get_binned_energy_ranges():
 
 
 @pytest.mark.external_test_data
-def test_validate_upstream_ion_cull(setup_repoint_47_data):
+@pytest.mark.parametrize(
+    "version, channels",
+    [
+        (1, UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1),
+        (2, UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_2),
+    ],
+)
+def test_validate_upstream_ion_cull(setup_repoint_383_data, version, channels):
     """Validate that upstream ion quality flags match expected results."""
     # read test data from csv files
     expected_results = pd.read_csv(
-        TEST_PATH / "validate_upstream_ion_1_culling_results_repoint00047_v1.csv"
+        TEST_PATH
+        / f"validate_upstream_ion_{version}_culling_results_repoint00383_v1.csv"
     ).to_numpy()
-    de_datasets, _, spin_tbin_edges, energy_ranges, de_counts_summary = (
-        setup_repoint_47_data
-    )
+    _, _, spin_tbin_edges, energy_ranges, de_counts_summary = setup_repoint_383_data
+    # No spin bins flagged by previous steps
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
-    mask[0:2, 0:2] = (
-        True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
-    )
-
-    flags = flag_upstream_ion(
-        de_counts_summary,
-        energy_ranges,
-        mask,
-        UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
-    )
-    # Combine the flags with the mask to get the final expected results since the
-    # masked bins should be flagged as well.
-    results = flags | mask
+    flags = flag_upstream_ion(de_counts_summary, energy_ranges, mask, channels)
+    # The upstream ion flags are energy independent, so they apply to every energy
+    # range.
+    results = np.broadcast_to(flags, mask.shape)
     np.testing.assert_array_equal(results, ~expected_results.astype(bool))
 
 
 @pytest.mark.external_test_data
-def test_upstream_ion_cull_invalid_channels(setup_repoint_47_data):
+def test_upstream_ion_cull_invalid_channels(setup_repoint_383_data):
     """Validate upstream ion error handling."""
-    de_datasets, _, spin_tbin_edges, energy_ranges, de_counts_summary = (
-        setup_repoint_47_data
-    )
+    _, _, spin_tbin_edges, energy_ranges, de_counts_summary = setup_repoint_383_data
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     with pytest.raises(
         ValueError,
@@ -1003,23 +988,18 @@ def test_upstream_ion_cull_invalid_channels(setup_repoint_47_data):
 
 
 @pytest.mark.external_test_data
-def test_validate_spectral_cull(setup_repoint_47_data):
+def test_validate_spectral_cull(setup_repoint_383_data):
     """Validate that spectral flags match expected results."""
     # read test data from csv files
     expected_results = pd.read_csv(
-        TEST_PATH / "validate_spectral_culling_results_repoint00047_v1.csv"
+        TEST_PATH / "validate_spectral_culling_results_repoint00383_v1.csv"
     ).to_numpy()
-    de_datasets, xspin, spin_tbin_edges, energy_ranges, de_counts_summary = (
-        setup_repoint_47_data
-    )
-    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
-    mask[0:2, 0:2] = (
-        True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
-    )
+    _, _, _, energy_ranges, de_counts_summary = setup_repoint_383_data
     flags = flag_spectral_events(
         de_counts_summary,
         energy_ranges,
         UltraConstants.SPECTRAL_ENERGY_CHANNELS,
     )
-    results = flags | mask
+    # The spectral flags are energy independent, so they apply to every energy range.
+    results = np.broadcast_to(flags, expected_results.shape)
     np.testing.assert_array_equal(results, ~expected_results.astype(bool))

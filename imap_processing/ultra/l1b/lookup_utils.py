@@ -736,15 +736,17 @@ class ExtendedSpinConfig:
                 f" per pointing."
             )
         config = filtered_df.iloc[0]
-        # Get the column names that contain "cullThresh"
+        # Get the column names that contain "cullThresh" and sort them ascending.
         thresh_colnames = sorted(
             [col for col in df.columns if "cullThresh" in col],
             key=lambda threshold: int(threshold.split("_")[-1]),
         )
-        e_thresholds = np.array([config[col] for col in thresh_colnames])
-        # The config provides thresholds for bins 0-4; bin 5 (>
-        # UltraConstands.MAX_ENERGY_THRESHOLD keV) reuses the bin 4 threshold
-        e_thresholds = np.append(e_thresholds, e_thresholds[-1])
+        # The thresholds are counts per spin bin of UltraConstants.SPIN_BIN_SIZE (20)
+        # spins, so they are used as is. If SPIN_BIN_SIZE changes, the thresholds in
+        # the config file need to be updated for the new bin size.
+        thresholds = np.array([config[col] for col in thresh_colnames])
+        # Duplicate the last energy threshold
+        thresholds = np.append(thresholds, thresholds[-1])
         date = datetime.datetime.strptime(config["date"], "%m/%d/%y")
 
         return cls(
