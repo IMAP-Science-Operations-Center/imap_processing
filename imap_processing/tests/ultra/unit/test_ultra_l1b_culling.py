@@ -87,7 +87,6 @@ def setup_repoint_383_data():
     )
 
     de_datasets = {"p0": de_ds, "p1": de_ds}
-    spin_config = REPOINT_383_SPIN_CONFIG
 
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(build_energy_bins()[0])
@@ -96,7 +95,7 @@ def setup_repoint_383_data():
         de_datasets,
         energy_ranges,
         spin_tbin_edges,
-        REPOINT_47_SPIN_CONFIG,
+        REPOINT_383_SPIN_CONFIG,
         90,
     )
 
@@ -402,7 +401,8 @@ def test_flag_low_voltage(test_data):
     spin_tbin_edges = get_binned_spins_edges(
         spins, spin_period, spin_starttime, spin_bin_size
     )
-    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset)
+    v_threshold = REPOINT_383_SPIN_CONFIG.voltage_threshold
+    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset, v_threshold)
 
     # There should be an extra bin edge for the last bin to indicate the end of the last
     # spin bin
@@ -415,7 +415,7 @@ def test_flag_low_voltage(test_data):
     # Set only the first spin to be below threshold
     mock_status_dataset["rightdeflection_v"].data[1:] += 5000
     mock_status_dataset["leftdeflection_v"].data[1:] += 5000
-    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset)
+    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset, v_threshold)
     # Check that only the first spin is flagged for low voltage
     assert np.all(quality_flags[0])
     # The rest should not be flagged
@@ -441,7 +441,9 @@ def test_flag_low_voltage_incomplete_bins(test_data):
     spin_tbin_edges = get_binned_spins_edges(
         spins, spin_period, spin_starttime, spin_bin_size
     )
-    quality_flags = flag_low_voltage(spin_tbin_edges, mock_status_dataset)
+    quality_flags = flag_low_voltage(
+        spin_tbin_edges, mock_status_dataset, REPOINT_383_SPIN_CONFIG.voltage_threshold
+    )
 
     # check quality flag
     assert quality_flags.shape == (n_spins // spin_bin_size,)
@@ -543,7 +545,9 @@ def test_validate_voltage_cull():
         xspin.spin_start_time.values,
         spin_bin_size,
     )
-    lv_flags = flag_low_voltage(spin_tbin_edges, status_ds)
+    lv_flags = flag_low_voltage(
+        spin_tbin_edges, status_ds, REPOINT_47_SPIN_CONFIG.voltage_threshold
+    )
 
     assert np.array_equal(lv_flags, validation_low_voltage_qf)
 
@@ -621,7 +625,7 @@ def test_get_valid_de_count_summary_valid_events():
         {"p0": de_dataset, "p1": de_dataset},
         energy_range_edges,
         spin_tbin_edges,
-        REPOINT_47_SPIN_CONFIG,
+        REPOINT_383_SPIN_CONFIG,
         90,
     )
 
@@ -663,7 +667,6 @@ def test_get_valid_de_count_summary_ultra45(mock_spkezr):
             "ebin": ("epoch", np.full(len(energy), 10)),
         }
     )
-
     # ensure that all events fail the earth angle check by setting a very large
     # keepout angle
     keepout_angle = np.radians(360)
@@ -671,7 +674,7 @@ def test_get_valid_de_count_summary_ultra45(mock_spkezr):
         {"p0": de_dataset, "p1": de_dataset},
         energy_range_edges,
         spin_tbin_edges,
-        REPOINT_47_SPIN_CONFIG,
+        REPOINT_383_SPIN_CONFIG,
         45,
         keepout_angle,
     )
@@ -718,6 +721,7 @@ def test_flag_high_energy():
         start=0, stop=len(energy) + 1, step=4
     )  # create spin bins of 4 seconds
     de_datasets = {"p0": de_dataset, "p1": de_dataset}
+
     de_counts_summary = get_valid_de_count_summary(
         de_datasets,
         energy_range_edges,
@@ -798,6 +802,7 @@ def test_flag_statistical_outliers():
         start=0, stop=len(energy) + 1, step=spin_step
     )  # create spin bins of 7 seconds
     de_datasets = {"p0": de_dataset, "p1": de_dataset}
+
     de_counts_summary = get_valid_de_count_summary(
         de_datasets,
         energy_range_edges,

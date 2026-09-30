@@ -98,7 +98,9 @@ def calculate_extendedspin(
     # 5. Spectral cull
     # 6. Statistical outliers (energy dependent)
 
-    voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
+    voltage_qf = flag_low_voltage(
+        spin_tbin_edges, status_dataset, extendedspin_conf.voltage_threshold
+    )
     # Get energy bins used at l1c
     intervals, _, _ = build_energy_bins()
     # Get the energy ranges
@@ -118,7 +120,7 @@ def calculate_extendedspin(
         de_counts_summary,
         spin_tbin_edges,
         energy_ranges,
-        extendedspin_conf.thresholds,
+        extendedspin_conf.energy_thresholds,
         voltage_qf,
     )
     # For the following culls, mask the spins that have already been flagged for

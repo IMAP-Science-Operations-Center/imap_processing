@@ -631,7 +631,7 @@ def count_rejected_events_per_spin(
 def flag_low_voltage(
     spin_tbin_edges: NDArray,
     status_dataset: xr.Dataset,
-    voltage_threshold: float = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD,
+    voltage_threshold: float,
 ) -> NDArray:
     """
     Flag low voltage events.
@@ -1102,10 +1102,9 @@ def get_valid_de_count_summary(
         # By default, use priority 1 de unless it's the last energy bin and the
         # config is p0 or if the config is set to use raw de only.
         de = de_datasets["p1"]
-        if UltraConstants.L1B_USE_RAW_DE_ONLY or (
-            i == n_energy_ranges - 1 and priority_conf == "p0"
-        ):
+        if i == n_energy_ranges - 1 and priority_conf == "p0":
             de = de_datasets["p0"]
+
         valid_outliers = de["quality_outliers"].values == 0
         valid_scattering = de["quality_scattering"].values == 0
         # TODO what about species non-proton? For those psets dont cull based on
