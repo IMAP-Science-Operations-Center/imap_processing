@@ -3,6 +3,8 @@
 Level 2 - The Daily Lightcurve
 ==============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Goal:** the lowest level of research-grade GLOWS science data. One
 observational day's good-time L1B histograms, co-added into a single
 high-resolution lightcurve of **photon flux in Rayleighs** along the GLOWS

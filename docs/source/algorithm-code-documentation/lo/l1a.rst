@@ -3,6 +3,8 @@
 Level 1A - Packet Decommutation
 ===============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Module:** ``imap_processing/lo/l1a/lo_l1a.py``, with the real unpacking in
 ``imap_processing/lo/l0/``.
 

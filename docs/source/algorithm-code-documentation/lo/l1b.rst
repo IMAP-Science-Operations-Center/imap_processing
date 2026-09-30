@@ -3,6 +3,8 @@
 Level 1B - Annotation, Rates, and Time Selection
 ================================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Module:** ``imap_processing/lo/l1b/lo_l1b.py`` (~2900 lines, the largest
 single file in the instrument).
 

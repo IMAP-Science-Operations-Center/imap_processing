@@ -3,6 +3,8 @@
 L3 Scope - What Is Not in This Repository
 =========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. warning::
 
    **SWE L3 is not produced here.** ``imap-processing`` takes SWE to L2. A

@@ -3,6 +3,8 @@
 L1B to L2 - Phase Space Density, Flux and Spin Angle
 ====================================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This page covers algorithm document section 3.4.4.
 
 **[DOC]** "SWE Level 1b to Level 2 processing consists of converting the counts

@@ -3,6 +3,8 @@
 L3 Scope - What Is Not in This Repository
 =========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Document:** sections 7.1.1, 9.5, 10.4, 10.5, 13.
 
 .. important::

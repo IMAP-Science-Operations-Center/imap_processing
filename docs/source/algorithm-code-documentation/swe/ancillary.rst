@@ -3,6 +3,8 @@
 Ancillary Files, Calibration and External Dependencies
 ======================================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 What the pipeline actually reads
 --------------------------------
 

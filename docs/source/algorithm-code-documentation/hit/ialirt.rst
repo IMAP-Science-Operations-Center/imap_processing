@@ -3,6 +3,8 @@
 I-ALiRT: The Real-Time Space Weather Product
 ============================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Sections 2.5.1, 2.5.3, 4.4 and 8 of the algorithm document.
 
 I-ALiRT (IMAP Active Link for Real-Time) is the continuous low-rate broadcast

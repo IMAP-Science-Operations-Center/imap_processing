@@ -3,6 +3,8 @@
 I-ALiRT - Real-Time Bidirectional Electrons
 ===========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This page covers algorithm document sections 3.3.5, 3.4.2.2 and 3.4.5.
 
 .. important::

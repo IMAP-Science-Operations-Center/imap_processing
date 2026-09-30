@@ -3,6 +3,8 @@
 Level 1B - Counts to Rates
 ==========================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Section 11. **[CODE]** ``codice_l1b.py`` - 219 lines, one function
 that does everything.
 

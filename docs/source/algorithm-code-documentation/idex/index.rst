@@ -3,6 +3,8 @@
 IDEX
 ====
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.idex
 
 This is the IDEX (Interstellar Dust Experiment) instrument module, which contains

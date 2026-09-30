@@ -3,6 +3,8 @@
 L2A, L2B and L2C Processing
 ===========================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 L2A turns six waveforms into physical quantities per dust impact. L2B and L2C
 turn a month of those impacts into count rates and sky maps.
 

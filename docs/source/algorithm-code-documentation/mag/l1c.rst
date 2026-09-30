@@ -3,6 +3,8 @@
 L1C - Gap Filling from Burst Mode
 =================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/mag/l1c/mag_l1c.py``,
 ``imap_processing/mag/l1c/interpolation_methods.py``.
 

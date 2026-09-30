@@ -3,6 +3,8 @@
 Level 1B - Physical Units, Flags and Geometry
 =============================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Goal:** decode onboard integer encodings into physical units, attach
 everything the spacecraft knows (position, velocity, spin axis, spin period),
 and compute the two flag systems that decide what L2 is allowed to use.

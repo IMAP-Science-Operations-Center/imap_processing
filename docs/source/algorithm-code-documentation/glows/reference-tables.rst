@@ -3,6 +3,8 @@
 Reference Tables - Where to Look Them Up
 ========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 The algorithm document's large tables are **deliberately not reproduced** here:
 they go stale, and in almost every case a machine-readable version already
 exists in the repository that the code actually reads.

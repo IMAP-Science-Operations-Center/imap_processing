@@ -3,6 +3,8 @@
 GLOWS
 =====
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.glows
 
 This is the GLOWS (GLObal solar Wind Structure) instrument module, which

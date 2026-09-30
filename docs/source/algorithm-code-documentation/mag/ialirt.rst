@@ -3,6 +3,8 @@
 I-ALiRT - Real-Time Space Weather Stream
 ========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/ialirt/l0/parse_mag.py`` (the whole algorithm),
 ``imap_processing/ialirt/l0/mag_l0_ialirt_data.py`` (status bit decoders),
 ``imap_processing/ialirt/packet_definitions/ialirt_mag.xml``.

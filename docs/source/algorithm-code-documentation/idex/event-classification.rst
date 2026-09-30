@@ -3,6 +3,8 @@
 Event Classification and Saturation Flags
 =========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. important::
 
    **Everything on this page is [CODE].** ``imap_processing/idex/idex_event_flags.py``

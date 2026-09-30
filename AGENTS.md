@@ -104,17 +104,26 @@ make -C docs html SPHINXOPTS="-W --keep-going"
 
 ## Gotchas
 
-- **This repository is public.** Do not commit mission documents (algorithm PDFs,
-  telemetry spreadsheets) or other material that has not been cleared for release.
-  Reference external documents in prose instead, and transcribe only what's needed.
 - Pre-commit blocks direct commits to `main` and `dev`, and files over 1000 KB. Work on
   a feature branch; test data is downloaded at runtime, never committed (no git-lfs).
 - Algorithm behavior is documented per-instrument in
   [docs/source/algorithm-code-documentation/](docs/source/algorithm-code-documentation/). Check there before changing science logic.
   Some instruments have a full working reference distilled from their algorithm document —
-  a product inventory, the algorithms with equations, and an honest implementation-status
+  a product inventory, the algorithms with equations, and an implementation-status
   page listing deviations and gaps. **Read the instrument's page set before proposing or
   estimating work on it.**
+
+  **Many of these pages are unreviewed AI-generated drafts.** They contain the line
+  `.. include:: /algorithm-code-documentation/_ai_generated_notice.inc` just below the
+  page title (this renders as a warning banner). Treat a page with that line as a
+  strong starting point, not as an authority:
+  - When a marked page disagrees with the code, do not assume the code is wrong. The
+    algorithm document or CMAD may be out of date, or the deviation may be intentional.
+    Point out the discrepancy and let a human decide; don't "fix" code to match the page.
+  - When you cite a marked page in a PR, review, or answer, say that it is unverified.
+  - Only a person who has verified the page against the code or with the instrument
+    team removes the include line. Never remove it yourself unless that person asks you
+    to. When you edit a marked page, keep the marker.
   - CoDICE: [docs/source/algorithm-code-documentation/codice/index.rst](docs/source/algorithm-code-documentation/codice/index.rst)
   - GLOWS: [docs/source/algorithm-code-documentation/glows/index.rst](docs/source/algorithm-code-documentation/glows/index.rst)
   - HIT: [docs/source/algorithm-code-documentation/hit/index.rst](docs/source/algorithm-code-documentation/hit/index.rst)

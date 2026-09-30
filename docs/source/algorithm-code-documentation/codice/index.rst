@@ -3,6 +3,8 @@
 CoDICE
 ======
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.codice
 
 This is the CoDICE (Compact Dual Ion Composition Experiment) instrument module,

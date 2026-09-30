@@ -3,6 +3,8 @@
 L1A to L1B: Livetime Correction and Rates
 =========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Section 6 of the algorithm document.
 
 * **Input**: L1A CDF files (science), or the L0 CCSDS file again (housekeeping)

@@ -3,6 +3,8 @@
 Ancillary and Calibration Files
 ===============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Document:** section 7.2.
 
 Everything the MAG team delivers to the SDC arrives as a **CDF ancillary file**.

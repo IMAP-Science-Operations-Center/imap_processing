@@ -3,6 +3,8 @@
 L0 to L1 - Decommutation, Grouping and Counts
 =============================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/swapi/l1/swapi_l1.py`` (845 lines, the whole of L1).
 
 **Document:** section 10.1.

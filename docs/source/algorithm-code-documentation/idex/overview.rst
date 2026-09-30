@@ -3,6 +3,8 @@
 Instrument Overview and Vocabulary
 ==================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Everything on this page is **[DOC]** unless marked otherwise - it is the
 physical and telemetry context from chapters 2 and 3 of the algorithm document,
 condensed. Read it once; the rest of the pages assume this vocabulary.

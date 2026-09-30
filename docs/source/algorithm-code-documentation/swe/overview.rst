@@ -3,6 +3,8 @@
 Instrument and Measurement Concepts
 ===================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Everything on this page is background. No code depends on it directly, but
 almost every design decision in :ref:`swe-l1` and :ref:`swe-l2` only makes
 sense once you have it.

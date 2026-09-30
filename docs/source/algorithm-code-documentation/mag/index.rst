@@ -3,6 +3,8 @@
 MAG
 ===
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.mag
 
 This is the MAG (magnetometer) instrument module, which contains the code for

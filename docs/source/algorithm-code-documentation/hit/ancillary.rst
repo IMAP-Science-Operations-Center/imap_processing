@@ -3,6 +3,8 @@
 Ancillary Data and External Dependencies
 ========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 HIT is unusually light on ancillary data. There is exactly **one** family of
 ancillary files, and it is only used at L2.
 

@@ -3,6 +3,8 @@
 L1 to L2 - Count Rates and ESA Energies
 =======================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/swapi/l2/swapi_l2.py`` (312 lines).
 
 **Document:** sections 10.2 and 10.3.

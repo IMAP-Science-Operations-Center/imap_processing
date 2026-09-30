@@ -3,6 +3,8 @@
 Level 3 - Out of Scope Here
 ===========================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **This repository stops at L2.** CoDICE L3 products are produced by a separate
 repository run closer to the science team. Nothing in section 13 of the
 algorithm document should be implemented in ``imap_processing``.

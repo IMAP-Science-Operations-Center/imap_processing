@@ -3,6 +3,8 @@
 Data Products and What Feeds What
 =================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This is the "what goes into what" map. It is the page to read before touching
 ``cli.py``, adding a product, or changing a cadence.
 

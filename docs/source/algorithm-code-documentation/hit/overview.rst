@@ -3,6 +3,8 @@
 Instrument and Measurement Concepts
 ===================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Everything on this page is background. Very little code depends on it
 directly, but almost every design decision in :ref:`hit-l1a`,
 :ref:`hit-l1b` and :ref:`hit-l2` only makes sense once you have it.

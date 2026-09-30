@@ -3,6 +3,8 @@
 L0 to L1B - Decompression, Reorganization and Rates
 ===================================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This page covers algorithm document sections 3.4.2 (L0 to L1A) and 3.4.3
 (L1A to L1B).
 

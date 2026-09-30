@@ -3,6 +3,8 @@
 Ancillary and Calibration Files
 ===============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 CoDICE depends more heavily on ancillary files than any other IMAP instrument in
 this repository: **it cannot even unpack its own telemetry without one.** This
 page lists every file the pipeline asks for, what it contains, and which level

@@ -3,6 +3,8 @@
 Ancillary and Settings Files
 ============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 GLOWS is unusually dependent on instrument-team-supplied files. Almost every
 decision the pipeline makes about *which data to trust* comes out of one of
 these, and none of the science-relevant numbers are hard-coded in the repository.

@@ -3,6 +3,8 @@
 L1B - Engineering Calibration
 =============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/mag/l1b/mag_l1b.py``.
 
 **Document:** section 7.3.3.

@@ -3,6 +3,8 @@
 Ancillary Inputs and Dependencies
 =================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Section 4.3 organises dependencies by the first level that needs them.
 This page does the same, and adds **[CODE]** the exact paths, readers and
 failure modes.

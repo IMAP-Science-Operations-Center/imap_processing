@@ -3,6 +3,8 @@
 Upstream Calibration and Cleaning (CMAD)
 ========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This page summarises what the public **IMAP Calibration and Measurement
 Algorithms Document (CMAD)** says about MAG, and how that relates to the
 algorithm document the rest of these pages are built on.

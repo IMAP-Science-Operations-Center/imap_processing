@@ -3,6 +3,8 @@
 Level 1A - Unpacking
 ====================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Sections 7, 8 and 10. **[CODE]** ``codice_l1a.py``, ``utils.py``,
 ``decompress.py`` and the eleven ``codice_l1a_*`` product modules.
 

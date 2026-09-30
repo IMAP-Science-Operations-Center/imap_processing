@@ -3,6 +3,8 @@
 SWAPI
 =====
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.swapi
 
 This is the SWAPI (Solar Wind and Pickup Ion) instrument module, which contains

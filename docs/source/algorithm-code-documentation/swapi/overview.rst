@@ -3,6 +3,8 @@
 Instrument and Mission Concepts
 ===============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Everything on this page is background needed to read the algorithm pages. It is
 mostly **[DOC]** (algorithm document sections 4, 5, 6 and 7).
 

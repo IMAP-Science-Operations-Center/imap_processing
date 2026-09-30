@@ -3,6 +3,8 @@
 L1D - Rapid Near-L2 Product
 ===========================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/mag/l1d/mag_l1d.py``,
 ``imap_processing/mag/l1d/mag_l1d_data.py``, with the shared machinery in
 ``imap_processing/mag/l2/mag_l2_data.py``.

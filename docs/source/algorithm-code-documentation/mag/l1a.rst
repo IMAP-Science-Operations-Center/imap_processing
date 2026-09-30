@@ -3,6 +3,8 @@
 L1A - Decommutation and Decompression
 =====================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/mag/l0/decom_mag.py``,
 ``imap_processing/mag/l1a/mag_l1a.py``,
 ``imap_processing/mag/l1a/mag_l1a_data.py`` (the large one).

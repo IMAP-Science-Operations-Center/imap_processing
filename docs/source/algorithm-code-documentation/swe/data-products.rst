@@ -3,6 +3,8 @@
 Data Products and What Feeds What
 =================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This is the map. If you are trying to work out which file a variable comes from
 or which CLI invocation produces it, start here.
 

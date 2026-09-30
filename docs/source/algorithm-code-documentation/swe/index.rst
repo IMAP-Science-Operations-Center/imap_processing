@@ -3,6 +3,8 @@
 SWE
 ===
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.swe
 
 This is the SWE (Solar Wind Electron) instrument module, which contains the code

@@ -3,6 +3,8 @@
 L0 to L1A: Frame Assembly, Decompression and Counts
 ===================================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Section 5 of the algorithm document.
 
 * **Input**: CCSDS packets (APID 1251 housekeeping, 1252 science)

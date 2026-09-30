@@ -3,6 +3,8 @@
 Level 1C - Pointing Sets
 ========================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Module:** ``imap_processing/lo/l1c/lo_l1c.py``
 
 A **pointing set (PSET)** is one repointing period's worth of counts and

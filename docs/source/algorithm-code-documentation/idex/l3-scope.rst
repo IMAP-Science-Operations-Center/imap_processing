@@ -3,6 +3,8 @@
 L3 Scope - IDEX Does Not Have One Here
 ======================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Short page, because the answer is short: **there is no IDEX L3 in this
 repository, and as far as the algorithm document and the code are concerned,
 there is no IDEX L3 anywhere.**

@@ -3,6 +3,8 @@
 IMAP-Lo
 =======
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.lo
 
 This is the IMAP-Lo instrument module, which contains the code for processing

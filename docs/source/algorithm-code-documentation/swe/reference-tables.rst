@@ -3,6 +3,8 @@
 Reference Tables - Where to Look Them Up
 ========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Rule of thumb
 -------------
 

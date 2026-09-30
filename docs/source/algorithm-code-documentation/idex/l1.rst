@@ -3,6 +3,8 @@
 L0, L1A and L1B Processing
 ==========================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This page covers packet decommutation through the L1B products: how six
 waveforms and a pile of metadata are recovered from a stream of CCSDS packets,
 and how those become engineering units with geometry attached.

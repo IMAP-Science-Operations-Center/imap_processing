@@ -3,6 +3,8 @@
 Ancillary and Calibration Data
 ==============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 IMAP-Lo processing depends on a lot of external tables. Some ship with this
 package, some arrive as CLI dependencies from the SDC, and some are described
 in the algorithm document but do not exist yet.

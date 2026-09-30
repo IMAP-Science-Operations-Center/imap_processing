@@ -3,6 +3,8 @@
 I-ALiRT - Real-Time Space Weather Stream
 ========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/ialirt/l0/process_swapi.py`` (368 lines, the whole
 algorithm), ``imap_processing/ialirt/constants.py``
 (``class IalirtSwapiConstants``),

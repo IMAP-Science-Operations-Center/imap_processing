@@ -3,6 +3,8 @@
 Instrument and Measurement Overview
 ===================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Everything on this page is **[DOC]** unless marked otherwise. It exists so that
 the algorithm pages can use GLOWS vocabulary without stopping to define it.
 

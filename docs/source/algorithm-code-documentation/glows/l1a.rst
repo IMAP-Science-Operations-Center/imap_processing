@@ -3,6 +3,8 @@
 Level 1A - Unpacked Telemetry
 =============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Goal:** turn the binary CCSDS stream into human-readable data structures.
 Nothing is calibrated, nothing is masked, no SPICE is involved. The only real
 algorithm here is **direct-event decompression**.

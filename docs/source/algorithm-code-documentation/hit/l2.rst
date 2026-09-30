@@ -3,6 +3,8 @@
 L1B to L2: Conversion to Intensity
 ==================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Section 7 of the algorithm document.
 
 * **Input**: L1B CDF files

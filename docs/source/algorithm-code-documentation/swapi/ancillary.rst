@@ -3,6 +3,8 @@
 Ancillary Files, Calibration and External Dependencies
 ======================================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Document:** sections 8, 9, 10.3 and 11.
 
 SWAPI needs remarkably little ancillary data to reach L2 - two tables, both

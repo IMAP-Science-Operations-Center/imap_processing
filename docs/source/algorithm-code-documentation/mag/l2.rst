@@ -3,6 +3,8 @@
 L2 - Released Science Product
 =============================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Code:** ``imap_processing/mag/l2/mag_l2.py``,
 ``imap_processing/mag/l2/mag_l2_data.py``.
 

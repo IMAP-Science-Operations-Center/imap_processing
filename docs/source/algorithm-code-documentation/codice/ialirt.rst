@@ -3,6 +3,8 @@
 I-ALiRT
 =======
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **[DOC]** Sections 10.4 and 14. **[CODE]**
 ``imap_processing/ialirt/l0/process_codice.py`` - the entire CoDICE I-ALiRT
 algorithm lives in this one module, which reuses the ordinary L1A/L1B/L2

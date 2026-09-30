@@ -3,6 +3,8 @@
 Instrument Overview
 ===================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 Everything on this page is background you need before any algorithm page makes
 sense. If you only read one thing, read
 :ref:`codice-esa-stepping` and :ref:`codice-modes` - those two are where almost

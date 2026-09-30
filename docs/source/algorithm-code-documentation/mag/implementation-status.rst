@@ -3,6 +3,8 @@
 Implementation Status and Known Gaps
 ====================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This page is the honest accounting of where the code stands against the
 algorithm document (SW-009) and, where it overlaps, the public CMAD (see
 :ref:`mag-cmad`). **Read it before proposing or estimating work.**

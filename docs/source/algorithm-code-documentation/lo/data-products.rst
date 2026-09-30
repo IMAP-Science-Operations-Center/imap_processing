@@ -3,6 +3,8 @@
 Data Products and Pipeline
 ==========================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 This page is the map of **what exists, what feeds what, and what it is called**.
 Use it to find the right module and the right ``logical_source`` before diving
 into an algorithm page.

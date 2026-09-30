@@ -3,6 +3,8 @@
 HIT
 ===
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 .. currentmodule:: imap_processing.hit
 
 This is the HIT (High-energy Ion Telescope) instrument module, which contains

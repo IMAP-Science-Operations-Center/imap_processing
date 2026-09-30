@@ -3,6 +3,8 @@
 Level 2 - Calibrated Science and Sky Maps
 =========================================
 
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
 **Module:** ``imap_processing/lo/l2/lo_l2.py`` (~1900 lines), on top of the
 shared ``imap_processing/ena_maps/`` machinery.
 
