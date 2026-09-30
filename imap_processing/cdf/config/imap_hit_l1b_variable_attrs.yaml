@@ -545,7 +545,7 @@ ebox_p2d0vd:
   VALIDMAX: 10000000000
 
 
-# <=== Science Data Variable Attributes (source: HIT CDF Product Definitions spreadsheet) ===>
+# <=== Science Data Variable Attributes (source: https://lasp.colorado.edu/galaxy/spaces/IMAP/pages/207619340/HIT+CDF+Product+Designs) ===>
 
 double_fillval: &double_fillval -1e+31
 
