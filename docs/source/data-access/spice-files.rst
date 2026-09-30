@@ -131,7 +131,7 @@ Metakernel file (default, ``list_files`` omitted or ``False``):
 
       KERNELS_TO_LOAD = ( 'lsk/naif0012.tls',
                           'fk/imap_130.tf',
-                          'fk/imap_science_120.tf',
+                          'fk/imap_science_130.tf',
                           'sclk/imap_sclk_0147.tsc',
                           'spk/de440.bsp'
                         )
@@ -142,7 +142,7 @@ List of filenames (``list_files=True``):
 
 .. code-block:: json
 
-   ["naif0012.tls", "imap_130.tf", "imap_science_120.tf", "imap_sclk_0147.tsc", "de440.bsp"]
+   ["naif0012.tls", "imap_130.tf", "imap_science_130.tf", "imap_sclk_0147.tsc", "de440.bsp"]
 
 Coverage gap error (``require_coverage=True`` and gaps exist):
 
