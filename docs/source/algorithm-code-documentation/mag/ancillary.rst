@@ -120,7 +120,8 @@ Offsets - ``l2-norm-offsets`` and ``l2-burst-offsets``
 -------------------------------------------------------
 
 Consumed by :ref:`mag-l2`. **[DOC]** generated **daily**. These are the output of
-the MAG team's spacecraft-field removal and Leinweber offset determination.
+the MAG team's spacecraft-field removal and offset determination. How Imperial
+produces them is described in :ref:`mag-cmad`.
 
 Document contents, **for each sensor and for every timestamped vector in the L0
 data**:
@@ -130,6 +131,7 @@ data**:
   ``VALIDMIN``/``VALIDMAX`` so the intent is unambiguous.
 * A **quality flag** (see :ref:`mag-quality-flags`).
 * A **quality bitmask**, with some bits reserved for in-flight calibration.
+  Bit definitions are in :ref:`mag-quality-flags`.
 * A **Delta-T** in +/- milliseconds adjusting the vector timestamp.
 * Additional metadata (TBD) that may include time-varying information about how
   the calibration was determined - for example when interference was occurring

@@ -47,6 +47,8 @@ Rule of thumb
      - :ref:`mag-l1d` - transcribed
    * - The clock-angle formulae
      - :ref:`mag-ialirt` - transcribed
+   * - How the L2 offsets and matrices were derived, or the quality bitmask bits
+     - :ref:`mag-cmad`, summarising the public CMAD (not SW-009)
    * - Anything else
      - the algorithm document, using the section index below
 
@@ -135,6 +137,9 @@ Document section index
 For when you do have a copy of IMAP-MAG-SW-009-01B in ``docs/reference/``.
 44 pages, Issue 5 Revision 2.
 
+SW-009 is not part of the public CMAD. For where MAG material *does* appear in
+the CMAD, see the location table in :ref:`mag-cmad`.
+
 .. list-table::
    :header-rows: 1
    :widths: 14 16 70
@@ -162,7 +167,8 @@ For when you do have a copy of IMAP-MAG-SW-009-01B in ``docs/reference/``.
    * - 4.7
      - 12-13
      - **Calibration.** Ground (Magnetsrode) and in-flight (Imperial College),
-       including the Leinweber offset method.
+       including the Leinweber offset method. *The CMAD gives the as-flown
+       method; see* :ref:`mag-cmad`.
    * - 5
      - 13-15
      - Product overview and the **product summary table** (inputs, outputs,
@@ -176,6 +182,8 @@ For when you do have a copy of IMAP-MAG-SW-009-01B in ``docs/reference/``.
    * - 7.2
      - 16-18
      - **Calibration file contents** and the **quality flag / bitmask table**.
+       *The bitmask table is superseded by CMAD section 5.4.5; see*
+       :ref:`mag-quality-flags`.
    * - 7.2.1
      - 18-19
      - **Gradiometer mode** and the kappa equation.

@@ -15,9 +15,11 @@ These pages are a **condensed, self-contained working reference** for the MAG
 processing algorithms, written so that a developer (human or AI agent) can get
 productive without reading the full algorithm document.
 
-They are a summary of the source document below plus what the code in
+They are a summary of the algorithm document below plus what the code in
 ``imap_processing/mag`` actually does. Where the two disagree, that is called
-out explicitly in :ref:`mag-implementation-status`.
+out explicitly in :ref:`mag-implementation-status`. The MAG team's upstream
+calibration and cleaning, which the public CMAD documents instead, is summarised
+in :ref:`mag-cmad`.
 
 .. _mag-source-documents:
 
@@ -39,6 +41,23 @@ the MAG instrument team at Imperial College London or the SDC document store.
        Revision 2, 01 June 2026. Prepared by Alastair Crabtree, approved by
        Tim Horbury, Imperial College London. 44 pages. The primary source for
        these pages.
+
+       Unlike most instruments' algorithm documents, this one is **not**
+       embedded in the public CMAD (below).
+   * - **CMAD**
+     - *Calibration and Measurement Algorithms Document for NASA's IMAP
+       Mission*, version 1.1 (preliminary), ``IMAP_CMAD_20260722.pdf``. Public.
+       For MAG it embeds two Imperial technical notes instead of the algorithm
+       document:
+
+       * IMAP-OPS-TN-ICL-017, *IMAP MAG Calibration Inputs Description*,
+         Issue 2, 4 June 2026 (CMAD section 3.5.2, printed pages 152-163);
+       * IMAP-OPS-TN-ICL-013, *IMAP MAG Data Cleaning Processes*, Issue 4,
+         4 June 2026 (CMAD section 4.4, printed pages 912-929).
+
+       Section 5.4.5 (printed pages 1163-1166) holds the authoritative L2 quality
+       flag and bitmask definitions. All of this is summarised in
+       :ref:`mag-cmad`.
    * - **TLM_MAG** ([RD01])
      - MAG telemetry definition spreadsheet. Superseded in practice by
        ``imap_processing/mag/packet_definitions/MAG_SCI_COMBINED.xml``, which
@@ -52,6 +71,8 @@ the MAG instrument team at Imperial College London or the SDC document store.
    If you hold a copy of the algorithm document, put it in ``docs/reference/``.
    That directory is gitignored, so it will never be committed, and the section
    index in :ref:`mag-reference-tables` is written against that location.
+   Even though the CMAD is public, do not commit it: it is ~128 MB and far over
+   the repository's file-size limit.
 
 .. important::
 
@@ -112,6 +133,10 @@ Read only what you need. Each page is designed to be loaded on its own.
    * - :ref:`mag-ancillary`
      - Every calibration and offset file: who delivers it, what variables it
        contains, and which level consumes it.
+   * - :ref:`mag-cmad`
+     - How the MAG team produces the L2 offsets and matrices (cleaning and
+       calibration at Imperial), the **authoritative quality bitmask**, and the
+       artifacts left in released L2. Summarises the public CMAD.
    * - :ref:`mag-implementation-status`
      - What is implemented, where the code deviates from the document, known
        and suspected bugs, and what is not written at all. **Read before
@@ -132,6 +157,7 @@ Read only what you need. Each page is designed to be loaded on its own.
    l2
    ialirt
    ancillary
+   cmad
    implementation-status
    reference-tables
 

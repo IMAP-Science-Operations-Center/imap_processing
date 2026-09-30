@@ -329,6 +329,19 @@ Only steps 1, 2 and 4 land in this repository, as delivered numbers in
 calibration files. Step 3 happens entirely at Imperial College; its results
 arrive as the per-vector offsets and the quality bitmask.
 
+.. note::
+
+   **[CMAD]** The public CMAD describes how this worked out in flight for Data
+   Release 1, and it refines SW-009 on two points:
+
+   * **Step 2:** the in-flight matrices (CalibrationMatricesV9) use fitted
+     angles and gains that are *not* exactly identity.
+   * **Step 4:** Leinweber is used only for the **spin-axis** offset. The
+     spin-plane offsets use the Kepko method plus a spin-tone optimisation.
+
+   Step 3 is now a set of named cleaning processes (IMAP-Lo pivot platform,
+   Hi/Ultra heaters, thrusters). See :ref:`mag-cmad`.
+
 Processing windows and the 30-minute buffer
 --------------------------------------------
 

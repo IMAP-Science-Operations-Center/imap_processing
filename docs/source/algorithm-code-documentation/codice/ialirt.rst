@@ -204,30 +204,31 @@ SSD groups:
    * - Group :math:`g`
      - SSD IDs
      - Elevation angle
-     - Ref. spin angle (doc)
+     - Ref. spin angle :math:`\theta_{g,0}`
    * - 0
      - 0, 1, 3
      - 132.8 deg
-     - 286.85 deg
+     - 196.85 deg
    * - 1
      - 4, 5, 7
      - 65.7 deg
-     - 264.55 deg
+     - 174.55 deg
    * - 2
      - 8, 9, 11
      - 47.1 deg
-     - 343.16 deg
+     - 253.16 deg
    * - 3
      - 12, 13, 15
      - 114.3 deg
-     - 5.44 deg
+     - 275.44 deg
 
 **[CODE]** ``HI_IALIRT_ELEVATION_ANGLE = [132.8, 65.7, 47.1, 114.3]`` matches.
-``HI_IALIRT_REF_SPIN_ANGLE = [196.85, 174.55, 253.16, 275.44]`` is the document
-table **minus 90 deg** - the :ref:`codice-spin-angle-offset` correction.
-``HI_IALIRT_SPIN_ANGLE`` in ``ialirt/utils/constants.py`` is built by adding 0,
-90, 180 and 270 deg (mod 360) to each reference, matching **[DOC]**
-:math:`\theta_{g,n} = (\theta_{g,0} + 90^\circ n) \bmod 360^\circ`.
+``HI_IALIRT_REF_SPIN_ANGLE = [196.85, 174.55, 253.16, 275.44]`` **matches Rev 3
+Chg 1**. The January 2026 draft printed values 90 deg higher (286.85, 264.55,
+343.16, 5.44); see :ref:`codice-spin-angle-offset`. ``HI_IALIRT_SPIN_ANGLE`` in
+``ialirt/utils/constants.py`` is built by adding 0, 90, 180 and 270 deg (mod
+360) to each reference, matching **[DOC]** :math:`\theta_{g,n} = (\theta_{g,0}
++ 90^\circ n) \bmod 360^\circ`.
 
 Rates and intensities
 ^^^^^^^^^^^^^^^^^^^^^
@@ -261,6 +262,15 @@ grouping factor is expected to be baked into the ``GF`` row of the CSV.
 
 Output
 ------
+
+**[DOC]** Table 4 of Rev 3 Chg 1 lists both CoDICE I-ALiRT products (Hi H
+intensities at 1 min; Lo C/O, Mg/O, Fe/O, C6+/C5+, O7+/O6+, Fe_loq/Fe_hiq) with
+file prefix ``imap_ialirt_l1_realtime`` - the mission-wide I-ALiRT product -
+rather than the ``imap_codice_l2-hi-ialirt_`` / ``imap_codice_l2-lo-ialirt_``
+prefixes of the draft. That matches this repository: CoDICE writes no I-ALiRT
+CDF of its own. Its fields go into the shared ``imap_ialirt_l1_realtime``
+dataset built by ``ialirt/utils/create_xarray.py``. The synthesised
+``Logical_file_id`` in step 6 above uses the same name.
 
 **[CODE]** ``process_codice`` returns two lists of dicts, ready for DynamoDB:
 

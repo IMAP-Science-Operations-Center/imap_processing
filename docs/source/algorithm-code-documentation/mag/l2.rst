@@ -13,9 +13,11 @@ this repository refines it further.
 
 The idea is simple: take the L1B burst or L1C normal vectors, apply the MAG
 team's per-vector offsets and time deltas, rotate into the science frames, and
-publish. All the difficult work - detecting and removing spacecraft fields,
-thruster interference, spacecraft tones, and determining the Leinweber offsets -
-happens at Imperial College London and arrives as numbers in an ancillary file.
+publish. All the difficult work - removing spacecraft and instrument fields,
+thruster interference and the IMAP-Lo pivot platform, and determining the
+spin-plane (Kepko) and spin-axis (Leinweber) offsets - happens at Imperial
+College London and arrives as numbers in an ancillary file. That upstream work is
+described in the public CMAD and summarised in :ref:`mag-cmad`.
 
 Inputs
 ------
@@ -80,49 +82,52 @@ vector in the corresponding L1 file:
 Quality flags
 -------------
 
-**[DOC]** Two variables travel together.
+Two variables travel together. Both are produced by the MAG team and arrive in
+the offsets file.
 
-``quality_flag`` is a single value: ``0`` if data is good for publication,
-``1`` if known issues exist.
+``quality_flag`` is a single value: ``0`` for good data, ``1`` for bad data not
+suitable for science. **[CMAD]** A raised flag is always accompanied by a
+non-zero bitmask.
 
-``quality_bitmask`` is a bitfield:
+``quality_bitmask`` is a bitfield. **[CMAD]** section 5.4.5 is the authoritative
+definition (bit 0 is the least significant):
 
 .. list-table::
    :header-rows: 1
-   :widths: 34 66
+   :widths: 12 88
 
-   * - Abbreviation
-     - Raised when
-   * - ``THRUSTERINTERFERENCE``
-     - A thruster fired, for the duration of the thruster cleaning.
-   * - ``SCINTERFERENCE``
-     - Large signal between MAGo and MAGi, indicating significant spacecraft
-       interference in the data.
-   * - ``SCTONES``
-     - Spacecraft tones have been removed from the data.
-   * - ``INSTRUMENTINTERFERENCE``
-     - Instrument signals have been removed from the data.
-   * - ``PIVOTPLATFORMINTERFERENCE``
-     - The IMAP-Lo pivot platform was moving and its magnetic signal has been
-       removed.
-   * - ``RESERVE6``, ``RESERVE7``
+   * - Bit
+     - Meaning
+   * - 0
+     - Data is sourced from the secondary sensor.
+   * - 1
+     - Thruster firing signals have been removed (daily firing around 10:00 UT
+       and the pre-thruster activity an hour earlier).
+   * - 2
+     - Spacecraft interference impacts these data (TCMs, IMAP-Lo pivot platform
+       motion).
+   * - 3
+     - Instrument signals have been removed.
+   * - 4-7
      - Reserved for in-flight calibration.
-   * - ``SEC_SENS``
-     - The data is sourced from the secondary sensor.
+
+This matches the ``VAR_NOTES`` on ``qf_bitmask`` in
+``imap_processing/cdf/config/imap_mag_l2_variable_attrs.yaml``. See
+:ref:`mag-cmad-quality` for what triggers each bit.
+
+.. note::
+
+   **[DOC]** SW-009 section 7.2 has an older, different list: eight named bits
+   (``THRUSTERINTERFERENCE``, ``SCINTERFERENCE``, ``SCTONES``,
+   ``INSTRUMENTINTERFERENCE``, ``PIVOTPLATFORMINTERFERENCE``, ``RESERVE6``,
+   ``RESERVE7``, ``SEC_SENS``) with the secondary-sensor bit last. **It is
+   superseded by the CMAD.**
 
 .. warning::
 
    **[CODE]** MAG does **not** use ``imap_processing/quality_flags.py``. There is
    no ``MagQualityFlags`` enum; the bitmask is copied through opaquely from the
-   offsets file as a ``uint16``.
-
-   The only in-repo description of the bits is the ``VAR_NOTES`` on
-   ``qf_bitmask`` in ``imap_processing/cdf/config/imap_mag_l2_variable_attrs.yaml``,
-   and **it does not match the document**: it lists only four named bits
-   (secondary sensor, thruster, spacecraft interference, instrument signals) with
-   bits 4-7 reserved, omitting ``SCTONES`` and ``PIVOTPLATFORMINTERFERENCE``,
-   and it puts ``SEC_SENS`` at bit 0 while the document lists it last. See
-   :ref:`mag-implementation-status`.
+   offsets file as a ``uint16``. See :ref:`mag-implementation-status`.
 
 Processing steps
 ----------------

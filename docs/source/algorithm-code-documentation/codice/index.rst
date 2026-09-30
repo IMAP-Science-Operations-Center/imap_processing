@@ -36,12 +36,16 @@ the CoDICE instrument team at SwRI or the SDC document store.
      - Reference
    * - **Algorithm document**
      - 26850.03-DPA-01, *Data Products and Algorithms (DPA) for the IMAP Compact
-       Dual Ion Composition Experiment (CoDICE)*, Rev 3 Chg 0, January 2026
-       (cover page still reads "Rev 2 Chg 0 / October 2025"; the revision notice
-       table on page iii is authoritative). Prepared by Joey Mukherjee and
-       Michael Starkey, Southwest Research Institute, SDRL SW-009. 87 pages.
-       The primary source for these pages. **Export controlled (EAR ECCN
-       9E515).**
+       Dual Ion Composition Experiment (CoDICE)*, **Rev 3 Chg 1, June 2026**.
+       Prepared by Joey Mukherjee and Michael Starkey, Southwest Research
+       Institute, SDRL SW-009. The primary source for these pages.
+
+       This revision is publicly released as **section 4.3.2 of the IMAP
+       Calibration and Measurement Algorithms Document (CMAD)**,
+       ``IMAP_CMAD_20260722.pdf``, PDF pages 623-709. Rev 3 Chg 1 differs from
+       Rev 3 Chg 0 only by removing the EAR export-control statement; the
+       substantive changes listed under Rev 3 Chg 0 (May 2026) are summarised in
+       :ref:`codice-doc-revisions` below.
    * - **SCI_LUT spreadsheet**
      - ``26850.03-SCI-LUT-01.xls`` (and successors). The plan / ESA-sweep /
        stepping / views / collapse tables. **This is not optional** - CoDICE
@@ -57,6 +61,8 @@ the CoDICE instrument team at SwRI or the SDC document store.
    If you hold a copy of the algorithm document, put it in ``docs/reference/``.
    That directory is gitignored, so it will never be committed, and the section
    index in :ref:`codice-reference-tables` is written against that location.
+   Even though the CMAD is public, do not commit it: it is ~128 MB and far over
+   the repository's file-size limit.
 
 .. important::
 
@@ -98,8 +104,9 @@ Read only what you need. Each page is designed to be loaded on its own.
      - Read it when you need to know...
    * - :ref:`codice-overview`
      - What CoDICE physically is, the two sensors, the coordinate frames and
-       angle conventions, the ESA stepping scheme, RGFO/NSO modes and the
-       commissioning timeline. **Start here if you are new.**
+       angle conventions, the ESA stepping scheme, RGFO/NSO modes, the
+       commissioning timeline and the instrument team's data caveats. **Start
+       here if you are new.**
    * - :ref:`codice-data-products`
      - The full product inventory, exact ``Logical_source`` strings, APID
        mapping, what feeds what, and how the CLI is wired. **The "what goes into

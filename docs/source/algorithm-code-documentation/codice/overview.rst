@@ -42,7 +42,15 @@ at the entrance to the TOF-E subsystem.
 * TOF between Start and Stop gives velocity; the APD gives residual energy E.
 * Combined (E/q, TOF, E) determines mass M, charge state q and M/q.
 * Arrival direction in azimuth comes from a **delay-line anode** on the Start
-  MCP ("position"), not from the APD ID.
+  MCP ("position"), not from the APD ID - by design (section 4.1).
+
+.. warning::
+
+   **[DOC]** The post-launch data caveats (section 9.2) reverse that in
+   practice: the delay-line position "is not an accurate identifier of particle
+   direction" and "should only be used to support APD ID". The L3b 3-D VDFs now
+   bin by APD ID. When the document says "position", check whether the team
+   now means APD ID. See :ref:`codice-data-caveats`.
 
 **[DOC]** One Lo azimuth sector always points sunward, so **one sector measures
 the solar wind continuously** while the others sweep the sky as the spacecraft
@@ -67,7 +75,7 @@ The Hi FOV is a cone centred **30 deg above the CoDICE-Lo FOV plane**, so
    **[DOC]** There are 12 SSDs but **16 SSD ID values (0-15)**. The original
    design had four dual-pixel SSDs for electrons; that was not flown, but the
    flight software still emits 16 IDs. The **valid SSD IDs are 0, 1, 3, 4, 5, 7,
-   8, 9, 11, 12, 13, 15**; the remaining four are filled with zeros.
+   8, 9, 11, 12, 13, 15**; the remaining four are not valid.
 
    **[CODE]** ``SSD_ID_TO_ELEVATION`` and ``SSD_ID_TO_SPIN_ANGLE`` in
    ``constants.py`` are 16-element arrays indexed by SSD ID with ``np.nan`` at
@@ -89,7 +97,9 @@ letters; the code uses names.
    * - :math:`k`
      - ``inst_az`` / ``position`` / ``ssd_id``
      - Azimuthal look direction in the instrument frame. Lo: **position 1-24**
-       (delay-line anode). Hi: **SSD ID**.
+       (delay-line anode) in most of the document, but **APD ID 1-24** in the
+       newer text (L1A species split, L3b VDFs) - see
+       :ref:`codice-data-caveats`. Hi: **SSD ID**.
    * - :math:`n`
      - ``spin_sector`` / ``spin_angle``
      - Spin phase bin. Lo reports **12 half-spin sectors (0-11)** which de-spin
@@ -141,20 +151,33 @@ Coordinate frames and angle conventions
   +Z is the average spin vector, +X is the North Ecliptic Pole, +Y completes the
   right-hand rule.
 
+**[DOC] Spin phase and the spin-angle reference**
+  Spacecraft spin phase 0 deg is the moment the **+Y**\ :sub:`SC` axis crosses
+  the ecliptic plane. The SC-frame spin angle is measured from +X\ :sub:`SC`
+  (north ecliptic pole) to the detector's central look direction. Because the
+  instrument frame rotates with the spacecraft, the **instrument-frame spin
+  angle is measured from a fixed reference: the direction of the +X**\
+  :sub:`Co` **axis at spin phase 0**. At spin phase 0, +X\ :sub:`Co` is offset
+  **~46.0 deg** from +X\ :sub:`SC`.
+
 **[DOC] Frame conversion**
 
 .. math::
 
-   \theta_{SC} = (\theta_{inst} + 316^\circ) \bmod 360^\circ
+   \theta_{SC} = (\theta_{inst} + 46^\circ) \bmod 360^\circ
 
-The elevation angle is identical in both frames.
+The elevation angle is identical in both frames. This applies to both Hi SSDs
+and Lo APDs.
 
 .. note::
 
-   **[CODE]** The +316 deg rotation is **not applied anywhere in this
+   **[CODE]** The +46 deg rotation is **not applied anywhere in this
    repository.** All CoDICE L2 angle variables are in the **instrument frame**.
    The conversion appears in the document only in the L3 pitch-angle sections
-   (13.1.2, 13.3.2), which are out of scope here.
+   (13.1.2, 13.3.2), which are out of scope here. Section 4.2 now also says
+   spin angles "SHOULD" be computed from the look-direction unit vectors with
+   SPICE and the instrument kernel. The pipeline does not do that; it uses the
+   tabulated constants below.
 
 Lo azimuth (position) to angle
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -347,34 +370,40 @@ Hi SSD to elevation angle
      - 15
      - 138.6 deg
 
-.. _codice-spin-angle-offset:
+Spin angles in the instrument frame
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Spin angle reference: the 90 degree correction
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+All spin angles below are measured from the +X\ :sub:`Co` reference defined in
+:ref:`codice-frames` and are bin centres.
 
-.. warning::
+**[DOC] Lo** (section 4.2). The FOV of APDs 1 and 13 is perpendicular to the X-Y
+plane, so their spin angle is meaningless. For de-spun data (spin-angle index
+:math:`n` = 0-23 spanning 360 deg):
 
-   **The spin-angle reference tables in the code are deliberately 90 degrees
-   lower than the tables printed in the algorithm document (Rev 3).** Do not
-   "fix" this.
+.. math::
 
-**[DOC]** Rev 3 prints, for example, Hi sectored spin angle
-:math:`\theta_{k,0}` = 285.00 deg for SSD ID 0 and Hi direct-event
-:math:`\theta_{0,k}` = 277.50 deg.
+   \theta_{Lo,n} = n \cdot 15^\circ + 277.5^\circ \quad (\bmod 360^\circ)
 
-**[CODE]** ``L2_HI_SECTORED_ANGLE[0]`` = 195.00 and ``SSD_ID_TO_SPIN_ANGLE[0]``
-= 187.50, i.e. the document value minus 90 deg (equivalently plus 270 deg).
+Sections 12.2.2 and 13.2.6 write the same constant as
+:math:`7.5^\circ + 270^\circ`: the 270 deg is the spin angle of APDs 2-12 at
+spin sector 0.
 
-The same offset appears in ``HI_IALIRT_REF_SPIN_ANGLE`` (doc 286.85 ->
-code 196.85) and in the Lo direct-event formula (doc :math:`n\cdot15+7.5`; code
-:math:`(n\cdot15 + 277.5) \bmod 360`).
+**[DOC] Hi** (section 4.2). The SSD FOVs are inclined 30 deg to the Lo FOV
+plane, so each SSD sees a different spin angle for the same sector. Using the
+look-direction unit-vector components :math:`n_{x,k}, n_{y,k}` for SSD
+:math:`k`:
 
-This comes from a correction supplied by Michael Starkey after Rev 3 (tracked as
-issue #3242): the instrument-frame reference angles were re-derived relative to
-the instrument **+X** axis, a 270 deg shift from the original APD 2-12
-look-direction reference. ``imap_processing/tests/codice/test_codice_spin_angles.py``
-pins every one of these values as an exact-value regression test specifically so
-that a future reader of the PDF does not revert them.
+.. math::
+
+   \theta_{Hi,0,k} = 180^\circ + \tan^{-1}\!\left(\frac{n_{y,k}}{n_{x,k}}\right)
+   + 15^\circ
+
+This is the centre of the first 30 deg (sectored) bin; add 30 deg per sector.
+The direct-event table (section 12.1.1, 15 deg bins) is the same value minus
+7.5 deg, incremented by 15 deg per sector. The draft used two expressions in
+:math:`\varphi_k`, split by SSD group. Rev 3 Chg 1 replaces them with this
+single unit-vector form.
+
 
 .. _codice-esa-stepping:
 
@@ -469,6 +498,17 @@ collapsed) spin-sector dimension.
 Acquisition timing
 ------------------
 
+.. note::
+
+   In the CMAD (pages 623-709), Appendix C contains **only the first table**
+   (values common to Hi and Lo). The Hi :math:`t_{acquire}` derivation and the
+   Lo equations below are transcribed from the January 2026 draft, where they
+   continued onto the next page. Sections 11.1 and 11.2 of Rev 3 Chg 1 still
+   quote :math:`t_{acquire} = 0.59916` s for Hi and still point to "Appendix
+   B" (a stale cross-reference; the timing appendix is C). The section 7
+   pseudocode for Lo timing is unchanged and still omits the
+   :math:`t_{minHvSettle}` floor.
+
 **[DOC]** Appendix C. Values common to both sensors, all in microseconds unless
 noted:
 
@@ -552,7 +592,11 @@ RGFO - Reduced Geometric Factor Operation
 The ratio of voltages on the upper and lower ESA plates is reduced from 1,
 cutting the number of ions that pass the ESA. **The geometric factor changes**,
 so the ground must know which :math:`G_m` (Full or Reduced) applied to every
-bin. RGFO persists until NSO triggers or the 32 half-spin cycle ends.
+bin. RGFO persists until NSO triggers or the 32 half-spin cycle ends. In the
+launch configuration the FSW triggers RGFO on the **total counts on the
+START-A and START-B MCP** over a half-spin (~7.5 s), with a limit tunable in
+on-board LUTs. Section 4.1 gives the nominal reduction as the entrance ESA
+running at 70% of the main ESA voltage (configurable).
 
 NSO - No-Scan Operation
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -587,12 +631,14 @@ are still created in L1A, filled with NaN, for SPDF consistency.
 
 .. _codice-timeline:
 
-Commissioning timeline (section 9)
-----------------------------------
+Commissioning timeline (section 9.1)
+------------------------------------
 
-**[DOC]** Instrument behaviour has changed four times. **Any algorithm that
-touches RGFO, NSO or the ESA sweep must branch on the date.** This table is the
-authority for those branches.
+**[DOC]** Instrument behaviour has changed four times, giving five periods
+(P0-P4). **Any algorithm that touches RGFO, NSO or the ESA sweep must branch on
+the date.** This table is the authority for those branches. The document marks
+the last period "Current" as of its publication and says to check with the
+instrument team for later changes.
 
 .. list-table::
    :header-rows: 1
@@ -617,7 +663,7 @@ authority for those branches.
      - ESA sweep table updated: only **3 ESA steps per half-spin from step 80**
        (576 V, 3.3 keV/e). RGFO/NSO as P1.
    * - **P3**
-     - 2026-01-29 - current
+     - 2026-01-29 - 2026-04-03
      - FSW v1.5. RGFO/NSO trigger on **count rate within a single (ESA step,
        spin sector)** pair, switching on the following pair. New spin-sector and
        e-step fields added to all COUNTS and PHA packets. Hi/Lo priority counts
@@ -628,6 +674,26 @@ authority for those branches.
        PHA allocation increased: Lo 5760 -> 11520 and Hi 5000 -> 10000 events
        per cycle. Hi priority scheme updated to P5 = Heavies, P4 = Helium,
        P3 = Protons.
+   * - **P4**
+     - 2026-04-03 - current
+     - **Lo SCI_LUT update**: fixed an indexing issue that assigned species
+       rates to the wrong rate box. **Lo on-board species classification LUT
+       update**: refined mass boundaries for key species; binned **H+ is now
+       TCRs only** (it was DCRs during P0-P3). **Hi on-board species
+       classification LUT update**: fixed a bug that sent low-TOF events to low
+       priority. Only LUT updates are listed; no FSW update.
+
+.. note::
+
+   The document lists **only LUT changes for P4, no FSW update**, so a new XTCE
+   file or ``packet_version`` bump is not expected. (That is an inference; the
+   document does not say so.) On the ground P4 arrives as a new
+   ``l1a-sci-lut`` table. It does change what the Lo species (and H+) counts
+   *mean* before and after 2026-04-03. The code has no date branch for P4, and
+   none is needed for unpacking. Anyone comparing Lo species across that date
+   should know about it. 2026-04-03 is also a mid-mission SCI-LUT change, the
+   case the ``codice_l2.py`` TODO about SCI-LUT change days warns about (see
+   :ref:`codice-implementation-status`).
 
 .. warning::
 
@@ -638,6 +704,71 @@ authority for those branches.
    handling "the bug in which the spacecraft was sending data down 'off by one'
    and getting mislabeled". If you see unexplained NaN species columns, check
    the SCI-LUT version first.
+
+.. _codice-data-caveats:
+
+Data caveats (section 9.2)
+--------------------------
+
+**[DOC]** New in Rev 3 Chg 1. "Due to issues identified post-launch", these
+three Lo products are **not currently produced at any level (L1a-L2)**:
+``lo-nsw-species``, ``lo-sw-angular``, ``lo-nsw-angular``. That matches the
+repository, where none of the three is built. See
+:ref:`codice-implementation-status`.
+
+The caveats below apply to all CoDICE L2 data in the **first official IMAP data
+release (Summer 2026)**. The document says most of them will be fixed or
+mitigated in later releases. They describe the *data*, not the ground code, so
+nothing here is a pipeline bug. Keep them in mind when validating output or
+answering "why does this look wrong".
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - L2 product
+     - Caveat
+     - Effect on data
+   * - ``lo-sw-species``
+     - Counts are binned into SW/NSW products using **delay-line position
+       instead of APD ID** (on board).
+     - Lower counts than expected, so lower intensities.
+   * - ``lo-sw-species``
+     - Species classification boxes need fine tuning.
+     - Charge-state species are not well separated / identified.
+   * - ``lo-direct-events``
+     - Delay-line position is **not an accurate identifier of particle
+       direction**; position should only be used to support APD ID.
+     - (as stated)
+   * - ``lo-direct-events``
+     - Automatic TOF correction based on position.
+     - Larger TOF uncertainty.
+   * - ``hi-omni``, ``hi-sectored``
+     - Detection threshold depends on SSD ID.
+     - Increased noise at lower energies.
+   * - ``hi-omni``, ``hi-sectored``
+     - ASIC baseline fluctuates with count rate, producing pseudo-TCRs for
+       low-energy data.
+     - Increased noise / false counts at lower energies.
+   * - ``hi-omni``, ``hi-sectored``
+     - On-board mass computation needs correction.
+     - Mass tracks trend downward at low energy-per-nuc.
+   * - ``hi-omni``, ``hi-sectored``, ``hi-direct-events``
+     - MG and LG energy channels not well calibrated.
+     - Upper part of MG usable; lower part of MG and **all of LG not currently
+       usable**.
+
+.. note::
+
+   Two of these bear on ground-code choices already documented here:
+
+   * The Lo **position vs APD ID** caveat is relevant to
+     ``process_lo_direct_events``, which derives elevation from ``apd_id`` but
+     de-spins spin sectors using ``position``. See
+     :ref:`codice-implementation-status`.
+   * The Hi **LG/MG** caveat means ``GAIN_ID_TO_STR`` values 1 (LG) and 2 (MG)
+     label events whose energies are, for now, partly or wholly unreliable. The
+     pipeline still converts them; it does not flag them.
 
 Operational modes
 -----------------

@@ -25,7 +25,9 @@ Packet structure
 **[DOC]** All CoDICE packets share the standard CCSDS primary header plus
 ``SHCOARSE`` (32-bit spacecraft seconds).
 
-Non-PHA science packets then carry:
+Non-PHA science packets then carry the fields below. The latest version of the CoDICE algorithm document 
+dropped the "Max Length in Bits" column from these tables. The widths shown here come from a
+January 2026 draft, and are included for reference only. The XTCE files are the authority.
 
 .. list-table::
    :header-rows: 1
@@ -86,6 +88,13 @@ Non-PHA science packets then carry:
        ``NSO_spin_sector``
      - -
      - **Added by the 2026-01-29 FSW update.** Pin the trigger to an exact bin.
+       **[DOC]** "the ESA step / spin sector at which the RGFO (NSO) limit is
+       exceeded. RGFO (NSO) mode is activated for all ESA steps (spin sectors)
+       after this value." The spin-sector fields count over a **full spin
+       (0-23)**, while COUNTS-product ``spin_sector`` is half-spin relative
+       (0-11), so compare using ``% 12``. The same fields, plus
+       ``RGFO_Half_Spin`` / ``NSO_Half_Spin``, are also in PHA packets since
+       2026-01-29.
 
 **[DOC]** PHA (direct-event) packets differ: 16-bit ``Acq_Start_Subseconds``, a
 4-bit ``Priority``, a 32-bit ``Num_Events``, a 1-bit ``Compressed`` flag and a
@@ -311,10 +320,15 @@ Lo species counts (``codice_l1a_lo_species.py``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **[DOC]** Section 10.3.3. Data is collapsed on board over spin sectors and
-positions to **two values per energy**: positions 1, 2, 3, 23, 24 sum to a
-sunward product; positions 4-22 sum to a non-sunward product. Because the spin
-axis is sun-facing these assignments are constant, so the two are separated
-on board and telemetered as different products.
+positions to **two values per energy**: azimuths 1, 2, 3, 23, 24 sum to a
+sunward product; 4-22 sum to a non-sunward product. Because the spin axis is
+sun-facing these assignments are constant, so the two are separated on board
+and telemetered as different products.
+
+The section 9.2 caveats say the flight instrument
+**actually bins by delay-line position**, which lowers the counts and
+intensities. This is an on-board issue; the ground cannot undo it. See
+:ref:`codice-data-caveats`.
 
 **[CODE]** Handles ``COD_LO_SW_SPECIES_COUNTS`` and ``COD_LO_IAL``. Reshapes to
 ``(num_packets, num_species, 128, *collapsed_shape)`` where ``collapsed_shape``
@@ -329,7 +343,15 @@ NaN. This absorbs the Fe highQ/lowQ label swap.
 Uncertainty is ``sqrt(counts)``, matching **[DOC]**
 :math:`\sigma_j(l) = \sqrt{C_j(l)}`.
 
-NSO masking (**[DOC]** section 10.3.3):
+NSO masking, **[DOC]** section 10.3.3, branches by date:
+
+* **Launch - 2026-01-29 (P0-P2):** the instrument enters NSO on the half-spin
+  *after* ``NSO_Half_Spin``, so set to NaN where ``half_spin > NSO_half_spin``.
+* **2026-01-29 onward (P3+):** NSO now starts mid-half-spin at a specific (ESA
+  step, spin sector). The summed species counts for that half-spin are not
+  representative, so set to NaN where ``half_spin >= NSO_half_spin``.
+
+**[CODE]** One rule for all dates:
 
 .. code-block:: python
 
@@ -340,25 +362,44 @@ i.e. ``half_spin >= NSO_half_spin`` -> NaN, plus anything at a padded (never
 sampled) ESA step. ``half_spin_per_esa_step`` is set to ``HALF_SPIN_FILLVAL``
 (63) and ``acquisition_time_per_esa_step`` to NaN in the same places.
 
+.. warning::
+
+   **Discrepancy.** For pre-2026-01-29 data the code also NaNs the
+   ``half_spin == NSO_half_spin`` half-spin, which the document says was still
+   valid, so one extra half-spin of ESA steps is discarded per NSO cycle. This
+   rule is unchanged between the January 2026 draft and Rev 3 Chg 1. See
+   :ref:`codice-implementation-status`.
+
 Lo priority counts (``codice_l1a_lo_priority.py``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **[DOC]** Section 10.3.5. Summed over all positions; final arrays are
 (128 ESA steps x 12 spin sectors), one variable per priority.
 
-**[CODE]** Implements the full **[DOC]** P3 NSO rule when
-``packet_version > 1``:
+**[DOC]** CMAD adds an explicit NSO rule for this product:
 
-1. ``half_spin > nso_half_spin`` -> NaN
-2. ``half_spin == nso_half_spin``:
+* **Launch - 2026-01-29:** ``half_spin > NSO_half_spin`` -> NaN.
+* **2026-01-29 onward:** the exact-bin rule, identical to the angular
+  products (section 10.3.4):
 
-   a. ``spin_sector > nso_spin_sector`` -> NaN
-   b. ``spin_sector == nso_spin_sector`` and ``esa_step > nso_esa_step`` -> NaN
+  1. ``half_spin > nso_half_spin`` -> NaN
+  2. ``half_spin == nso_half_spin``:
 
-``nso_spin_sector`` is taken **modulo 12** because the packet reports 0-23 over
-the full spin while this product's dimension is half-spin indexed 0-11.
+     a. ``spin_sector > nso_spin_sector`` -> NaN
+     b. ``spin_sector == nso_spin_sector`` and ``esa_step > nso_esa_step`` ->
+        NaN
 
-For ``packet_version <= 1`` it falls back to ``half_spin >= nso_half_spin``.
+  with ``nso_spin_sector`` taken **mod 12**, because it counts over the full
+  spin (0-23) while ``spin_sector`` is half-spin relative (0-11).
+
+**[CODE]** When ``packet_version > 1`` the code implements the exact-bin rule
+as documented, including the ``% 12``.
+
+For ``packet_version <= 1`` it uses ``half_spin >= nso_half_spin``. **That
+disagrees with the new document rule** (``>``) and with the code's own comment
+directly above it ("set all data to NaN where half_spin > nso_half_spin").
+Compare ``codice_l1a_lo_counters_singles.py``, whose pre-FSW branch uses
+``>``. See :ref:`codice-implementation-status`.
 
 Lo instrument counters
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -376,8 +417,15 @@ via ``get_counters_aggregated_pattern``, so a re-configuration in flight does no
 require a code change - but the six variable names are fixed, so a *different*
 selection would not be written.
 
-The singles module applies the same NSO rules as priority counts, with the extra
-step of ``nso_spin_sector % 12 // 2`` to map to the 6 paired spin-sector bins.
+The singles module applies the same exact-bin NSO rule as priority counts for
+``packet_version > 1``, with the extra step of ``nso_spin_sector % 12 // 2``
+to map to the 6 paired spin-sector bins. Its pre-FSW branch uses
+``half_spin > nso_half_spin``, which matches the document's priority/angular
+rule, **unlike** the priority module. The aggregated module uses
+``half_spin >= nso_half_spin`` for all dates, like the species module. Section
+10.3.1 gives no counters-specific rule. Section 11.2 says only that
+"esa-steps that are in half-spins after NSO_Half_Spin" are NaN, which reads as
+``>``.
 
 Hi omni-directional counts (``codice_l1a_hi_omni.py``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -389,6 +437,12 @@ values per species in each 16-spin packet. Species: H, He3, He4, C, O,
 Ne/Mg/Si, Fe, UH and unknown ("junk"). **The number of energy bins varies by
 species.** The CDF must carry each species' energy table with centres and
 plus/minus deltas.
+
+**[DOC]** CMAD names the deltas ``energy_<species>_delta_plus`` and
+``energy_<species>_delta_minus`` (sections 10.2.3 and 10.2.4). **[CODE]** The
+variables are ``energy_<species>_plus`` and ``energy_<species>_minus``, and
+``codice_l2.py`` reads them by those names. The meaning is the same; renaming
+would be a CDF-schema change touching L1A, L1B and L2.
 
 **[CODE]** ``n_spins = int(16 / three_d_collapsed)``; each packet's epoch is
 expanded into ``n_spins`` epochs:
@@ -498,7 +552,8 @@ Direct events (``codice_l1a_de.py``)
 
 **[DOC]** Hi gain (``Energy Range``) mapping: 0 = no energy, 1 = low gain,
 2 = mid gain, 3 = high gain. **[CODE]** ``GAIN_ID_TO_STR = {1: "LG", 2: "MG",
-3: "HG"}``.
+3: "HG"}``. Per the section 9.2 caveats, LG is currently unusable and only the
+upper part of MG is usable; see :ref:`codice-data-caveats`.
 
 **[DOC]** Three PHA event types: **TCR** (start + stop + SSD), **DCR** (start +
 stop, no SSD) and **SSD** (SSD only). Each type populates a different subset of

@@ -54,11 +54,14 @@ Rule of thumb
    * - Geometric factors or efficiencies
      - The ``l2-lo-gfactor`` / ``l2-*-efficiency`` ancillary CSVs; test copies
        in ``imap_processing/tests/codice/data/l2_lut/``
-   * - The spin-angle reference values and why they differ from the PDF
+   * - The spin-angle reference values (now equal to Rev 3 Chg 1; 90 deg below
+       older drafts)
      - :ref:`codice-spin-angle-offset` and
        ``imap_processing/tests/codice/test_codice_spin_angles.py``
    * - The commissioning timeline / RGFO / NSO rules
      - :ref:`codice-timeline` and :ref:`codice-modes` - transcribed
+   * - The instrument team's known data caveats
+     - :ref:`codice-data-caveats` - transcribed
    * - The acquisition-time equations (Appendix C)
      - :ref:`codice-esa-stepping` - transcribed
    * - Anything else
@@ -143,7 +146,12 @@ quickest way to enumerate what a code path needs.
 Algorithm document section index
 --------------------------------
 
-Page numbers are the printed page numbers of Rev 3 Chg 0 (87 PDF pages).
+Section numbers are those of **Rev 3 Chg 1**, as embedded in the CMAD
+(``IMAP_CMAD_20260722.pdf`` section 4.3.2, PDF pages 623-709). To find a
+printed body page in the CMAD, add 628 to it (printed page 1 = CMAD page 629).
+The front matter is on CMAD pages 625-628, and Appendices A, B and C start on
+CMAD pages 704, 705 and 709. Printed page numbers moved by one or two pages
+relative to the January 2026 draft, and sections 4-5 were re-numbered as shown.
 
 .. list-table::
    :header-rows: 1
@@ -160,14 +168,20 @@ Page numbers are the printed page numbers of Rev 3 Chg 0 (87 PDF pages).
      - :ref:`codice-overview`
    * - 4.2
      - Angular mappings in sensor coordinates (look-direction unit vectors,
-       azimuth tables, spin-angle tables, SC frame offset)
+       azimuth tables, spin-phase / +X\ :sub:`Co` reference, spin-angle tables,
+       46 deg SC frame offset)
      - :ref:`codice-frames`
-   * - 4.3-4.8
-     - Algorithm input/output, testing, validation, uncertainty
-     - Mostly **TBD in the document itself**
-   * - 5
-     - Processing pipeline
+   * - 5.1
+     - Algorithm description: the four packet IDs and the SCI-LUT (was 4.3
+       "Algorithm Input" in the draft)
+     - :ref:`codice-l1a`, :ref:`codice-ancillary`
+   * - 5.2
+     - Processing pipeline (was 5.1)
      - :ref:`codice-data-products`
+   * - 5.3
+     - Data validation: pre-launch synthetic-data validation, independent
+       re-implementation by the SDC, post-launch re-validation on flight data.
+     - -
    * - 6
      - Data products overview (Tables 1-4)
      - :ref:`codice-data-products`
@@ -178,9 +192,12 @@ Page numbers are the printed page numbers of Rev 3 Chg 0 (87 PDF pages).
    * - 8
      - Worked unpacking example
      - :ref:`codice-l1a`
-   * - 9
-     - Instrument operation timeline and changes (P0-P3)
+   * - 9.1
+     - Instrument operation timeline and changes (P0-P4)
      - :ref:`codice-timeline`
+   * - 9.2
+     - Data caveats for the Summer 2026 release; products not being produced
+     - :ref:`codice-data-caveats`
    * - 10.1
      - L1A housekeeping
      - :ref:`codice-l1b`
@@ -220,7 +237,8 @@ Page numbers are the printed page numbers of Rev 3 Chg 0 (87 PDF pages).
      - Hi true omni-directional intensity (solid-angle correction)
      - :ref:`codice-implementation-status` - **not implemented**
    * - App. C
-     - Spin-sector acquisition times
+     - Spin-sector acquisition times. **Truncated in the CMAD** after the
+       common-values table; the Hi/Lo equations are only in an older draft of the algorithm document.
      - :ref:`codice-esa-stepping` - transcribed
 
 Things you genuinely need the document for

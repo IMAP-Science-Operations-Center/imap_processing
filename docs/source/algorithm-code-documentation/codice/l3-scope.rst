@@ -27,9 +27,11 @@ What L3 consists of
      - L2 direct events plus per-event **mass** and **mass-per-charge**, and a
        normalisation factor derived from the priority counts.
    * - Lo SW 3-D VDFs
-     - ``imap_codice_l3a_lo-sw-3d-vdf_``
+     - ``imap_codice_l3a_lo-<species>-3d-distribution_``
+       (was ``lo-sw-3d-vdf``)
      - Intensity vs (azimuthal sector, spin sector, energy) in the instrument
-       frame, built from direct events.
+       frame, built from direct events. Binned by **APD ID**,
+       output 128 E/q x 24 spin angles x 13 elevations.
    * - Lo SW partial densities
      - ``imap_codice_l3a_lo-partial-densities_``
      - Per-species partial densities from the L2 SW species intensities.
@@ -40,7 +42,7 @@ What L3 consists of
      - (shares the partial-densities prefix)
      - O7+/O6+, C6+/C4+, C6+/C5+, Fe_low/Fe_high at 12 minute cadence.
    * - Lo SW charge state distributions
-     - ``imap_codice_l3a_lo-sw-distributions_``
+     - ``imap_codice_l3a_lo-sw-charge-state-distributions_``
      - Relative abundances of O charge states 5-8 and C charge states 4-6.
    * - Hi direct events
      - ``imap_codice_l3_hi-direct-events_``
@@ -136,7 +138,7 @@ This is the one place the **instrument -> spacecraft frame rotation** is needed:
 
 .. math::
 
-   \theta_{SC} = (\theta_{inst} + 316^\circ) \bmod 360^\circ, \qquad
+   \theta_{SC} = (\theta_{inst} + 46^\circ) \bmod 360^\circ, \qquad
    \phi_{SC} = \phi_{inst}
 
 .. math::
@@ -160,8 +162,10 @@ L3c combined products (13.3)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Hi + Lo combination converts Lo energy-per-charge to energy-per-nucleon
-using an assumed charge state and mass, re-bins both onto 20 logarithmic
-energy-per-nucleon bins per species, restricts the Hi range to avoid overlap
+using an assumed charge state and mass, then re-bins Lo onto a **common grid of
+20 sqrt(2)-spaced energy-per-nucleon bins** spanning
+:math:`E_{min} = 10^{-4}` to :math:`E_{max} \approx 0.1` MeV/n (lower edges
+:math:`E_{min} 2^{i/2}`, geometric centres). It then restricts the Hi range to avoid overlap
 (H > 0.08, He > 0.04, O > 0.03, Fe > 0.02 MeV/n), time-averages Hi to the 4 min
 Lo cadence, and concatenates.
 

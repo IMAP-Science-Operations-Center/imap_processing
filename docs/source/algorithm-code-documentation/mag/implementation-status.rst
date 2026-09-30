@@ -4,7 +4,8 @@ Implementation Status and Known Gaps
 ====================================
 
 This page is the honest accounting of where the code stands against the
-algorithm document. **Read it before proposing or estimating work.**
+algorithm document (SW-009) and, where it overlaps, the public CMAD (see
+:ref:`mag-cmad`). **Read it before proposing or estimating work.**
 
 Accurate as of the most recent survey of ``imap_processing/mag`` and
 ``imap_processing/ialirt/l0/parse_mag.py``. If you change something material,
@@ -156,7 +157,9 @@ GSM at L2
 The document lists DSRF, SRF, RTN and GSE for L1D and L2, and GSM only for
 I-ALiRT. The code additionally produces ``imap_mag_l2_{norm,burst}-gsm``, with
 matching global attributes. This is an intentional extension. L1D does **not**
-produce GSM.
+produce GSM. The public CMAD (section 4.1.1) lists the ``gsm`` L2 products
+alongside the other frames, so the project documentation now agrees with the
+code.
 
 Fine time divisor
 ^^^^^^^^^^^^^^^^^
@@ -248,34 +251,49 @@ most likely mismatch.
 Quality bitmask definitions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-MAG does not use ``imap_processing/quality_flags.py``; there is no
-``MagQualityFlags`` enum. The only in-repo definition is the ``VAR_NOTES`` on
-``qf_bitmask`` in ``imap_mag_l2_variable_attrs.yaml``, and it **disagrees with
-the document**:
+**Bit assignment: resolved.** SW-009 section 7.2 and the ``VAR_NOTES`` on
+``qf_bitmask`` in ``imap_mag_l2_variable_attrs.yaml`` used to disagree: SW-009
+lists eight named bits including ``SCTONES`` and ``PIVOTPLATFORMINTERFERENCE``,
+with ``SEC_SENS`` last. The public CMAD (section 5.4.5) now defines the bitmask
+explicitly, and it **matches the YAML**:
 
-.. list-table::
-   :header-rows: 1
-   :widths: 50 50
+* Bit 0: data sourced from the secondary sensor
+* Bit 1: thruster firing signals removed
+* Bit 2: spacecraft interference (TCMs, IMAP-Lo pivot platform motion)
+* Bit 3: instrument signals removed
+* Bits 4-7: reserved for in-flight calibration
 
-   * - Document (section 7.2)
-     - ``imap_mag_l2_variable_attrs.yaml``
-   * - ``THRUSTERINTERFERENCE``,
-       ``SCINTERFERENCE``,
-       ``SCTONES``,
-       ``INSTRUMENTINTERFERENCE``,
-       ``PIVOTPLATFORMINTERFERENCE``,
-       ``RESERVE6``, ``RESERVE7``,
-       ``SEC_SENS``
-     - Bit 0 secondary sensor,
-       Bit 1 thruster,
-       Bit 2 spacecraft interference,
-       Bit 3 instrument signals,
-       Bits 4-7 reserved
+Treat SW-009's list as superseded. See :ref:`mag-cmad-quality`.
 
-``SCTONES`` and ``PIVOTPLATFORMINTERFERENCE`` are missing from the YAML, and
-``SEC_SENS`` is placed first rather than last. Since the bitmask is produced by
-the MAG team and passed through opaquely, the **bit assignment must be confirmed
-with them** before either source is trusted.
+**Still not done:** MAG does not use ``imap_processing/quality_flags.py``; there
+is no ``MagQualityFlags`` enum, and the bitmask is copied through opaquely from
+the offsets file. The YAML ``VAR_NOTES`` is the only in-repo definition.
+
+L2 provenance of Imperial calibration inputs (unconfirmed)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CMAD ICL-017 section 2 says the Imperial calibration input files (matrix
+version, spin-plane and spin-axis offset CSVs, listed in
+``calibration_input_release1_v001.json``) "are captured in the parent metadata
+field of the released L2 science data files".
+
+**[CODE]** ``Mag.do_processing`` in ``cli.py`` sets L2 ``Parents`` to the SDC
+dependency file names (calibration and offsets files) plus the one L1B/L1C file
+actually used. The offsets file's own ``Parents`` is used only to **locate** that
+L1 file: ``retrieve_mag_l1_inputs_from_l2_offsets`` downloads every entry and L2
+uses the first. It is never copied to the output.
+
+Whether this matters depends on what Imperial puts in the offsets file, which
+has not been checked against a real delivered file. If the offsets ``Parents``
+lists anything besides the L1 file (such as the calibration-input JSON):
+
+* those entries do not reach L2 ``Parents``, contrary to the CMAD statement;
+* ``retrieve_mag_l1_inputs_from_l2_offsets`` would try to ``download()`` them
+  from the SDC, and would fail if they are not SDC-hosted files.
+
+If instead the calibration-input names live only inside the offsets file, the
+CMAD statement is satisfied indirectly, because the offsets file is itself a
+parent of the L2 product.
 
 I-ALiRT gaps
 ^^^^^^^^^^^^
@@ -393,8 +411,10 @@ Roughly in order of value per unit effort:
 2. **Fix the 14-bit sequence-counter rollover** and add the first/last sequence
    counter attributes. This is the most-repeated missing requirement in the
    document and it is provenance data that cannot be reconstructed later.
-3. **Settle the quality bitmask bit assignment** with the MAG team and put it in
-   ``quality_flags.py`` as a real enum, then make the YAML derive from it.
+3. **Put the quality bitmask in** ``quality_flags.py`` as a real enum and make
+   the YAML derive from it. The bit assignment is now settled by CMAD section
+   5.4.5 (see :ref:`mag-cmad-quality`). While there, check what a real delivered
+   offsets file carries in ``Parents`` (see the provenance note above).
 4. **Propagate the gradiometer quality flag and magnitude into the L1D science
    product.** The values are already computed.
 5. **Split spin-average offsets per sensor.** Currently MAGo offsets are applied

@@ -69,7 +69,7 @@ Summary
 The SCI-LUT
 -----------
 
-**[DOC]** Sections 4.3, 7 and 8. Originates as ``26850.03-SCI-LUT-01.xls`` with
+**[DOC]** Sections 5.1, 7 and 8. Originates as ``26850.03-SCI-LUT-01.xls`` with
 tabs ``Plan``, ``ESA Sweep``, ``Lo Stepping``, ``Views``, ``Collapse_Lo``,
 ``Collapse_Hi``, ``Data Products - Lo`` and ``Data Products - Hi``. The
 ``Table_ID`` in each science packet says which spreadsheet version to use.
@@ -258,6 +258,9 @@ SPICE
 **[CODE]** CoDICE processing uses ``imap_processing.spice.time.met_to_ttj2000ns``
 to convert acquisition times to CDF epochs. It does **not** use SPICE kernels,
 pointing frames or spin data - all CoDICE L2 angles are in the instrument frame
-and the +316 deg rotation to the spacecraft frame is not applied here (see
-:ref:`codice-frames`). CoDICE L2 jobs therefore do not need a metakernel beyond
+and the +46 deg rotation to the spacecraft frame (+316 deg in the January 2026
+draft) is not applied here (see :ref:`codice-frames`). Rev 3 Chg 1 section 4.2
+says spin angles "SHOULD" be computed with SPICE from the look-direction unit
+vectors and the instrument kernel. The pipeline uses tabulated constants
+instead, which the document also provides. CoDICE L2 jobs therefore do not need a metakernel beyond
 what the leapsecond/SCLK conversion requires.

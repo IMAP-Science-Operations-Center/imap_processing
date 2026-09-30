@@ -10,7 +10,7 @@ into an algorithm page.
 Level definitions
 -----------------
 
-**[DOC]** Section 2.1 and section 5.1:
+**[DOC]** Section 2.1 and section 5.2:
 
 .. list-table::
    :header-rows: 1
@@ -160,6 +160,14 @@ etc.) but are **not processed** by ``process_l1a``.
    The Lo species, angular and NSW products described in sections 10.3.3 and
    10.3.4 of the document are therefore **only half built**. See
    :ref:`codice-implementation-status`.
+
+   **[DOC]** Rev 3 Chg 1 section 9.2 now says the instrument team is **not
+   currently producing** ``lo-nsw-species``, ``lo-sw-angular`` or
+   ``lo-nsw-angular`` at any level, "due to issues identified post-launch".
+   The missing code therefore matches current operations. The algorithms are
+   still fully specified in sections 10-12, and "not currently" suggests the
+   products may return. Ask the team before building them. See
+   :ref:`codice-data-caveats`.
 
 Products this repository can emit
 ---------------------------------
@@ -492,4 +500,10 @@ cross-checked at L1A.
 
 **[DOC]** The document's non-sunward Lo species list is H+, He++, O5-8, C4-6,
 Ne+Mg+Si, Fe, He+ and CNO+ (8 species). There is no corresponding constant in
-the code, consistent with the NSW products not being implemented.
+the code, consistent with the NSW products not being implemented (and not
+currently produced by the team, per section 9.2).
+
+**[DOC]** Table 2 of the document lists the Lo angular species as He++, O+6,
+C+5, Fe+10 and PUI He+. The code's ``LO_SW_ANGULAR_VARIABLE_NAMES`` is
+``hplus``, ``heplusplus``, ``oplus6``, ``fe_loq``, ``heplus``. Resolve this
+against the SCI-LUT, not either list, if the angular products are ever built.

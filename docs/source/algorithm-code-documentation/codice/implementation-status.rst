@@ -7,9 +7,24 @@ This page is the honest accounting of where the code stands against the
 algorithm document. **Read it before proposing or estimating work.**
 
 Accurate as of the most recent survey of ``imap_processing/codice`` and
-``imap_processing/ialirt/l0/process_codice.py``, against algorithm document
-Rev 3 Chg 0. If you change something material, update this page in the same
-commit.
+``imap_processing/ialirt/l0/process_codice.py``. The code survey was done
+against the January 2026 draft (Rev 3 Chg 0). This page has since been
+re-checked against **Rev 3 Chg 1** (CMAD section 4.3.2) without re-surveying
+the code, apart from spot checks where the document changed. If you change
+something material, update this page in the same commit.
+
+.. note::
+
+   **What Rev 3 Chg 1 changed on this page:**
+
+   * The **90 deg spin-angle discrepancy is resolved** - the document now
+     prints the values the code uses.
+   * The three missing Lo products are **officially not being produced** by the
+     instrument team (section 9.2).
+   * The Lo direct-event ``apd_id`` vs ``position`` issue is re-framed by the
+     new caveat that position is not a reliable direction.
+   * A **pre-2026-01-29 NSO boundary discrepancy** is recorded (it existed
+     against the draft too, but was not previously written down).
 
 Summary
 -------
@@ -25,8 +40,7 @@ Summary
      - **Mostly complete**
      - Eleven of fourteen science products implemented, plus housekeeping. The
        SCI-LUT unpacking machinery, all seven compression modes, segmented
-       direct events and the full P3 NSO masking rules all work. **The three
-       angular/NSW-species products are missing entirely.**
+       direct events and the full P3 NSO masking rules all work. 
    * - L1B
      - **Complete for what L1A produces**
      - Every implemented L1A product has a working rate conversion. The three
@@ -51,51 +65,6 @@ apart from the generic unknown-data-level branch in ``Codice.do_processing``.
 Not implemented at all
 ----------------------
 
-Lo angular counts and intensities
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**The largest single gap.** Document sections 10.3.4 (L1A), 11.2.3 (L1B) and
-12.2.2 (L2).
-
-* APIDs 1158 (``COD_LO_SW_ANGULAR_COUNTS``) and 1159
-  (``COD_LO_NSW_ANGULAR_COUNTS``) are defined in ``CODICEAPID`` but
-  **``process_l1a`` has no branch for them**. There is no
-  ``codice_l1a_lo_angular.py``.
-* ``LO_SW_ANGULAR_VARIABLE_NAMES`` and ``LO_NSW_ANGULAR_VARIABLE_NAMES`` exist
-  in ``constants.py`` and are otherwise unreferenced.
-* ``imap_codice_l1a_lo-sw-angular``, ``imap_codice_l1b_lo-sw-angular``,
-  ``imap_codice_l2_lo-sw-angular`` and the NSW equivalents all have
-  ``Logical_source`` entries and CDF variable-attribute YAML
-  (``imap_codice_l2-lo-angular_variable_attrs.yaml``), so the *metadata* is
-  ready and the *processing* is not.
-
-Building it requires, in order:
-
-1. The full **de-spin** mapping from (12 spin sectors x 5/19 positions) to
-   (24 spin angles x 5/19 positions), using half-spin parity and pixel
-   orientation. See :ref:`codice-esa-stepping`.
-2. The P3 **NSO masking** rules (already written twice, in
-   ``codice_l1a_lo_priority.py`` and ``codice_l1a_lo_counters_singles.py`` -
-   worth factoring out rather than writing a third time).
-3. L1B: ``n_sectors = 1``. Trivial once ``LO_SW_ANGULAR_VARIABLE_NAMES`` is
-   reachable by the ``getattr`` reflection.
-4. L2: the intensity division, then the **position -> elevation angle**
-   reduction, then the **position 1 and 13 replication** across the unobserved
-   half of the spin angles.
-5. Wiring ``compute_geometric_factors(..., angular_product=True)``, which is
-   already written and **currently unreachable**.
-
-Lo non-sunward species
-^^^^^^^^^^^^^^^^^^^^^^
-
-APID 1157 (``COD_LO_NSW_SPECIES_COUNTS``) has no ``process_l1a`` branch and no
-species-name constant. The document's 8 NSW species (H+, He++, O5-8, C4-6,
-Ne+Mg+Si, Fe, He+, CNO+) are not represented anywhere in the code.
-
-At L2 the NSW isotropy factor (19 positions, averaged :math:`G_m` and
-:math:`\varepsilon`) is *supported* by ``calculate_intensity`` via
-``NSW_POSITIONS`` and ``average_across_positions=True`` - that constant is
-defined but never passed.
 
 Hi Appendix B: true omni-directional intensity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -123,7 +92,8 @@ propagation into each ratio. ``calculate_ratios`` computes only the six ratios.
 Frame conversion to spacecraft coordinates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:math:`\theta_{SC} = (\theta_{inst} + 316^\circ) \bmod 360^\circ` is not applied
+:math:`\theta_{SC} = (\theta_{inst} + 46^\circ) \bmod 360^\circ` (Rev 3 Chg 1;
++316 deg against the draft's old instrument-frame tables) is not applied
 anywhere. All L2 angles are instrument-frame. This is consistent with the
 document, which only needs the SC frame for L3 pitch angles, but it means an L2
 consumer must do the rotation themselves.
@@ -173,14 +143,32 @@ Ordered by how likely they are to affect released data.
        this is correct depends entirely on what the ``GF`` row of
        ``imap_codice_l2-hi-omni-efficiency_*.csv`` contains. **Verify before
        trusting absolute omni intensities.**
+   * - ``codice_l1a_lo_species.py``, ``codice_l1a_lo_priority.py``,
+       ``codice_l1a_lo_counters_aggregated.py``
+     - **NSO boundary half-spin over-masked before 2026-01-29.** For P0-P2 the
+       document says the instrument enters NSO on the half-spin *after*
+       ``NSO_Half_Spin``, so only ``half_spin > NSO_half_spin`` is NaN
+       (species: section 10.3.3, unchanged since the draft; priority: section
+       10.3.5, new in Rev 3 Chg 1). These three modules use ``>=`` for
+       pre-FSW data. Species and aggregated do so for *all* dates, which is
+       correct only from 2026-01-29 for species. In the priority module this
+       contradicts its own comment. ``codice_l1a_lo_counters_singles.py`` uses
+       ``>``. Effect: one extra half-spin of valid ESA steps is NaN'd in every
+       cycle where NSO triggered, in P0-P2 data. Confirm the intended rule for
+       the counters products with the team; the document does not give one
+       explicitly.
    * - ``codice_l2.py``, ``process_lo_direct_events``
-     - **Elevation angle is looked up from ``apd_id``, not ``position``.**
-       Document section 12.2.1 says "Converted from position to elevation
-       angle". The same function uses ``position`` for the 13-24 spin shift, so
-       the two fields are being used inconsistently within one function. For
-       CoDICE-Lo the delay-line ``position`` is the direction measurement and
-       ``apd_id`` identifies the energy detector - the document (section 4.1) is
-       clear these are different things.
+     - **``apd_id`` and ``position`` used inconsistently within one function.**
+       Elevation is looked up from ``apd_id``; the 13-24 spin de-spin shift uses
+       ``position``. Section 12.2.1 still says elevation is "converted from
+       position". However, Rev 3 Chg 1 section 9.2 says delay-line position "is
+       not an accurate identifier of particle direction" and "should only be
+       used to support APD ID". It also describes the de-spin in terms of
+       **APDs** 2-12 / 14-24, and L3b now bins by APD ID. **This makes the
+       elevation lookup the likely-correct half and the ``position``-based
+       spin shift the likely-wrong half** - the reverse of what this page said
+       against the draft. Either way the two should agree; confirm with the
+       team before changing released L2.
    * - ``utils.py``, ``get_codice_epoch_time``
      - Sub-seconds are divided by ``65536`` (2^16) for every product, but non-PHA
        science packets declare a **20-bit** ``Acq_Start_Subseconds`` field
@@ -204,18 +192,13 @@ Deviations from the algorithm document
 
 These are design decisions, not bugs, but they will surprise anyone reading the
 document first.
+Hi energy-delta variable names
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The 90 degree spin-angle correction
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Every spin-angle reference table in the code is the printed Rev 3 value minus
-90 degrees.** This is a post-Rev-3 correction from Michael Starkey (issue #3242)
-re-deriving instrument-frame reference angles relative to the instrument +X
-axis. It affects ``L2_HI_SECTORED_ANGLE``, ``SSD_ID_TO_SPIN_ANGLE``,
-``HI_IALIRT_REF_SPIN_ANGLE`` and the Lo direct-event ``+277.5`` constant.
-``imap_processing/tests/codice/test_codice_spin_angles.py`` pins all of them as
-exact-value regression tests specifically to stop somebody reverting to the PDF.
-See :ref:`codice-spin-angle-offset`.
+Rev 3 Chg 1 calls the Hi energy-bin deltas ``energy_<species>_delta_plus`` /
+``energy_<species>_delta_minus``. The code uses ``energy_<species>_plus`` /
+``energy_<species>_minus`` at L1A/L1B and reads them by those names at L2. The
+two are equivalent; only the names differ.
 
 Epoch is the window centre, not the start
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -241,6 +224,16 @@ The document says nothing about this. The code sets ``tof_ns < 0`` to NaN in
 ``process_lo_direct_events``, with the comment that it mirrors "Menlo's L3a
 handling" - i.e. the downstream L3 repository already discards them, and doing
 it at L2 keeps the two consistent.
+
+Data caveats are not flagged
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Section 9.2 lists known problems with the Summer 2026 L2 data (see
+:ref:`codice-data-caveats`), e.g. Hi LG energies unusable and Lo SW/NSW
+binning by position. These are instrument/on-board issues, and the document
+does not ask the ground pipeline to do anything about them. The pipeline sets
+no quality flag for any of them. If the team later asks for flags (for
+example on Hi LG/MG events), that would be new work here.
 
 RGFO boundary fill applies to all dates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -294,8 +287,8 @@ times in the source:
   changes. There may be different packet versions in the same dataset.``
 
 **2026-01-29 itself is therefore expected to be wrong** in some products, and so
-is any future day on which the SCI-LUT changes mid-day. If you are chasing an
-anomaly, check the date first.
+is any future day on which the SCI-LUT changes mid-day. **2026-04-03** (start of
+P4, a Lo SCI_LUT update; see :ref:`codice-timeline`) is one documented example. If you are chasing an anomaly, check the date first.
 
 Complete TODO inventory
 -----------------------
@@ -365,7 +358,8 @@ Test coverage
      - Hi omni and sectored intensities, spin-angle construction.
    * - ``test_codice_spin_angles.py``
      - Exact-value regression on every corrected reference angle. **Runs without
-       external data** - the primary guard against reverting to the PDF tables.
+       external data** - the primary guard against reverting to pre-Rev 3 Chg 1
+       PDF tables.
    * - ``test_decompress.py``
      - All seven compression modes.
    * - ``test_process_by_table_id.py``
