@@ -691,7 +691,8 @@ def get_de_product_name(repoint: str, sensor: int, ancillary_files: dict) -> str
 class ExtendedSpinConfig:
     """Pointing dependent l1b culling configurations."""
 
-    thresholds: dict[int, float]  # energy thresholds for culling
+    energy_thresholds: np.ndarray  # energy thresholds for culling
+    voltage_threshold: float  # voltage threshold for culling
     date: datetime.datetime  # Date when configuration changed
     priority: str  # Which de product to use priority 1-4 de or raw de. e.g. p0-p4
     calibration: str  # Calibration label
@@ -736,12 +737,19 @@ class ExtendedSpinConfig:
             )
         config = filtered_df.iloc[0]
         # Get the column names that contain "cullThresh"
-        thresh_colnames = [col for col in df.columns if "cullThresh" in col]
-        thresholds = {int(col.split("_")[-1]): config[col] for col in thresh_colnames}
+        thresh_colnames = sorted(
+            [col for col in df.columns if "cullThresh" in col],
+            key=lambda threshold: int(threshold.split("_")[-1]),
+        )
+        e_thresholds = np.array([config[col] for col in thresh_colnames])
+        # The config provides thresholds for bins 0-4; bin 5 (>
+        # UltraConstands.MAX_ENERGY_THRESHOLD keV) reuses the bin 4 threshold
+        e_thresholds = np.append(e_thresholds, e_thresholds[-1])
         date = datetime.datetime.strptime(config["date"], "%m/%d/%y")
 
         return cls(
-            thresholds=thresholds,
+            energy_thresholds=e_thresholds,
+            voltage_threshold=config["deflector_Vthresh"],
             date=date,
             priority=config["pri_config"],
             calibration=config["cal_config"],

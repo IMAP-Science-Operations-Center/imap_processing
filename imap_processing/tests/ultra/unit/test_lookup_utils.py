@@ -307,5 +307,24 @@ def test_extended_config_class():
 
     assert config.priority == "p0"
     assert config.calibration == "c0"
-    assert config.thresholds == {0: 200, 1: 7.5, 2: 4.5, 3: 3.5, 4: 3.5}
+    np.testing.assert_array_equal(
+        config.energy_thresholds, np.array([200, 7.5, 4.5, 3.5, 3.5, 3.5])
+    )
     assert config.date == datetime.datetime(2025, 11, 10)
+    assert config.voltage_threshold == 3400
+
+
+def test_extended_config_class_last_repoint_range():
+    """Tests the ExtendedSpinConfig class."""
+    config_path = (
+        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
+    )
+    config = ExtendedSpinConfig.from_csv(config_path, "repoint00383")
+
+    assert config.priority == "p1"
+    assert config.calibration == "c4"
+    np.testing.assert_array_equal(
+        config.energy_thresholds, np.array([117.5, 73.5, 2.5, 26.5, 8.5, 8.5])
+    )
+    assert config.date == datetime.datetime(2026, 8, 11)
+    assert config.voltage_threshold == 2900
