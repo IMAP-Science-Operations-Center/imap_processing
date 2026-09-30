@@ -174,7 +174,7 @@ class UltraConstants:
             "imap_spk_demo.bsp",
             "sim_1yr_imap_attitude.bc",
             "imap_001.tf",
-            "imap_science_120.tf",
+            "imap_science_130.tf",
             "sim_1yr_imap_pointing_frame.bc",
         ]
     ]
