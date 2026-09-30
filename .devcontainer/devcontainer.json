@@ -12,7 +12,7 @@
 		}
 	},
 	"forwardPorts": [6080],
-	"postCreateCommand": "poetry install",
+	"postCreateCommand": "poetry install --all-extras",
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -21,8 +21,8 @@
 			],
 			// Set *default* container specific settings.json values on container create.
 			"settings": {
-				// not using venvs? uncomment this
-				"python.defaultInterpreterPath": "/usr/local/bin/python"
+				// poetry installs into the in-project .venv (see Dockerfile)
+				"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
 			}
 		}
 	}
