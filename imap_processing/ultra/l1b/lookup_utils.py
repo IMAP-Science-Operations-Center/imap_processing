@@ -691,7 +691,7 @@ def get_de_product_name(repoint: str, sensor: int, ancillary_files: dict) -> str
 class ExtendedSpinConfig:
     """Pointing dependent l1b culling configurations."""
 
-    energy_thresholds: np.ndarray  # energy thresholds for culling
+    energy_thresholds: np.ndarray  # energy thresholds for culling (counts per 20-spin bin)
     voltage_threshold: float  # voltage threshold for culling
     date: datetime.datetime  # Date when configuration changed
     priority: str  # Which de product to use priority 1-4 de or raw de. e.g. p0-p4
@@ -744,9 +744,10 @@ class ExtendedSpinConfig:
         # The thresholds are counts per spin bin of UltraConstants.SPIN_BIN_SIZE (20)
         # spins, so they are used as is. If SPIN_BIN_SIZE changes, the thresholds in
         # the config file need to be updated for the new bin size.
-        thresholds = np.array([config[col] for col in thresh_colnames])
-        # Duplicate the last energy threshold
-        thresholds = np.append(thresholds, thresholds[-1])
+        e_thresholds = np.array([config[col] for col in thresh_colnames])
+        # The config provides thresholds for bins 0-4; bin 5 (>
+        # UltraConstands.MAX_ENERGY_THRESHOLD keV) reuses the bin 4 threshold
+        e_thresholds = np.append(e_thresholds, e_thresholds[-1])
         date = datetime.datetime.strptime(config["date"], "%m/%d/%y")
 
         return cls(
