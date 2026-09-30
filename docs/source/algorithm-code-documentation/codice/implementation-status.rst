@@ -13,19 +13,6 @@ re-checked against **Rev 3 Chg 1** (CMAD section 4.3.2) without re-surveying
 the code, apart from spot checks where the document changed. If you change
 something material, update this page in the same commit.
 
-.. note::
-
-   **What Rev 3 Chg 1 changed on this page:**
-
-   * The **90 deg spin-angle discrepancy is resolved** - the document now
-     prints the values the code uses.
-   * The three missing Lo products are **officially not being produced** by the
-     instrument team (section 9.2).
-   * The Lo direct-event ``apd_id`` vs ``position`` issue is re-framed by the
-     new caveat that position is not a reliable direction.
-   * A **pre-2026-01-29 NSO boundary discrepancy** is recorded (it existed
-     against the draft too, but was not previously written down).
-
 Summary
 -------
 
