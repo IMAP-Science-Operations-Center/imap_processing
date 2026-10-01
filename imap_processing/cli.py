@@ -1487,6 +1487,12 @@ class Lo(ProcessInstrument):
                 f"Unexpected dependencies found for IMAP-Lo pivot-ckernel: "
                 f"{nhk_files}. Expected exactly one L1B NHK file."
             )
+        # The repoint table provides the pointing start and end times.
+        if not dependencies.get_file_paths(data_type=RepointInput.data_type):
+            raise ValueError(
+                "A repoint table dependency is required for IMAP-Lo pivot-ckernel "
+                "processing."
+            )
         minor_version = self._resolve_kernel_minor_version(self.descriptor)
         return lo_pivot_kernel.generate_lo_pivot_kernel(
             nhk_files[0], self.repointing, minor_version

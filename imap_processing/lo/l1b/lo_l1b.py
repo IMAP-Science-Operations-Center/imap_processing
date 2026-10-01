@@ -1878,9 +1878,12 @@ def get_median_pivot_angle(ds_nhk: xr.Dataset) -> float:
     Returns
     -------
     pivot_angle : float
-        The median pivot angle [degrees], or NaN if there are no valid samples
-        within the time range.
+        The median pivot angle [degrees], or NaN if the dataset has no records
+        or there are no valid samples within the time range.
     """
+    if ds_nhk.sizes.get("epoch", 0) == 0:
+        return np.nan
+
     hk_epoch_ets = ttj2000ns_to_et(ds_nhk["epoch"])
     start_et_hk = (
         hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[0]).total_seconds()

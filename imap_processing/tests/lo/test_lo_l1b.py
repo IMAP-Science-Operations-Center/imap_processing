@@ -2242,6 +2242,15 @@ def test_get_median_pivot_angle_no_samples(furnish_kernels):
     assert np.isnan(pivot)
 
 
+def test_get_median_pivot_angle_empty():
+    """NaN, not an IndexError, for an NHK dataset with no records."""
+    empty = xr.Dataset(
+        {"pcc_coarse_pot_pri": ("epoch", np.array([], dtype=np.float64))},
+        coords={"epoch": np.array([], dtype=np.int64)},
+    )
+    assert np.isnan(get_median_pivot_angle(empty))
+
+
 def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
     """Test basic functionality of l1b_bgrates_and_goodtimes."""
     # Arrange - Create a simple L1B histogram rates dataset

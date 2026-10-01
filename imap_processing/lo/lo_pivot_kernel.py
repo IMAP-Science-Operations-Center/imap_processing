@@ -1,6 +1,8 @@
 """Generate the IMAP-Lo pivot platform attitude kernel (CK)."""
 
 import logging
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -70,6 +72,9 @@ def generate_lo_pivot_kernel(
     - Latest NAIF leapseconds kernel (naif0012.tls)
     - The latest IMAP sclk (imap_sclk_NNNN.tsc)
     - The latest IMAP frame kernel (imap_###.tf), which defines IMAP_LO_BASE
+
+    The repoint table must also be set (`imap_processing.spice.repoint`), as it
+    gives the pointing start and end times.
     """
     repoint_id = imap_data_access.ScienceFilePath(l1b_nhk_path.name).repointing
     if repoint_id is None or f"repoint{repoint_id:05d}" != repointing:
@@ -89,7 +94,14 @@ def generate_lo_pivot_kernel(
         raise FileExistsError(f"Lo pivot kernel already exists: {kernel_path}")
     kernel_path.parent.mkdir(parents=True, exist_ok=True)
 
-    write_lo_pivot_ck(kernel_path, segment, pivot_angle, l1b_nhk_path.name)
+    # Write the kernel in a temporary directory and only publish it once it is
+    # complete, so a failed write never leaves a partial kernel at the output
+    # path. os.link does not replace an existing file, preserving the
+    # no-overwrite behavior even if the kernel appeared during the write.
+    with tempfile.TemporaryDirectory(dir=kernel_path.parent) as tmp_dir:
+        tmp_kernel_path = Path(tmp_dir) / kernel_path.name
+        write_lo_pivot_ck(tmp_kernel_path, segment, pivot_angle, l1b_nhk_path.name)
+        os.link(tmp_kernel_path, kernel_path)
     return [kernel_path]
 
 

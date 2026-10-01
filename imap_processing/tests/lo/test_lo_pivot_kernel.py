@@ -205,3 +205,48 @@ def test_calculate_pivot_segment_no_samples(nhk_files, monkeypatch):
     monkeypatch.setattr(lo_pivot_kernel, "load_cdf", lambda path: nhk)
     with pytest.raises(ValueError, match="No valid pivot angle samples"):
         calculate_pivot_segment(nhk_files["paths"][100], 100)
+
+
+def test_calculate_pivot_segment_empty_nhk(nhk_files, monkeypatch):
+    """An NHK file with no records is the same error as no valid samples."""
+    nhk = make_nhk(np.array([]), np.array([]))
+    monkeypatch.setattr(lo_pivot_kernel, "load_cdf", lambda path: nhk)
+    with pytest.raises(ValueError, match="No valid pivot angle samples"):
+        calculate_pivot_segment(nhk_files["paths"][100], 100)
+
+
+def test_generate_lo_pivot_kernel_write_failure(nhk_files, monkeypatch, tmp_path):
+    """A failed write leaves no partial kernel, so a retry succeeds."""
+
+    def failing_ckw02(*args, **kwargs):
+        raise spiceypy.utils.exceptions.SpiceyError("simulated write failure")
+
+    with monkeypatch.context() as m:
+        m.setattr(spiceypy, "ckw02", failing_ckw02)
+        with pytest.raises(spiceypy.utils.exceptions.SpiceyError):
+            generate_lo_pivot_kernel(nhk_files["paths"][100], "repoint00100", 1)
+
+    ck_dir = tmp_path / "imap/spice/ck"
+    assert list(ck_dir.iterdir()) == []
+
+    kernel_path = generate_lo_pivot_kernel(nhk_files["paths"][100], "repoint00100", 1)
+    assert [p.name for p in ck_dir.iterdir()] == [kernel_path[0].name]
+
+
+def test_generate_lo_pivot_kernel_appears_during_write(nhk_files, monkeypatch):
+    """A kernel created by another process mid-write is not overwritten."""
+    write = lo_pivot_kernel.write_lo_pivot_ck
+    final_path = {}
+
+    def write_then_race(kernel_path, *args):
+        write(kernel_path, *args)
+        final_path["path"] = kernel_path.parent.parent / kernel_path.name
+        final_path["path"].write_bytes(b"other process")
+
+    monkeypatch.setattr(lo_pivot_kernel, "write_lo_pivot_ck", write_then_race)
+    with pytest.raises(FileExistsError):
+        generate_lo_pivot_kernel(nhk_files["paths"][100], "repoint00100", 1)
+    assert final_path["path"].read_bytes() == b"other process"
+    assert [p.name for p in final_path["path"].parent.iterdir()] == [
+        final_path["path"].name
+    ]
