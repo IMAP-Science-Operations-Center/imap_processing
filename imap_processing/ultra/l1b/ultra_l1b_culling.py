@@ -667,7 +667,7 @@ def flag_low_voltage(
     low_voltage_times = status_dataset["shcoarse"].data[low_voltage_inds]
     # For each low voltage time, find the corresponding spin time
     lv_spin_inds = np.atleast_1d(
-        np.searchsorted(spin_tbin_edges, low_voltage_times, side="right") - 1
+        np.searchsorted(spin_tbin_edges[:-1], low_voltage_times, side="right") - 1
     )
     # Ensure that the indices are within the valid range of spin groups
     valid_bin_inds = (lv_spin_inds >= 0) & (lv_spin_inds < spin_bin_size)
@@ -1171,16 +1171,18 @@ def combine_de_counts_summary(
         A 2D array of counts per energy range and spin bin for valid events, with
         counts combined across spin bins.
     """
-    # Pad array along the spin bin axis to ensure sliding_window_view returns
-    # an array of the correct shape.
+    # Pad array along the spin bin axis with NaN so that sliding_window_view returns
+    # an array of the correct shape. To be consistent with the ULTRA IT
+    # implementation, the padded values are ignored in the mean, so edge bins are
+    # averaged over only the bins that exist.
     counts_padded = np.pad(
-        de_counts_summary,
+        de_counts_summary.astype(float),
         ((0, 0), (combine_spin_bin_radius, combine_spin_bin_radius)),
-        mode="edge",
+        constant_values=np.nan,
     )
     window_size = combine_spin_bin_radius * 2 + 1
     windows = sliding_window_view(counts_padded, window_shape=window_size, axis=1)
-    return np.mean(windows, axis=-1)
+    return np.nanmean(windows, axis=-1)
 
 
 def get_valid_earth_angle_events(
@@ -1201,8 +1203,8 @@ def get_valid_earth_angle_events(
     Returns
     -------
     valid_earth_angle_events : NDArray
-        A boolean array indicating which events have Earth angle greater than the
-        specified threshold.
+        A boolean array indicating which events have an angle greater than the
+        specified threshold from both the Earth and anti-Earth directions.
     """
     velocity_dps_sc = de_dataset_subset["velocity_dps_sc"].values
     # Use the mean event time to compute the Earth unit vector since the spacecraft
@@ -1229,13 +1231,9 @@ def get_valid_earth_angle_events(
     )  # shape (n_events, 3)
     # Get cos(theta) between each particle look direction and Earth direction
     cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (n_events,)
-    # Clip cos_sep to the valid range of [-1, 1] to avoid numerical issues with arccos
-    cos_sep = np.clip(cos_sep, -1.0, 1.0)
-    sep_angle = np.arccos(cos_sep)
-    # An event is valid if the separation angle between the particle look
-    # direction and Earth direction is greater than the Earth angle limit
-    # (i.e., the Earth is outside the field of view).
-    return sep_angle > earth_ang_45
+    # An event is valid if the particle look direction is more than the Earth angle
+    # limit away from both the Earth direction and the anti-Earth direction.
+    return np.abs(cos_sep) < np.cos(earth_ang_45)
 
 
 def get_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
@@ -1403,5 +1401,8 @@ def expand_bin_flags_to_spins(
         )
         repeated_flags = repeated_flags[:n_spins]
     quality_flags[: len(repeated_flags)] = repeated_flags
+    # Spins in an incomplete trailing bin inherit the flag of the last complete bin.
+    if len(repeated_flags) < n_spins:
+        quality_flags[len(repeated_flags) :] = binned_quality_flags[-1]
 
     return quality_flags

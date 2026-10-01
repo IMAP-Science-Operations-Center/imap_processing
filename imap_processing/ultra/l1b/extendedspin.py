@@ -64,25 +64,24 @@ def calculate_extendedspin(
     aux_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-aux"]
     rates_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-rates"]
     status_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-status"]
-    # Use the raw de for the spin level quantities since it contains all events.
+    # Use the priority 1 de for the spin level quantities since it contains all events.
     # The energy dependent culling selects its de dataset per energy range.
-    # TODO use priority 1.
-    de_dataset = de_datasets["p1"]
+    priority_1_de_dataset = de_datasets["p1"]
 
     extendedspin_dict = {}
     rates_qf, spin, energy_bin_geometric_mean, n_sigma_per_energy = flag_rates(
-        de_dataset["spin"].values,
-        de_dataset["energy"].values,
+        priority_1_de_dataset["spin"].values,
+        priority_1_de_dataset["energy"].values,
     )
     count_rates, _, _counts, _ = get_energy_histogram(
-        de_dataset["spin"].values, de_dataset["energy"].values
+        priority_1_de_dataset["spin"].values, priority_1_de_dataset["energy"].values
     )
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(
-        de_dataset["spin"].values, aux_dataset
+        priority_1_de_dataset["spin"].values, aux_dataset
     )
     # TODO: We will add to this later
-    hk_qf = flag_hk(de_dataset["spin"].values)
-    inst_qf = flag_imap_instruments(de_dataset["spin"].values)
+    hk_qf = flag_hk(priority_1_de_dataset["spin"].values)
+    inst_qf = flag_imap_instruments(priority_1_de_dataset["spin"].values)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
     spin_tbin_edges = get_binned_spins_edges(
@@ -157,9 +156,9 @@ def calculate_extendedspin(
     # Track rejected events in each spin based on
     # quality flags in de l1b data.
     rejected_counts = count_rejected_events_per_spin(
-        de_dataset["spin"].values,
-        de_dataset["quality_scattering"].values,
-        de_dataset["quality_outliers"].values,
+        priority_1_de_dataset["spin"].values,
+        priority_1_de_dataset["quality_scattering"].values,
+        priority_1_de_dataset["quality_outliers"].values,
     )
 
     # These will be the coordinates.

@@ -455,15 +455,16 @@ def test_expand_bin_flags_to_spins(caplog):
     spin_bin_size = 5
     n_spins = 12
     # Mock the shape of binned quality flags for 12 spins and a bin size of 5
-    binned_qf = np.full((n_spins // spin_bin_size), 1)
+    binned_qf = np.array([1, 2])
     quality_flags = expand_bin_flags_to_spins(n_spins, binned_qf, spin_bin_size)
     # Check the size
     assert quality_flags.shape == (n_spins,)
-    # The first 10 spins should be flagged since they fall into the first two bins
-    assert np.all(quality_flags[:10] == 1)
-    # The last 2 spins should not be flagged since they fall into the last incomplete
-    # bin
-    assert np.all(quality_flags[10:] == 0)
+    # The first 10 spins should have the flags of the two complete bins
+    assert np.all(quality_flags[:5] == 1)
+    assert np.all(quality_flags[5:10] == 2)
+    # The last 2 spins fall into the incomplete bin and should inherit the flag of
+    # the last complete bin
+    assert np.all(quality_flags[10:] == 2)
     binned_qf = np.full((n_spins // spin_bin_size) + 1, 1)
     # test that a warning is logged when there are incomplete bins found
     expand_bin_flags_to_spins(n_spins, binned_qf, spin_bin_size)
@@ -581,7 +582,7 @@ def test_get_valid_earth_angle_events(mock_spkezr):
     vde = np.sqrt(np.sum(de_dps_velocity**2, 1))
     uv = de_dps_velocity / vde[:, np.newaxis]
     local_uv = np.array([upos, yax, zax]) @ np.transpose(-uv)
-    expected_flags = local_uv[0, :] < np.cos(earth_angle_threshold)
+    expected_flags = np.abs(local_uv[0, :]) < np.cos(earth_angle_threshold)
 
     actual_flags = get_valid_earth_angle_events(de_dataset, earth_angle_threshold)
     np.testing.assert_array_equal(actual_flags, expected_flags)
