@@ -675,7 +675,7 @@ def test_get_valid_de_count_summary_ultra45(mock_spkezr):
         {"p0": de_dataset, "p1": de_dataset},
         energy_range_edges,
         spin_tbin_edges,
-        REPOINT_383_SPIN_CONFIG,
+        REPOINT_47_SPIN_CONFIG,
         45,
         keepout_angle,
     )
