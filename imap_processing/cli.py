@@ -2071,6 +2071,10 @@ class Ultra(ProcessInstrument):
                 )
             datasets = ultra_l1a.ultra_l1a(science_files[0], create_derived_l1b=True)
         elif self.data_level == "l1b":
+            if self.repointing is None:
+                raise ValueError(
+                    "Repointing must be provided for ULTRA L1b processing."
+                )
             science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
             l1a_dict = {
                 dataset.attrs["Logical_source"]: dataset
@@ -2086,7 +2090,7 @@ class Ultra(ProcessInstrument):
             ancillary_files = {}
             for path in anc_paths:
                 ancillary_files[path.stem.split("_")[2]] = path
-            datasets = ultra_l1b.ultra_l1b(combined, ancillary_files)
+            datasets = ultra_l1b.ultra_l1b(combined, ancillary_files, self.repointing)
         elif self.data_level == "l1c":
             science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
             l1a_dict = {

@@ -24,6 +24,7 @@ from imap_processing.spice.geometry import (
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
+    ExtendedSpinConfig,
     get_scattering_coefficients,
     get_scattering_thresholds,
 )
@@ -1061,40 +1062,91 @@ def flag_spectral_events(
 
 
 def get_valid_de_count_summary(
-    de_dataset: xr.Dataset,
+    de_datasets: dict[str, xr.Dataset],
     energy_ranges: NDArray,
     spin_tbin_edges: NDArray,
+    spin_config: ExtendedSpinConfig,
     sensor_id: int = 90,
+    earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
 ) -> NDArray:
     """
     Get a summary of valid counts per energy range and spin bin.
 
     Parameters
     ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
+    de_datasets : dict[str, xr.Dataset]
+        Dictionary of raw, and priority 1-4 direct event datasets.
     energy_ranges : numpy.ndarray
         Array of energy range edges.
     spin_tbin_edges : numpy.ndarray
         Array of spin time bin edges.
+    spin_config : ExtendedSpinConfig
+        Spin configuration object containing the direct event priority to use.
     sensor_id : int
         Sensor ID (e.g., 45 or 90).
+    earth_ang_45 : float
+        Earth angle to use for culling in ULTRA 45.
 
     Returns
     -------
     counts : numpy.ndarray
         A 2D array of counts per energy range and spin bin for valid events.
     """
-    valid_events = get_valid_events_per_energy_range(
-        de_dataset, energy_ranges, UltraConstants.EARTH_ANGLE_45_THRESHOLD, sensor_id
-    )
+    # Get the specified de priority. E.g. "p0" for raw de or "p1" for priority 1 de.
+    priority_conf = spin_config.priority
+    n_energy_ranges = len(energy_ranges) - 1
     counts: np.ndarray = np.zeros(
-        (len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=float
+        (n_energy_ranges, len(spin_tbin_edges) - 1), dtype=float
     )
+    for i in range(n_energy_ranges):
+        # By default, use priority 1 de unless it's the last energy bin and the
+        # config is p0 or if the config is set to use raw de only.
+        de = de_datasets["p1"]
+        if UltraConstants.L1B_USE_RAW_DE_ONLY or (
+            i == n_energy_ranges - 1 and priority_conf == "p0"
+        ):
+            de = de_datasets["p0"]
+        valid_outliers = de["quality_outliers"].values == 0
+        valid_scattering = de["quality_scattering"].values == 0
+        # TODO what about species non-proton? For those psets dont cull based on
+        #   High energy?
+        valid_ebin = np.isin(
+            de["ebin"].values, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"]
+        )
+        # Exclude events with invalid (fill) event times.
+        valid_event_times = de["event_times"].values > 0
+        energy_mask = (
+            (de["energy_spacecraft"].values >= energy_ranges[i])
+            & (de["energy_spacecraft"].values < energy_ranges[i + 1])
+            & valid_event_times
+        )
+        if not np.any(energy_mask):
+            continue
+        # subset the dataset to events within the energy range
+        de_dataset_subset = de.isel(epoch=energy_mask)
+        valid_earth_angle: np.ndarray = np.full(np.sum(energy_mask), True, dtype=bool)
+        # For ultra45, also apply an Earth angle cut to remove times when
+        # the Earth is in the field of view. ULTRA 90 does not require this since
+        # Earth is always outside the field of view.
+        if sensor_id == 45:
+            valid_earth_angle = get_valid_earth_angle_events(
+                de_dataset_subset, earth_ang_45
+            )
 
-    for i in range(len(energy_ranges) - 1):
+        # Count events at the valid energy ranges if they meet all the criteria for
+        # valid events: not flagged as outliers, not flagged as scattering,
+        # in a valid ebin, and (for ultra45) have a valid Earth angle.
+        valid_events = np.logical_and.reduce(
+            [
+                valid_outliers[energy_mask],
+                valid_scattering[energy_mask],
+                valid_ebin[energy_mask],
+                valid_earth_angle,
+            ]
+        )
         counts[i, :], _ = np.histogram(
-            de_dataset["de_event_met"].values[valid_events[i, :]], bins=spin_tbin_edges
+            de_dataset_subset["de_event_met"].values[valid_events],
+            bins=spin_tbin_edges,
         )
 
     return counts
@@ -1130,70 +1182,6 @@ def combine_de_counts_summary(
     window_size = combine_spin_bin_radius * 2 + 1
     windows = sliding_window_view(counts_padded, window_shape=window_size, axis=1)
     return np.mean(windows, axis=-1)
-
-
-def get_valid_events_per_energy_range(
-    de_dataset: xr.Dataset, energy_ranges: NDArray, earth_ang_45: float, sensor_id: int
-) -> NDArray:
-    """
-    Get valid events per energy range.
-
-    Parameters
-    ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
-    energy_ranges : numpy.ndarray
-        Array of energy range edges.
-    earth_ang_45 : float
-        Earth angle to use for culling in ULTRA 45.
-    sensor_id : int
-        Sensor ID (e.g., 45 or 90).
-
-    Returns
-    -------
-    valid_events_per_range : numpy.ndarray
-        A boolean array of shape (n_energy_ranges, n_events).
-    """
-    event_energies = de_dataset["energy_spacecraft"].values
-    valid_events: np.ndarray = np.zeros(
-        (len(energy_ranges) - 1, len(event_energies)), dtype=bool
-    )
-    valid_outliers = de_dataset["quality_outliers"].values == 0
-    valid_scattering = de_dataset["quality_scattering"].values == 0
-    # TODO what about species non-proton? For those psets dont cull based on
-    #   High energy?
-    ebin = de_dataset["ebin"].values
-    valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
-    for i in range(len(energy_ranges) - 1):
-        energy_mask = (event_energies >= energy_ranges[i]) & (
-            event_energies < energy_ranges[i + 1]
-        )
-        if not np.any(energy_mask):
-            continue
-        # subset the dataset to events within the energy range
-        de_dataset_subset = de_dataset.isel(epoch=energy_mask)
-        valid_earth_angle: np.ndarray = np.full(np.sum(energy_mask), True, dtype=bool)
-        # For ultra45, also apply an Earth angle cut to remove times when
-        # the Earth is in the field of view. ULTRA 90 does not require this since Earth
-        # is always outside the field of view.
-        if sensor_id == 45:
-            valid_earth_angle = get_valid_earth_angle_events(
-                de_dataset_subset, earth_ang_45
-            )
-
-        # Flag events at the valid energy ranges if they meet all the criteria for
-        # valid events: not flagged as outliers, not flagged as scattering,
-        # in a valid ebin, and (for ultra45) have a valid Earth angle.
-        valid_events[i, energy_mask] = np.logical_and.reduce(
-            [
-                valid_outliers[energy_mask],
-                valid_scattering[energy_mask],
-                valid_ebin[energy_mask],
-                valid_earth_angle,
-            ]
-        )
-
-    return valid_events
 
 
 def get_valid_earth_angle_events(

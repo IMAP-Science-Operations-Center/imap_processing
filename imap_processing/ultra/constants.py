@@ -254,3 +254,7 @@ class UltraConstants:
     # When True, applies the scattering rejection mask based on the FWHM thresholds
     # to the L1C fine energy bin maps.
     APPLY_SCATTERING_REJECTION_L1C: bool = False
+
+    # When true, only use raw direct events for culling in extendedspin.py. Otherwise,
+    # refer to the priority specified in the extendedspin-config ancillary file.
+    L1B_USE_RAW_DE_ONLY = False

@@ -50,7 +50,7 @@ def ultra_l1c(
             # Determine which l1b de product to use in calculating the l1c products.
             # Will be either the raw de product or a priority 1-4 de product.
             de_product_desc = get_de_product_name(
-                repoint, instrument_id, "l1c", ancillary_files
+                repoint, instrument_id, ancillary_files
             )
             if de_product_desc not in data_dict:
                 raise ValueError(

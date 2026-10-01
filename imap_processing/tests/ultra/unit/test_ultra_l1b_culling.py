@@ -16,6 +16,7 @@ from imap_processing.quality_flags import (
     ImapRatesUltraFlags,
 )
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import ExtendedSpinConfig
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     compare_aux_univ_spin_table,
     count_rejected_events_per_spin,
@@ -42,12 +43,16 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_spin_data,
     get_valid_de_count_summary,
     get_valid_earth_angle_events,
-    get_valid_events_per_energy_range,
 )
 from imap_processing.ultra.l1b.ultra_l1b_extended import get_spin_info
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
+
+REPOINT_47_SPIN_CONFIG = ExtendedSpinConfig.from_csv(
+    TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
+    "repoint00047",
+)
 
 
 @pytest.fixture
@@ -57,6 +62,7 @@ def setup_repoint_47_data():
     de_ds = xr.Dataset(
         {
             "de_event_met": ("epoch", de_df.event_times.values),
+            "event_times": ("epoch", de_df.event_times.values),
             "energy_spacecraft": ("epoch", de_df.energy_spacecraft.values),
             "quality_outliers": ("epoch", de_df.quality_outliers.values),
             "quality_scattering": ("epoch", de_df.quality_scattering.values),
@@ -71,7 +77,21 @@ def setup_repoint_47_data():
         xspin.spin_start_time.values,
         spin_bin_size,
     )
-    return de_ds, xspin, spin_tbin_edges
+
+    de_datasets = {"p0": de_ds, "p1": de_ds}
+
+    # Get the energy ranges
+    energy_ranges = get_binned_energy_ranges(build_energy_bins()[0])
+
+    de_counts_summary = get_valid_de_count_summary(
+        de_datasets,
+        energy_ranges,
+        spin_tbin_edges,
+        REPOINT_47_SPIN_CONFIG,
+        90,
+    )
+
+    return de_datasets, xspin, spin_tbin_edges, energy_ranges, de_counts_summary
 
 
 @pytest.fixture
@@ -555,8 +575,8 @@ def test_get_valid_earth_angle_events(mock_spkezr):
     np.testing.assert_array_equal(actual_flags, expected_flags)
 
 
-def test_get_valid_events_per_energy_range():
-    """Tests get_valid_events_per_energy_range function."""
+def test_get_valid_de_count_summary_valid_events():
+    """Tests that get_valid_de_count_summary only counts valid events."""
     np.random.seed(0)
     energy_range_edges = np.array([3, 5, 7, 18])  # 3 example energy bins
     # example energy values that fall into different bins
@@ -573,72 +593,53 @@ def test_get_valid_events_per_energy_range():
     # mark event 6 as having an invalid ebin
     ebin[5] = -1
     de_dps_velocity = np.random.random((len(energy), 3))
+    # Give each event its own time and spin bin so the counts per spin bin show
+    # exactly which events were counted as valid.
+    event_times = np.arange(1, len(energy) + 1)
+    spin_tbin_edges = np.arange(0.5, len(energy) + 1)
 
     de_dataset = xr.Dataset(
         {
             "de_dps_velocity": (("epoch", "component"), de_dps_velocity),
-            "event_times": ("epoch", np.arange(len(energy))),
+            "event_times": ("epoch", event_times),
+            "de_event_met": ("epoch", event_times),
             "energy_spacecraft": ("epoch", energy),
             "quality_outliers": ("epoch", quality_outliers),
             "quality_scattering": ("epoch", quality_scattering),
             "ebin": ("epoch", ebin),
         }
     )
-    keepout_angle = np.radians(180)
-    valid_events = get_valid_events_per_energy_range(
-        de_dataset, energy_range_edges, keepout_angle, 90
+    counts = get_valid_de_count_summary(
+        {"p0": de_dataset, "p1": de_dataset},
+        energy_range_edges,
+        spin_tbin_edges,
+        REPOINT_47_SPIN_CONFIG,
+        90,
     )
 
-    # Assert that for the first energy bin (3-5), all are false
-    assert np.array_equal(valid_events[0], np.full(len(valid_events[0]), False))
-    # Assert that for the second energy bin (5-7), all are false except
-    # events 3 and 8 (event 1 had an outlier flag, event 2 had a scattering flag)
-    expected_flags_ebin2 = np.array(
-        [
-            False,
-            False,
-            True,
-            False,
-            False,
-            False,
-            False,
-            True,
-            False,
-            False,
-            False,
-            False,
-        ]
-    )
-    assert np.array_equal(valid_events[1], expected_flags_ebin2)
-    # Assert that for the third energy bin (7-18), all are false except events 4 and 7
-    # (event 5 was marked as an outlier and event 6 has an invalid ebin)
-    expected_flags_ebin3 = np.array(
-        [
-            False,
-            False,
-            False,
-            True,
-            False,
-            False,
-            True,
-            False,
-            False,
-            False,
-            False,
-            False,
-        ]
-    )
-    assert np.array_equal(valid_events[2], expected_flags_ebin3)
+    # Assert that for the first energy bin (3-5), nothing is counted
+    assert np.array_equal(counts[0], np.zeros(len(energy)))
+    # Assert that for the second energy bin (5-7), only events 3 and 8 are counted
+    # (event 1 had a scattering flag, event 2 had an outlier flag)
+    expected_counts_ebin2 = np.array([0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+    assert np.array_equal(counts[1], expected_counts_ebin2)
+    # Assert that for the third energy bin (7-18), only events 4 and 7 are counted
+    # (event 5 was marked as an outlier, event 6 has an invalid ebin, and event 9
+    # had a scattering flag)
+    expected_counts_ebin3 = np.array([0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0])
+    assert np.array_equal(counts[2], expected_counts_ebin3)
 
 
 @mock.patch("imap_processing.ultra.l1b.ultra_l1b_culling.sp.spkezr")
-def test_get_valid_events_per_energy_range_ultra45(mock_spkezr):
-    """Tests get_valid_events_per_energy_range function."""
+def test_get_valid_de_count_summary_ultra45(mock_spkezr):
+    """Tests the Earth angle cut in get_valid_de_count_summary for ULTRA 45."""
     np.random.seed(0)
     mock_imap_state = np.random.random(6)  # Mock IMAP state for testing
     mock_spkezr.return_value = (mock_imap_state, None)
     energy_range_edges = np.array([3, 5, 7, 18])  # 3 example energy bins
     energy = np.arange(18)
+    event_times = np.full(len(energy), 798033671)
+    spin_tbin_edges = np.array([798033670, 798033672])
 
     # mark all events with valid outlier and scattering flags and valid ebins.
     de_dps_velocity = np.random.random((len(energy), 3))
@@ -646,23 +647,30 @@ def test_get_valid_events_per_energy_range_ultra45(mock_spkezr):
     de_dataset = xr.Dataset(
         {
             "velocity_dps_sc": (("epoch", "component"), de_dps_velocity),
-            "event_times": ("epoch", np.full(len(energy), 798033671)),
+            "event_times": ("epoch", event_times),
+            "de_event_met": ("epoch", event_times),
             "energy_spacecraft": ("epoch", energy),
             "quality_outliers": ("epoch", np.full(len(energy), 0)),
             "quality_scattering": ("epoch", np.full(len(energy), 0)),
             "ebin": ("epoch", np.full(len(energy), 10)),
         }
     )
+
     # ensure that all events fail the earth angle check by setting a very large
     # keepout angle
     keepout_angle = np.radians(360)
-    valid_events = get_valid_events_per_energy_range(
-        de_dataset, energy_range_edges, keepout_angle, 45
+    counts = get_valid_de_count_summary(
+        {"p0": de_dataset, "p1": de_dataset},
+        energy_range_edges,
+        spin_tbin_edges,
+        REPOINT_47_SPIN_CONFIG,
+        45,
+        keepout_angle,
     )
 
     # although all events were valid for outliers, scattering, and ebin, all events
     # failed the earth angle check for ultra45
-    assert not np.any(valid_events)
+    assert not np.any(counts)
 
 
 @mock.patch(
@@ -689,6 +697,7 @@ def test_flag_high_energy():
     de_dataset = xr.Dataset(
         {
             "de_event_met": ("epoch", np.arange(len(energy))),
+            "event_times": ("epoch", np.arange(len(energy))),
             "energy_spacecraft": ("epoch", energy),
             "quality_outliers": ("epoch", np.full(len(energy), 0)),
             "quality_scattering": ("epoch", np.full(len(energy), 0)),
@@ -700,8 +709,13 @@ def test_flag_high_energy():
     spin_tbin_edges = np.arange(
         start=0, stop=len(energy) + 1, step=4
     )  # create spin bins of 4 seconds
+    de_datasets = {"p0": de_dataset, "p1": de_dataset}
     de_counts_summary = get_valid_de_count_summary(
-        de_dataset, energy_range_edges, spin_tbin_edges
+        de_datasets,
+        energy_range_edges,
+        spin_tbin_edges,
+        REPOINT_47_SPIN_CONFIG,
+        90,
     )
     quality_flags = flag_high_energy(
         de_counts_summary,
@@ -743,11 +757,12 @@ def test_validate_high_energy_cull(setup_repoint_47_data):
     expected_qf = pd.read_csv(
         TEST_PATH / "validate_high_energy_culling_results_repoint00047_v2.csv"
     ).to_numpy()
-    de_ds, _, spin_tbin_edges = setup_repoint_47_data
+    de_datasets, _, spin_tbin_edges, _, _ = setup_repoint_47_data
+
     # Get the energy ranges
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
     de_counts_summary = get_valid_de_count_summary(
-        de_ds, energy_ranges, spin_tbin_edges
+        de_datasets, energy_ranges, spin_tbin_edges, REPOINT_47_SPIN_CONFIG
     )
     high_energy_combined_spin_bin_radius = 3
     e_flags = flag_high_energy(
@@ -779,6 +794,7 @@ def test_flag_statistical_outliers():
     de_dataset = xr.Dataset(
         {
             "de_event_met": ("epoch", np.arange(len(energy))),
+            "event_times": ("epoch", np.arange(len(energy))),
             "energy_spacecraft": ("epoch", energy),
             "quality_outliers": ("epoch", np.full(len(energy), 0)),
             "quality_scattering": ("epoch", np.full(len(energy), 0)),
@@ -788,10 +804,12 @@ def test_flag_statistical_outliers():
     spin_tbin_edges = np.arange(
         start=0, stop=len(energy) + 1, step=spin_step
     )  # create spin bins of 7 seconds
+    de_datasets = {"p0": de_dataset, "p1": de_dataset}
     de_counts_summary = get_valid_de_count_summary(
-        de_dataset,
+        de_datasets,
         energy_range_edges,
         spin_tbin_edges,
+        REPOINT_47_SPIN_CONFIG,
         90,
     )
     quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
@@ -834,6 +852,7 @@ def test_flag_statistical_outliers_invalid_events():
     de_dataset = xr.Dataset(
         {
             "de_event_met": ("epoch", np.arange(len(energy))),
+            "event_times": ("epoch", np.arange(len(energy))),
             "energy_spacecraft": ("epoch", energy),
             "quality_outliers": ("epoch", np.full(len(energy), 0)),
             "quality_scattering": ("epoch", np.full(len(energy), 0)),
@@ -844,10 +863,13 @@ def test_flag_statistical_outliers_invalid_events():
         start=0, stop=len(energy) + 1, step=5
     )  # create spin bins of 5 seconds
     mask = np.ones((len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
+    de_datasets = {"p0": de_dataset, "p1": de_dataset}
+
     de_counts_summary = get_valid_de_count_summary(
-        de_dataset,
+        de_datasets,
         energy_range_edges,
         spin_tbin_edges,
+        REPOINT_47_SPIN_CONFIG,
         90,
     )
     quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
@@ -891,21 +913,15 @@ def test_validate_stat_cull(setup_repoint_47_data):
     results_df = pd.read_csv(
         TEST_PATH / "validate_stat_culling_results_repoint00047_v3.csv"
     )
-    de_ds, _, spin_tbin_edges = setup_repoint_47_data
-    # Get the energy ranges
-    energy_ranges = get_binned_energy_ranges(build_energy_bins()[0])
+    de_datasets, _, spin_tbin_edges, energy_ranges, de_counts_summary = (
+        setup_repoint_47_data
+    )
 
     # Create a mask of flagged events to test that the stat cull algorithm
     # properly ignores these. The test data was created using this exact mask as well.
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     mask[0:2, 0:2] = (
         True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
-    )
-    de_counts_summary = get_valid_de_count_summary(
-        de_ds,
-        energy_ranges,
-        spin_tbin_edges,
-        90,
     )
     # ignored in the statistics calculation and flagging.
     flags, con, it, std = flag_statistical_outliers(
@@ -950,19 +966,14 @@ def test_validate_upstream_ion_cull(setup_repoint_47_data):
     expected_results = pd.read_csv(
         TEST_PATH / "validate_upstream_ion_1_culling_results_repoint00047_v1.csv"
     ).to_numpy()
-    de_ds, _, spin_tbin_edges = setup_repoint_47_data
-    intervals, _, _ = build_energy_bins()
-    energy_ranges = get_binned_energy_ranges(intervals)
+    de_datasets, _, spin_tbin_edges, energy_ranges, de_counts_summary = (
+        setup_repoint_47_data
+    )
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     mask[0:2, 0:2] = (
         True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
     )
-    de_counts_summary = get_valid_de_count_summary(
-        de_ds,
-        energy_ranges,
-        spin_tbin_edges,
-        90,
-    )
+
     flags = flag_upstream_ion(
         de_counts_summary,
         energy_ranges,
@@ -978,16 +989,10 @@ def test_validate_upstream_ion_cull(setup_repoint_47_data):
 @pytest.mark.external_test_data
 def test_upstream_ion_cull_invalid_channels(setup_repoint_47_data):
     """Validate upstream ion error handling."""
-    de_ds, _, spin_tbin_edges = setup_repoint_47_data
-    intervals, _, _ = build_energy_bins()
-    energy_ranges = get_binned_energy_ranges(intervals)
-    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
-    de_counts_summary = get_valid_de_count_summary(
-        de_ds,
-        energy_ranges,
-        spin_tbin_edges,
-        90,
+    de_datasets, _, spin_tbin_edges, energy_ranges, de_counts_summary = (
+        setup_repoint_47_data
     )
+    mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     with pytest.raises(
         ValueError,
         match="Channels provided for upstream ion flagging"
@@ -1008,20 +1013,13 @@ def test_validate_spectral_cull(setup_repoint_47_data):
     expected_results = pd.read_csv(
         TEST_PATH / "validate_spectral_culling_results_repoint00047_v1.csv"
     ).to_numpy()
-    de_ds, _, spin_tbin_edges = setup_repoint_47_data
-    intervals, _, _ = build_energy_bins()
-    energy_ranges = get_binned_energy_ranges(intervals)
+    de_datasets, xspin, spin_tbin_edges, energy_ranges, de_counts_summary = (
+        setup_repoint_47_data
+    )
     mask = np.zeros((len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     mask[0:2, 0:2] = (
         True  # This will mark the first 2 energy bins and first 2 spin bins as flagged
     )
-    de_counts_summary = get_valid_de_count_summary(
-        de_ds,
-        energy_ranges,
-        spin_tbin_edges,
-        90,
-    )
-
     flags = flag_spectral_events(
         de_counts_summary,
         energy_ranges,

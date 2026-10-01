@@ -116,6 +116,7 @@ nitpick_ignore_regex = [
     (r"py:.*", r".*.hit.l0.utils.*"),
     (r"py:.*", r".*.hit.l0.data_classes.*"),
     (r"py:.*", r".*.hit.l1a.*"),
+    (r"py:.*", r".*ExtendedSpinConfig.*"),
     (r"py:.*", r".*InitVar*"),
     (r"py:.*", r".*.glows.utils.constants.TimeTuple.*"),
     (r"py:.*", r".*glows.utils.constants.DirectEvent.*"),
