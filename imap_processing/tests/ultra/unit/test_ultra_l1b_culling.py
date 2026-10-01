@@ -610,7 +610,7 @@ def test_get_valid_de_count_summary_valid_events():
         }
     )
     spin_config = ExtendedSpinConfig(
-        thresholds={},
+        energy_thresholds={},
         date=datetime.datetime(2025, 10, 1),
         priority="p0",
         calibration="",
@@ -662,7 +662,7 @@ def test_get_valid_de_count_summary_ultra45(mock_spkezr):
         }
     )
     spin_config = ExtendedSpinConfig(
-        thresholds={},
+        energy_thresholds={},
         date=datetime.datetime(2025, 10, 1),
         priority="p0",
         calibration="",
