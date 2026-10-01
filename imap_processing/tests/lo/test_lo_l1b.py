@@ -24,6 +24,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     create_datasets,
     filter_valid_star_records,
     get_avg_spin_durations_per_cycle,
+    get_median_pivot_angle,
     get_pivot_angle_from_nhk,
     get_sampling_cadence_from_nhk,
     get_spin_start_times,
@@ -2211,6 +2212,34 @@ def test_get_pivot_angle_from_nhk():
 
     # Assert
     assert pivot_angle == expected_pivot_angle
+
+
+def _pivot_nhk(minutes: np.ndarray, pivot: np.ndarray) -> xr.Dataset:
+    """Make an NHK dataset sampled at the given minutes after an arbitrary t0."""
+    t0_ttj2000ns = 8.2e17
+    return xr.Dataset(
+        {"pcc_coarse_pot_pri": ("epoch", np.asarray(pivot, dtype=np.float64))},
+        coords={"epoch": (t0_ttj2000ns + minutes * 60e9).astype(np.int64)},
+    )
+
+
+def test_get_median_pivot_angle(furnish_kernels):
+    """Median over 0.5 h to 22.5 h after the first NHK sample."""
+    minutes = np.arange(0, 24 * 60, 1.0)
+    pivot = np.full(minutes.shape, 75.0)
+    pivot[minutes < 30] = 90.0  # Pivot still moving at the start
+    pivot[minutes > 22.5 * 60] = 105.0  # Next repoint
+    pivot[100] = np.nan
+    with furnish_kernels(["naif0012.tls"]):
+        assert get_median_pivot_angle(_pivot_nhk(minutes, pivot)) == 75.0
+
+
+def test_get_median_pivot_angle_no_samples(furnish_kernels):
+    """NaN when no valid samples are in the time range."""
+    minutes = np.arange(0, 20, 1.0)  # Ends before the 0.5 h start
+    with furnish_kernels(["naif0012.tls"]):
+        pivot = get_median_pivot_angle(_pivot_nhk(minutes, np.full(20, 75.0)))
+    assert np.isnan(pivot)
 
 
 def test_l1b_bgrates_and_goodtimes_basic(anc_dependencies, attr_mgr_l1b):
