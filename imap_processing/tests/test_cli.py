@@ -841,6 +841,89 @@ def test_spacecraft_pointing_kernel_no_version(
     assert mock_spacecraft_pointing.call_count == 0
 
 
+LO_PIVOT_DEPENDENCY_FILES = (
+    '[{"type": "science","files": ['
+    '"imap_lo_l1b_nhk_20251110-repoint00100_v001.cdf"]}, '
+    '{"type": "spice","files": ["naif0012.tls", "imap_sclk_0005.tsc", '
+    '"imap_130.tf"]}]'
+)
+
+
+@mock.patch(
+    "imap_processing.cli.lo_pivot_kernel.generate_lo_pivot_kernel", autospec=True
+)
+def test_lo_pivot_kernel(mock_lo_pivot, mock_instrument_dependencies):
+    """Test coverage for the cli.Lo pivot-ckernel job"""
+    dependency_str = json.dumps(
+        {
+            "dependency": json.loads(LO_PIVOT_DEPENDENCY_FILES),
+            "version": {"pivot-ckernel": {"major_version": None, "minor_version": 4}},
+        }
+    )
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(LO_PIVOT_DEPENDENCY_FILES)
+    kernel_path = Path("imap_lopivot-repoint00100_2025_314_2025_314_004.bc")
+    mock_lo_pivot.return_value = [kernel_path]
+
+    instrument = Lo(
+        "l1b", "pivot-ckernel", dependency_str, None, "repoint00100", "v001", False
+    )
+    products = instrument.do_processing(input_collection)
+
+    assert products == [kernel_path]
+    assert mock_lo_pivot.call_count == 1
+    nhk_path, repointing, minor_version = mock_lo_pivot.call_args[0]
+    assert nhk_path.name == "imap_lo_l1b_nhk_20251110-repoint00100_v001.cdf"
+    assert repointing == "repoint00100"
+    assert minor_version == 4
+
+
+@mock.patch(
+    "imap_processing.cli.lo_pivot_kernel.generate_lo_pivot_kernel", autospec=True
+)
+def test_lo_pivot_kernel_no_repointing(mock_lo_pivot, mock_instrument_dependencies):
+    """The cli.Lo pivot-ckernel job requires a repointing"""
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(LO_PIVOT_DEPENDENCY_FILES)
+    instrument = Lo(
+        "l1b",
+        "pivot-ckernel",
+        LO_PIVOT_DEPENDENCY_FILES,
+        "20251110",
+        None,
+        "v001",
+        False,
+    )
+    with pytest.raises(ValueError, match="repointing must be provided"):
+        instrument.do_processing(input_collection)
+    assert mock_lo_pivot.call_count == 0
+
+
+@mock.patch(
+    "imap_processing.cli.lo_pivot_kernel.generate_lo_pivot_kernel", autospec=True
+)
+def test_lo_pivot_kernel_multiple_nhk(mock_lo_pivot, mock_instrument_dependencies):
+    """The cli.Lo pivot-ckernel job requires exactly one NHK file"""
+    input_collection = ProcessingInputCollection()
+    input_collection.deserialize(
+        '[{"type": "science","files": ['
+        '"imap_lo_l1b_nhk_20251110-repoint00100_v001.cdf", '
+        '"imap_lo_l1b_nhk_20251110-repoint00101_v001.cdf"]}]'
+    )
+    instrument = Lo(
+        "l1b",
+        "pivot-ckernel",
+        LO_PIVOT_DEPENDENCY_FILES,
+        None,
+        "repoint00100",
+        "v001",
+        False,
+    )
+    with pytest.raises(ValueError, match="Expected exactly one L1B NHK file"):
+        instrument.do_processing(input_collection)
+    assert mock_lo_pivot.call_count == 0
+
+
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")
 def test_ultra_l1a(mock_ultra_l1a, mock_instrument_dependencies):
     """Test coverage for cli.Ultra class with l1a data level"""
