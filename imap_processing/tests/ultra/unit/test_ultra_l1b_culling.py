@@ -670,7 +670,7 @@ def test_get_valid_de_count_summary_ultra45(mock_spkezr):
     )
     # ensure that all events fail the earth angle check by setting a very large
     # keepout angle
-    keepout_angle = np.radians(360)
+    keepout_angle = np.radians(90)
     counts = get_valid_de_count_summary(
         {"p0": de_dataset, "p1": de_dataset},
         energy_range_edges,
