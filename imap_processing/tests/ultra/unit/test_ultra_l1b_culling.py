@@ -1,6 +1,5 @@
 """Tests Culling for ULTRA L1b."""
 
-import datetime
 from unittest import mock
 
 import numpy as np
@@ -50,6 +49,11 @@ from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 
 TEST_PATH = imap_module_directory / "tests" / "ultra" / "data" / "l1"
 
+REPOINT_47_SPIN_CONFIG = ExtendedSpinConfig.from_csv(
+    TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
+    "repoint00047",
+)
+
 
 @pytest.fixture
 def setup_repoint_47_data():
@@ -75,10 +79,6 @@ def setup_repoint_47_data():
     )
 
     de_datasets = {"p0": de_ds, "p1": de_ds}
-    spin_config = ExtendedSpinConfig.from_csv(
-        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
-        "repoint00047",
-    )
 
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(build_energy_bins()[0])
@@ -87,7 +87,7 @@ def setup_repoint_47_data():
         de_datasets,
         energy_ranges,
         spin_tbin_edges,
-        spin_config,
+        REPOINT_47_SPIN_CONFIG,
         90,
     )
 
@@ -609,17 +609,11 @@ def test_get_valid_de_count_summary_valid_events():
             "ebin": ("epoch", ebin),
         }
     )
-    spin_config = ExtendedSpinConfig(
-        energy_thresholds={},
-        date=datetime.datetime(2025, 10, 1),
-        priority="p0",
-        calibration="",
-    )
     counts = get_valid_de_count_summary(
         {"p0": de_dataset, "p1": de_dataset},
         energy_range_edges,
         spin_tbin_edges,
-        spin_config,
+        REPOINT_47_SPIN_CONFIG,
         90,
     )
 
@@ -661,12 +655,7 @@ def test_get_valid_de_count_summary_ultra45(mock_spkezr):
             "ebin": ("epoch", np.full(len(energy), 10)),
         }
     )
-    spin_config = ExtendedSpinConfig(
-        energy_thresholds={},
-        date=datetime.datetime(2025, 10, 1),
-        priority="p0",
-        calibration="",
-    )
+
     # ensure that all events fail the earth angle check by setting a very large
     # keepout angle
     keepout_angle = np.radians(360)
@@ -674,7 +663,7 @@ def test_get_valid_de_count_summary_ultra45(mock_spkezr):
         {"p0": de_dataset, "p1": de_dataset},
         energy_range_edges,
         spin_tbin_edges,
-        spin_config,
+        REPOINT_47_SPIN_CONFIG,
         45,
         keepout_angle,
     )
@@ -721,16 +710,11 @@ def test_flag_high_energy():
         start=0, stop=len(energy) + 1, step=4
     )  # create spin bins of 4 seconds
     de_datasets = {"p0": de_dataset, "p1": de_dataset}
-    spin_config = ExtendedSpinConfig.from_csv(
-        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
-        "repoint00047",
-    )
-
     de_counts_summary = get_valid_de_count_summary(
         de_datasets,
         energy_range_edges,
         spin_tbin_edges,
-        spin_config,
+        REPOINT_47_SPIN_CONFIG,
         90,
     )
     quality_flags = flag_high_energy(
@@ -774,14 +758,11 @@ def test_validate_high_energy_cull(setup_repoint_47_data):
         TEST_PATH / "validate_high_energy_culling_results_repoint00047_v2.csv"
     ).to_numpy()
     de_datasets, _, spin_tbin_edges, _, _ = setup_repoint_47_data
-    spin_config = ExtendedSpinConfig.from_csv(
-        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
-        "repoint00047",
-    )
+
     # Get the energy ranges
     energy_ranges = np.array([4.2, 9.4425, 21.2116, 47.2388, 105.202, 316.335])
     de_counts_summary = get_valid_de_count_summary(
-        de_datasets, energy_ranges, spin_tbin_edges, spin_config
+        de_datasets, energy_ranges, spin_tbin_edges, REPOINT_47_SPIN_CONFIG
     )
     high_energy_combined_spin_bin_radius = 3
     e_flags = flag_high_energy(
@@ -824,16 +805,11 @@ def test_flag_statistical_outliers():
         start=0, stop=len(energy) + 1, step=spin_step
     )  # create spin bins of 7 seconds
     de_datasets = {"p0": de_dataset, "p1": de_dataset}
-    spin_config = ExtendedSpinConfig.from_csv(
-        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
-        "repoint00047",
-    )
-
     de_counts_summary = get_valid_de_count_summary(
         de_datasets,
         energy_range_edges,
         spin_tbin_edges,
-        spin_config,
+        REPOINT_47_SPIN_CONFIG,
         90,
     )
     quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
@@ -888,16 +864,12 @@ def test_flag_statistical_outliers_invalid_events():
     )  # create spin bins of 5 seconds
     mask = np.ones((len(energy_range_edges) - 1, len(spin_tbin_edges) - 1), dtype=bool)
     de_datasets = {"p0": de_dataset, "p1": de_dataset}
-    spin_config = ExtendedSpinConfig.from_csv(
-        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv",
-        "repoint00047",
-    )
 
     de_counts_summary = get_valid_de_count_summary(
         de_datasets,
         energy_range_edges,
         spin_tbin_edges,
-        spin_config,
+        REPOINT_47_SPIN_CONFIG,
         90,
     )
     quality_flags, convergence, iterations, std_diff = flag_statistical_outliers(
