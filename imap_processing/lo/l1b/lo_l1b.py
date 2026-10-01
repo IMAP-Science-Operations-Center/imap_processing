@@ -22,7 +22,7 @@ from imap_processing.spice.geometry import (
     SpiceFrame,
     cartesian_to_latitudinal,
     frame_transform,
-    get_spacecraft_to_instrument_spin_phase_offset,
+    get_instrument_mounting_az_el,
     instrument_pointing,
 )
 from imap_processing.spice.repoint import (
@@ -2334,9 +2334,14 @@ def l1b_star(
     spin_duration = float(avg_spin_durations.mean().values)
     logger.info(f"Using spin duration from spin data: {spin_duration:.6f} s")
 
-    # TODO: Read from ancillary config file when available
-    sc_to_inst_angle_offset = 360 * get_spacecraft_to_instrument_spin_phase_offset(
-        SpiceFrame.IMAP_LO
+    # Use the first epoch to determine which pointing we're in
+    first_met = l1a_star["shcoarse"].values[0]
+    pointing_mid_met = get_pointing_mid_time(first_met)
+
+
+    et = ttj2000ns_to_et(met_to_ttj2000ns(pointing_mid_met))
+    sc_to_inst_angle_offset = float(
+        get_instrument_mounting_az_el(SpiceFrame.IMAP_LO_STAR_SENSOR, et)[0]
     )
     end_bins_to_exclude = c.STAR_END_BINS_TO_EXCLUDE
     min_count_threshold = c.STAR_MIN_COUNT_THRESHOLD
@@ -2416,11 +2421,6 @@ def l1b_star(
 
     # Sort the dataset by spin_angle
     l1b_star_ds = l1b_star_ds.sortby("spin_angle")
-
-    # Add pointing mid time (MET) as a scalar value
-    # Use the first epoch to determine which pointing we're in
-    first_met = l1a_star["shcoarse"].values[0]
-    pointing_mid_met = get_pointing_mid_time(first_met)
 
     # Add global start and end day of year as scalar values
     start_doy = epoch_to_fractional_doy(global_start_epoch)
