@@ -268,7 +268,7 @@ angle index 0 corresponding to the direction of APDs 2-12, so
    \theta_{Lo,n} = n \cdot 15^\circ + 7.5^\circ + 270^\circ
 
 where the 270 deg is the spin angle of APDs 2-12 at spin sector 0. The draft
-gave :math:`n \cdot 15^\circ + 7.5^\circ`; see :ref:`codice-spin-angle-offset`.
+gave :math:`n \cdot 15^\circ + 7.5^\circ`.
 
 Hi omni-directional intensities
 -------------------------------

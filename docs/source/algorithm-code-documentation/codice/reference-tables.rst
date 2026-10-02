@@ -58,8 +58,7 @@ Rule of thumb
        in ``imap_processing/tests/codice/data/l2_lut/``
    * - The spin-angle reference values (now equal to Rev 3 Chg 1; 90 deg below
        older drafts)
-     - :ref:`codice-spin-angle-offset` and
-       ``imap_processing/tests/codice/test_codice_spin_angles.py``
+     - See ``imap_processing/tests/codice/test_codice_spin_angles.py``
    * - The commissioning timeline / RGFO / NSO rules
      - :ref:`codice-timeline` and :ref:`codice-modes` - transcribed
    * - The instrument team's known data caveats

@@ -332,7 +332,7 @@ Where the numbers disagree
       * - **IMAP-Lo**
         - 5-1000 eV
         - ENA maps *"down to 100 eV and below and up to 1 keV"*
-        - ENAs 40 eV - 1 keV (:ref:`lo-overview`)
+        - ENAs 40 eV - 1 keV
 
    These are mostly the same instrument described at different confidence
    levels and with different qualifiers - ``species dependent`` does a lot of

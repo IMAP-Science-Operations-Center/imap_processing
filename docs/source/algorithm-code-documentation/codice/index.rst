@@ -37,17 +37,8 @@ the CoDICE instrument team at SwRI or the SDC document store.
    * - Short name
      - Reference
    * - **Algorithm document**
-     - 26850.03-DPA-01, *Data Products and Algorithms (DPA) for the IMAP Compact
-       Dual Ion Composition Experiment (CoDICE)*, **Rev 3 Chg 1, June 2026**.
-       Prepared by Joey Mukherjee and Michael Starkey, Southwest Research
-       Institute, SDRL SW-009. The primary source for these pages.
-
-       This revision is publicly released as **section 4.3.2 of the IMAP
+     - This revision is publicly released as **section 4.3.2 of the IMAP
        Calibration and Measurement Algorithms Document (CMAD)**,
-       ``IMAP_CMAD_20260722.pdf``, PDF pages 623-709. Rev 3 Chg 1 differs from
-       Rev 3 Chg 0 only by removing the EAR export-control statement; the
-       substantive changes listed under Rev 3 Chg 0 (May 2026) are summarised in
-       :ref:`codice-doc-revisions` below.
    * - **SCI_LUT spreadsheet**
      - ``26850.03-SCI-LUT-01.xls`` (and successors). The plan / ESA-sweep /
        stepping / views / collapse tables. **This is not optional** - CoDICE

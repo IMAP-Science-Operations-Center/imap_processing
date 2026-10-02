@@ -227,7 +227,7 @@ SSD groups:
 **[CODE]** ``HI_IALIRT_ELEVATION_ANGLE = [132.8, 65.7, 47.1, 114.3]`` matches.
 ``HI_IALIRT_REF_SPIN_ANGLE = [196.85, 174.55, 253.16, 275.44]`` **matches Rev 3
 Chg 1**. The January 2026 draft printed values 90 deg higher (286.85, 264.55,
-343.16, 5.44); see :ref:`codice-spin-angle-offset`. ``HI_IALIRT_SPIN_ANGLE`` in
+343.16, 5.44). ``HI_IALIRT_SPIN_ANGLE`` in
 ``ialirt/utils/constants.py`` is built by adding 0, 90, 180 and 270 deg (mod
 360) to each reference, matching **[DOC]** :math:`\theta_{g,n} = (\theta_{g,0}
 + 90^\circ n) \bmod 360^\circ`.
