@@ -1,4 +1,5 @@
-.. _mag:
+:orphan:
+.. _mag-index:
 
 MAG
 ===

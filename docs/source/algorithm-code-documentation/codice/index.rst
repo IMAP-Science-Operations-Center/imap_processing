@@ -1,4 +1,5 @@
-.. _codice:
+:orphan:
+.. _codice-index:
 
 CoDICE
 ======
