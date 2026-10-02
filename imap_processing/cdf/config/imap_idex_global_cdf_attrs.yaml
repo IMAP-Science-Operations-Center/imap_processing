@@ -60,6 +60,9 @@ imap_idex_l1b_sci:
       saturation flags, corrects the TOF waveform and trigger-level
       conversion to milliamperes, and reports spin phase in the IDEX
       instrument frame rather than the spacecraft frame.
+    - >-
+      Major version 3, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_idex_l1b_msg-10days:
   <<: *instrument_base
@@ -100,6 +103,9 @@ imap_idex_l2a_sci:
       now estimated from the ion-grid-to-target charge ratio, with mass
       derived from the selected target charge. Inherits the corrected
       IDEX-frame spin phase.
+    - >-
+      Major version 3, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_idex_l2b_sci:
   <<: *instrument_base
@@ -113,6 +119,9 @@ imap_idex_l2b_sci:
       Version 2, with no prior Major Version 1 release, to keep major
       version numbers aligned with the upstream IDEX Level 1/Level 2A
       products.
+    - >-
+      Major version 3, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_idex_l2c_sci-rectangular:
   <<: *instrument_base
