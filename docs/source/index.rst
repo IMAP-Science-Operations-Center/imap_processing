@@ -21,6 +21,7 @@ The explicit code interfaces and structure are described in the :ref:`algorithm-
 .. toctree::
    :maxdepth: 1
 
+   Mission Overview <mission-overview>
    Onboarding & Collaboration <development/index>
    IMAP Data Access Tool <data-access/index>
    CDF Metadata Resources <cdf-metadata/index>

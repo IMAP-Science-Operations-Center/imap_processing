@@ -1,0 +1,462 @@
+.. _swapi-l1:
+
+L0 to L1 - Decommutation, Grouping and Counts
+=============================================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+**Code:** ``imap_processing/swapi/l1/swapi_l1.py`` (845 lines, the whole of L1).
+
+**Document:** section 10.1.
+
+L1 has one job: turn a day of 1-second CCSDS packets into an array of complete
+12-second sweeps, with the counts decompressed, the bad sweeps removed, and the
+quality flags set. No physical units are applied. **[DOC]** "Fully
+decommutated but uncalibrated raw data at full resolution."
+
+The pipeline
+------------
+
+**[CODE]** ``process_swapi_science(sci_dataset, hk_dataset)``:
+
+.. code-block:: text
+
+   1. get_indices_of_full_sweep()   find complete 12-packet sweeps
+   2. filter_good_data()            drop sweeps failing the quality gate
+   3. process_sweep_data()          reorder 6-per-packet -> 72-per-sweep  (x6)
+   4. decompress_count()            undo the divide-by-16 compression      (x3)
+   5. force step 0 to NaN           the ESA ramp-up step
+   6. build quality flag bitfield   from compression flags + nearest HK
+   7. assemble the xr.Dataset       epoch = packet 7's time
+   8. uncertainty = sqrt(counts)
+
+Housekeeping takes a much shorter path: decommutate twice
+(``use_derived_value=False`` then ``True``), attach attributes, return both.
+
+Step 1 - finding complete sweeps
+--------------------------------
+
+**[DOC]** Twelve consecutive seconds of science data correspond to a single
+sweep, which is the unit of L1 and all downstream products. A sweep begins at
+``SWP_SCI.SEQ_NUMBER == 0`` and ends at ``SEQ_NUMBER == 11``; **all 12 packets
+must be present** to process a sweep. Only complete sweeps (72 steps) are
+processed.
+
+**[CODE]** ``find_sweep_starts(packets)`` implements this as a sliding-window
+test. An index qualifies as a sweep start when:
+
+* ``seq_number == 0`` at that index, **and**
+* the ``shcoarse`` difference to the next packet is exactly 1 second, for each
+  of the following 11 gaps.
+
+.. code-block:: python
+
+   diff = packets["shcoarse"].data[1:] - packets["shcoarse"].data[:-1]
+   ione = diff == 1
+   valid = (packets["seq_number"] == 0)[:-11] & ione[:-10] & ione[1:-9] & ... & ione[10:]
+
+``get_indices_of_full_sweep()`` then expands each start index by
+``+ np.arange(12)`` to give the flat list of packet indices belonging to
+complete sweeps.
+
+.. note::
+
+   The check is on **packet timestamps being 1 second apart**, not on
+   ``seq_number`` running 0..11. A sequence of 12 one-second-spaced packets
+   starting at ``seq_number == 0`` is accepted even if the intervening sequence
+   numbers were wrong. In practice they are not, but the guard is on time, not
+   on sequence. (Contrast with the I-ALiRT code, which explicitly asserts
+   ``np.array_equal(seq_values, np.arange(12))``.)
+
+.. note::
+
+   ``find_sweep_starts`` returns early with an empty array if fewer than 12
+   packets are present, so a short file produces an empty product rather than
+   an error.
+
+Step 2 - the quality gate
+-------------------------
+
+**[DOC]** Section 10.1.2, "Marking data not qualified for L0-L1 processing".
+L0 data will be marked as ``NaN`` at L0-L2 and potentially rejected for L3 for
+any of:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 40 26
+
+   * - Condition
+     - Meaning
+     - Implemented?
+   * - ``SWP_HK.CHKSUM`` is wrong
+     - 8-bit XOR of all packet bytes (including the CCSDS header, excluding the
+       checksum byte) does not match
+     - **No**
+   * - ``SWP_SCI.MODE`` is not ``HVSCI``
+     - Instrument not in high-voltage science mode
+     - **Yes**
+   * - Saturation: any of ``PCEM_CNT0..5`` or ``SCEM_CNT0..5`` implies a count
+       rate above **4.0 MHz**
+     - Detector saturated; the sweep "may later be discarded"
+     - **No**
+   * - ``SWP_HK.PCEM_RATE_ST == 1`` at any point during the sweep
+     - PCEM count-rate threshold exceeded and *still* exceeded despite FSW
+       action
+     - **No**
+   * - ``SWP_HK.SCEM_RATE_ST == 1`` at any point during the sweep
+     - as above for SCEM
+     - **No**
+
+**[CODE]** ``filter_good_data(full_sweep_sci)`` implements a *different* gate.
+A sweep is kept when, across its 12 packets:
+
+* ``sweep_table`` is constant, **and**
+* ``plan_id`` is constant, **and**
+* ``mode == SWAPIMODE.HVSCI`` for every packet.
+
+The first two are the document's *grouping* criteria (10.1.1 step 3.b.ii)
+promoted to rejection criteria; the last is the only one of the five
+document rejection criteria that made it in. Checksum verification, the 4 MHz
+saturation test, and the two ``RATE_ST`` tests are **not implemented**. See
+:ref:`swapi-implementation-status`.
+
+.. warning::
+
+   There is a naming trap in ``filter_good_data``. The local variable
+   ``bad_data_indices`` holds the boolean mask of **good** sweeps; the code
+   then takes ``np.where(bad_data_indices == 0)`` to find the bad ones. The
+   logic is correct, the name is inverted.
+
+**[DOC]** For context, the flight software also transitions the instrument to
+SAFE automatically if PCEM/SCEM current, voltage or temperature sensors are
+out of limit on two consecutive samples, or if PCEM/SCEM count rate is out of
+limit (>4.0 MHz) on six or more consecutive samples. Ground processing never
+has to do anything about this beyond noticing the mode change.
+
+Step 3 - reordering 6-per-packet into 72-per-sweep
+--------------------------------------------------
+
+**[CODE]** ``process_sweep_data(full_sweep_sci, cem_prefix)``. This is the
+fiddliest part of L1 and it is worth understanding before changing anything.
+
+Each packet carries 6 samples as **6 separate named fields**
+(``PCEM_CNT0`` ... ``PCEM_CNT5``), one per 1/6-second interval. After
+decommutation those become 6 flat arrays indexed by packet. The sweep's 72
+values need packet-major, then sample-minor ordering:
+
+.. code-block:: text
+
+   Wanted:  step  0  1  2  3  4  5   6  7  8  9 10 11   12 ...
+            from  pkt0                pkt1               pkt2
+            field CNT0..CNT5          CNT0..CNT5         CNT0..CNT5
+
+The implementation is three reshapes:
+
+.. code-block:: python
+
+   current = np.concatenate([ds[f"{prefix}{i}"] for i in range(6)], axis=0)
+   current = current.reshape(6, -1, NUM_PACKETS_PER_SWEEP)   # (cem_sample, sweep, packet)
+   all_cem = np.stack(current, axis=-1)                      # (sweep, packet, cem_sample)
+   all_cem = all_cem.reshape(-1, NUM_ENERGY_STEPS)           # (sweep, 72)
+
+Called six times per invocation - three for the counts
+(``pcem_cnt``, ``scem_cnt``, ``coin_cnt``) and three for the compression
+indicators (``pcem_rng_st``, ``scem_rng_st``, ``coin_rng_st``).
+
+.. tip::
+
+   ``process_sweep_data`` is also imported and reused by the I-ALiRT code
+   (``imap_processing/ialirt/l0/process_swapi.py``) with the prefix
+   ``swapi_coin_cnt``. If you change its signature or ordering, you change the
+   real-time product too.
+
+Step 4 - count decompression
+----------------------------
+
+**[DOC]** Counts are compressed on board by a **divide-by-16**. Each sample
+carries a range-status bit (``XXX_RNG_ST0..5``) saying whether the value was
+compressed. There are three compression regions:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 34 20 32
+
+   * - Region
+     - True count range
+     - ``RNG_ST``
+     - Telemetered value
+   * - 1
+     - :math:`0 \le n \le 65{,}535`
+     - 0
+     - the count itself
+   * - 2
+     - :math:`65{,}536 \le n \le 1{,}048{,}575`
+     - 1
+     - :math:`n / 16`
+   * - 3
+     - :math:`n \ge 1{,}048{,}576`
+     - 1
+     - ``0xFFFF`` (overflow)
+
+The document's pseudocode:
+
+.. code-block:: text
+
+   if XXX_RNG_ST0 == 0:                            # Uncompressed
+       actual_value = XXX_CNT0
+   elif XXX_RNG_ST0 == 1 and XXX_CNT0 == 0xFFFF:   # Overflow
+       actual_value = <some constant that indicates overflow>
+   elif XXX_RNG_ST0 == 1 and XXX_CNT0 != 0xFFFF:
+       actual_value = XXX_CNT0 * 16
+
+**[CODE]** ``decompress_count(count_data, compression_flag)`` implements this
+exactly, with two concrete choices the document leaves open:
+
+* The **overflow sentinel** is ``np.iinfo(np.int32).max`` (2147483647),
+  "per SWAPI's suggestion to use a big value".
+* The function raises ``ValueError`` if any input count is negative, because
+  the field must be unsigned.
+* The return type is ``float32``, so the overflow sentinel survives as
+  ``2.1474836e+09`` and the array can carry ``NaN``.
+
+.. warning::
+
+   The overflow sentinel is an enormous *finite* number, not a fill value. It
+   propagates straight into L2: ``2147483647 / 0.145`` is a count rate of
+   ``1.48e10`` Hz. Nothing in the current L1 or L2 code flags or masks it. If
+   you are debugging absurd rates, check for the sentinel first.
+
+Step 5 - the ramp-up step
+-------------------------
+
+**[CODE]** Immediately after decompression:
+
+.. code-block:: python
+
+   swp_pcem_counts[:, 0] = np.nan
+   swp_scem_counts[:, 0] = np.nan
+   swp_coin_counts[:, 0] = np.nan
+
+**[DOC]** ESA step 0 is the "1 step to ramp up to full ESA voltage" and carries
+no usable science. The code comment records that this was SWAPI's instruction
+and that ``NaN`` (rather than dropping the step) was chosen because it helps
+with plotting.
+
+Note that the compression flags and quality flags for step 0 are **not**
+blanked - only the counts.
+
+Step 6 - quality flags
+----------------------
+
+**[CODE]** ``swp_l1a_flags``, one ``uint16`` per (sweep, ESA step), assembled
+from two sources. The bit assignments live in
+``imap_processing/quality_flags.py``, ``class SWAPIFlags``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 10 30 18 42
+
+   * - Bit
+     - Flag
+     - Source
+     - Meaning
+   * - 0
+     - ``INF``
+     - common
+     - Value is infinite
+   * - 1
+     - ``NEG``
+     - common
+     - Value is negative
+   * - 2
+     - ``SWP_PCEM_COMP``
+     - science
+     - PCEM count was compressed at this step
+   * - 3
+     - ``SWP_SCEM_COMP``
+     - science
+     - SCEM count was compressed
+   * - 4
+     - ``SWP_COIN_COMP``
+     - science
+     - COIN count was compressed
+   * - 5
+     - ``OVR_T_ST``
+     - HK
+     - Upper temperature limit of a thermistor exceeded
+   * - 6
+     - ``UND_T_ST``
+     - HK
+     - Lower temperature limit of a thermistor exceeded
+   * - 7
+     - ``PCEM_CNT_ST``
+     - HK
+     - PCEM count rate tripped but handled by FSW
+   * - 8
+     - ``SCEM_CNT_ST``
+     - HK
+     - SCEM count rate tripped but handled by FSW
+   * - 9
+     - ``PCEM_V_ST``
+     - HK
+     - PCEM voltage tolerance exceeded
+   * - 10
+     - ``PCEM_I_ST``
+     - HK
+     - PCEM current threshold exceeded despite FSW measures
+   * - 11
+     - ``PCEM_INT_ST``
+     - HK
+     - PCEM current interrupt tripped but handled by FSW
+   * - 12
+     - ``SCEM_V_ST``
+     - HK
+     - SCEM voltage tolerance exceeded
+   * - 13
+     - ``SCEM_I_ST``
+     - HK
+     - SCEM current threshold exceeded despite FSW measures
+   * - 14
+     - ``SCEM_INT_ST``
+     - HK
+     - SCEM current interrupt tripped but handled by FSW
+
+Compression bits are per-step and come straight from the reordered
+``*_rng_st`` arrays. The ten HK bits are per-**packet** and are broadcast:
+
+.. code-block:: python
+
+   hk_dataset = hk_dataset.drop_duplicates("epoch")
+   good_sweep_hk_data = hk_dataset.sel({"epoch": good_sweep_times}, method="nearest")
+   ...
+   current_flag = np.repeat(good_sweep_hk_data[flag_name.lower()].data, 6).reshape(-1, 72)
+
+**[CODE]** The reasoning, recorded in the source: HK and SCI cadences are not
+both 1 second in flight - in HVSCI, HK nominally comes every 60 s and SCI every
+12 s - but *both are sampled at 1 Hz on board*, so ground processing uses the
+**nearest-timestamp HK packet** for each SCI packet, per the SWAPI team. Since
+one SCI packet holds 6 measurements from the same packet, its HK flag is
+repeated 6 times.
+
+**[DOC]** Table 3 also lists ``SWP_PCEM_RNG_ST#COMP`` (singular, "pull from
+``SWP_SCI.PCEM_RNG_ST0``") where the code sets a single ``SWP_PCEM_COMP`` bit
+from any of the six. The code's behaviour is the sensible reading.
+
+Two document flags that are **not** in ``SWAPIFlags``: ``PCEM_RATE_ST`` and
+``SCEM_RATE_ST``. In the document these are rejection criteria (section
+10.1.2), not flags - and they are neither rejected nor flagged here.
+
+Step 8 - count uncertainty
+--------------------------
+
+**[DOC]** Uncertainty is quantified for the PCEM, SCEM and COIN counts. The
+Poisson contribution is
+
+.. math::
+
+   \Delta n = \sqrt{n}
+
+The upper (``_ERR_PLUS``) and lower (``_ERR_MINUS``) uncertainties are the same
+"except if we modify them to be asymmetric uncertainties in the future."
+
+**[DOC]** *Compression of the counts also contributes to the uncertainty.* That
+contribution is to be estimated empirically: generate count rates spanning the
+high-rate range, compress and un-compress them, compare, and fit an empirical
+expression to the differences.
+
+**[CODE]** Only the Poisson term is implemented, and the source carries an
+explicit ``TODO`` saying the formula "will change in the future - replace it
+with the actual formula once SWAPI provides it." Plus and minus are identical
+arrays.
+
+.. code-block:: python
+
+   dataset["swp_pcem_counts_stat_uncert_plus"]  = np.sqrt(swp_pcem_counts)
+   dataset["swp_pcem_counts_stat_uncert_minus"] = np.sqrt(swp_pcem_counts)
+
+Note that :math:`\sqrt{N}` is applied to the **decompressed** counts, which is
+correct for region 1 but understates the uncertainty in regions 2 and 3 - which
+is precisely the gap the compression term is meant to fill.
+
+Housekeeping processing
+-----------------------
+
+**[CODE]** The ``hk`` descriptor branch of ``swapi_l1()``:
+
+.. code-block:: python
+
+   l1a_hk_data = packet_file_to_datasets(f, xtce, use_derived_value=False)[SWP_HK]
+   l1b_hk_data = packet_file_to_datasets(f, xtce, use_derived_value=True)[SWP_HK]
+
+Two datasets from the same packets - L1A is raw DN, L1B is the derived
+engineering value from the XTCE calibrators and enumerations. There is no
+algorithm; the difference is entirely ``use_derived_value``.
+
+One wrinkle worth knowing: some derived HK values are **strings** (e.g.
+``SWP_HK.PCEM_SAFE`` is raw 0/1 but derives to ``'OK'``/``'ERR'``), so the L1B
+branch selects a different attribute set (``l1b_hk_string_attrs``) for string
+variables to stay ISTP compliant.
+
+L1 CDF contents vs the document
+-------------------------------
+
+**[DOC]** Table 2 lists the L1 product fields. Many of them are *filename and
+provenance* fields that the SDC supplies rather than the algorithm:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 20 50
+
+   * - Document field
+     - Where it lives now
+     - Note
+   * - ``Instrument``, ``dataLevel``, ``versionInfo``, ``filetype``,
+       ``dataProductDescriptor``
+     - CDF global attributes / filename
+     - Handled by ``ImapCdfAttributes`` and ``write_cdf()``
+   * - ``startTime``
+     - ``sci_start_time``
+     - UTC string, ms precision. The document's format is
+       ``yyyymmddthhmmss``; the code writes ISO with milliseconds (``A23``).
+   * - ``orbnum``
+     - **absent**
+     - Orbit number, "generated by MOC and stored at SDC". Not in the CDF.
+   * - ``mode``
+     - **absent as a variable**
+     - Only implicitly present: non-HVSCI sweeps are dropped.
+   * - ``predict/reconstruct``
+     - filename
+     - ``p``/``r`` per ephemeris kind; SDC-level concern.
+   * - ``SWP_HK.LUT_CHOICE``, ``FPGA_TYPE``, ``FPGA_REV``
+     - ``lut_choice``, ``fpga_type``, ``fpga_rev``
+     - Present.
+   * - ``SWP_SCI.SWEEP_TABLE``, ``SWP_SCI.PLAN_ID``
+     - ``sweep_table``, ``plan_id``
+     - Present.
+   * - ``SWP_L1_FLAGS``
+     - ``swp_l1a_flags``
+     - Present, renamed.
+   * - ``ESA_LVL5``
+     - ``esa_lvl5``
+     - Present. The document calls it a 16-bit int; the code carries the raw
+       integer and converts to a 4-digit hex string at L2.
+   * - ``SWP_{PCEM,SCEM,COIN}_COUNTS`` (+ ``_ERR_PLUS``/``_ERR_MINUS``)
+     - ``swp_*_counts``, ``swp_*_counts_stat_uncert_{plus,minus}``
+     - Present, renamed to the mission-wide ``stat_uncert`` convention.
+
+Tests
+-----
+
+**[CODE]** ``imap_processing/tests/swapi/``:
+
+* ``test_swapi_decom.py`` - validates decommutation of the first ``SWP_SCI``
+  and ``SWP_HK`` packet field-by-field against SWAPI-supplied CSV exports
+  (``idle_export_raw.SWP_SCI_20240924_080204.csv`` and the HK equivalent), and
+  checks the packet counts.
+* ``test_swapi_l1.py`` - unit tests for ``filter_good_data``,
+  ``decompress_count``, ``find_sweep_starts``, ``get_indices_of_full_sweep``,
+  the reordering, and an end-to-end ``write_cdf()`` round trip.
+
+The L0 test data (``imap_swapi_l0_raw_20240924_v001.pkts``) is **pre-launch
+idle data from 2024-09-24**, so the tests exercise the plumbing rather than
+flight-representative science.

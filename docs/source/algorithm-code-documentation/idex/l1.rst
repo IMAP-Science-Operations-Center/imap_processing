@@ -1,0 +1,704 @@
+.. _idex-l1:
+
+L0, L1A and L1B Processing
+==========================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+This page covers packet decommutation through the L1B products: how six
+waveforms and a pile of metadata are recovered from a stream of CCSDS packets,
+and how those become engineering units with geometry attached.
+
+L0: decommutation only
+----------------------
+
+**[CODE]** ``imap_processing/idex/idex_l0.py``, 54 lines, one function.
+
+``decom_packets(packet_file)`` returns a **three-tuple**:
+
+1. ``list`` of decommutated science packets,
+2. ``dict[apid, Dataset]`` of **raw** housekeeping datasets,
+3. ``dict[apid, Dataset]`` of **derived** housekeeping datasets.
+
+Science and housekeeping are decommutated separately and differently:
+
+.. code-block:: python
+
+   science_decom_packet_list = list(packet_generator(packet_file, science_xtce_file))
+   raw_datasets_by_apid     = packet_file_to_datasets(packet_file, hk_xtce_file,
+                                                      use_derived_value=False)
+   derived_datasets_by_apid = packet_file_to_datasets(packet_file, hk_xtce_file,
+                                                      use_derived_value=True)
+
+.. important::
+
+   **IDEX cannot use ``packet_file_to_datasets()`` for science packets.** That
+   helper requires every packet of a given APID to have the same field set, and
+   the IDEX science XTCE has *branching logic* - a header packet and a waveform
+   packet are both APID 1424 but carry different fields. So science packets come
+   back as a flat list of ``SpacePacket`` objects and all the structuring happens
+   in L1A. ``imap_processing/utils.py`` line ~255 names IDEX as the motivating
+   counter-example in its own docstring.
+
+There are no separate L0 files per content type. One
+``imap_idex_l0_raw_YYYYMMDD_vNNN.pkts`` file may contain science, event-message
+and catalog-list packets; the split happens here, by APID and XTCE.
+
+Relevant APIDs (``idex_constants.IDEXAPID``):
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 16 70
+
+   * - APID
+     - Name
+     - Content
+   * - 1424
+     - ``IDEX_SCIENCE``
+     - Dust-event header and waveform packets.
+   * - 1418
+     - ``IDEX_EVT``
+     - Event-message (instrument log) packets.
+   * - 1419
+     - ``IDEX_CATLST``
+     - Packet catalog summary.
+
+L1A science: assembling an event
+--------------------------------
+
+**[CODE]** ``imap_processing/idex/idex_l1a.py``. Two classes do the work:
+``PacketParser`` (per L0 file) and ``RawDustEvent`` (per dust impact).
+
+Packet classification
+^^^^^^^^^^^^^^^^^^^^^
+
+Science packets are routed by ``IDX__SCI0TYPE``. ``class Scitype(IntEnum)``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 12 26 62
+
+   * - Value
+     - Name
+     - Role
+   * - 1
+     - ``FIRST_PACKET``
+     - FPGA metadata header. Starts a new event.
+   * - 2
+     - ``TOF_HIGH``
+     - TOF high-gain waveform fragment
+   * - 4
+     - ``TOF_LOW``
+     - TOF low-gain waveform fragment
+   * - 8
+     - ``TOF_MID``
+     - TOF mid-gain waveform fragment
+   * - 16
+     - ``TARGET_LOW``
+     - Target low-gain waveform fragment
+   * - 32
+     - ``TARGET_HIGH``
+     - Target high-gain waveform fragment
+   * - 64
+     - ``ION_GRID``
+     - Ion-grid waveform fragment
+
+Note that the values are a one-hot bit pattern but are compared for equality,
+not masked. Note also the ordering trap: ``TOF_LOW`` is 4 and ``TOF_MID`` is 8,
+so the numeric order is High, Low, Mid - not High, Mid, Low.
+
+Event identity: two different event numbers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is subtle and worth reading twice. **[CODE]** ``_create_science_dataset``
+maintains two dictionaries:
+
+* ``dust_events: dict[_EventKey, RawDustEvent]`` - the events themselves, keyed
+  by a **stable** key.
+* ``active_event_keys: dict[int, _EventKey]`` - a mapping from the wire-level
+  event number to the stable key, used to route incoming fragments.
+
+The stable key is a ``NamedTuple``:
+
+.. code-block:: python
+
+   _EventKey(coarse_upper   = packet["IDX__TXHDRTIMESEC1"],
+             coarse_lower   = packet["IDX__TXHDRTIMESEC2"],
+             fine_subseconds= packet["IDX__TXHDRTIMESUBS"],
+             event_number   = packet["IDX__TXHDREVTNUM"])
+
+The routing key is ``packet["IDX__SCI0EVTNUM"]``, a 16-bit field present on
+*every* science packet. So the key is built from ``TXHDREVTNUM`` (the FPGA's
+event number, in the metadata header) plus the full event timestamp, while
+routing uses ``SCI0EVTNUM`` (the transport-level event number). **[DOC]**
+Section 4.6.3 says the same thing: "The stable event key is built from the
+transmit timestamp fields and event number, rather than from the event number
+alone."
+
+The reason is that the wire-level event number wraps and is reused. Keying
+events on it alone would merge two genuinely different impacts. Keying on the
+timestamp as well makes the key effectively unique.
+
+Failure modes here:
+
+* A waveform packet whose ``SCI0EVTNUM`` has no active header raises
+  ``KeyError("Have not receive header information from event number ...")`` and
+  **aborts the whole file**. This is the one place IDEX L1A is not defensive.
+* A duplicate header packet for an already-seen ``_EventKey`` logs a warning,
+  re-points ``active_event_keys``, and continues.
+* Any packet without an ``IDX__SCI0TYPE`` field logs ``"Unhandled packet
+  received"`` and is dropped.
+
+Event time reconstruction
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[DOC]** section 4.6.4 = **[CODE]** ``calculate_idex_event_time()``:
+
+.. math::
+
+   t_{MET} = \left(2^{16}\,\mathtt{IDX\_\_TXHDRTIMESEC1}
+             + \mathtt{IDX\_\_TXHDRTIMESEC2}\right)
+             + 20\times10^{-6}\,\mathtt{IDX\_\_TXHDRTIMESUBS}
+
+then ``met_to_ttj2000ns(t_MET)`` gives the CDF ``epoch``. The 32-bit seconds
+counter is split across two 16-bit telemetry words, so the upper word must be
+shifted left by 16. MET counts seconds from 2010-01-01. Subsecond resolution is
+**20 µs**, which is coarse compared to the 3.85 ns waveform sampling - the
+waveform time axis, not ``epoch``, is what carries fine timing within an event.
+
+The same function is reused for event messages (``elsec_evtpkt`` /
+``elssec_evtpkt``) and for catalog-list packets (``shcoarse`` / ``shfine``),
+because all three use the same seconds-plus-20 µs encoding.
+
+Waveform time axes
+^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``RawDustEvent._set_sample_trigger_times()``. This turns the header's
+pre-trigger *block* counts into a time offset in microseconds.
+
+Two packed header fields are unpacked:
+
+``IDX__TXHDRBLOCKS`` (32-bit)
+  * bits 6-11: number of **low**-rate pre-trigger blocks,
+    ``(n_blocks >> 6) & 0b111111``
+  * bits 16-19: number of **high**-rate pre-trigger blocks,
+    ``(n_blocks >> 16) & 0b1111``
+  * (bits 20-23 and 24-29 are the dead-time fields, unpacked later at L1B)
+
+``IDX__TXHDRSAMPDELAY`` (32-bit)
+  * bits 0-9: high-gain TOF delay
+  * bits 10-19: mid-gain TOF delay
+  * bits 20-29: low-gain TOF delay
+
+Which delay applies is chosen from the low 10 bits of ``IDX__TXHDRTRIGID``,
+checked in the order **bit 0 → HG, bit 1 → LG, bit 2 → MG**, defaulting to HG.
+
+.. math::
+
+   t_{LS,\mathrm{trig}} &= \Delta t_{LS}\,(N_{pre,LS}+1)\cdot 8 \\
+   t_{HS,\mathrm{trig}} &= \Delta t_{HS}\,(N_{pre,HS}+1)\cdot 512
+                           - \Delta t_{HS}\,(N_{delay}-1)
+
+and the axes themselves:
+
+.. math::
+
+   t_{LS}[i] = i\,\Delta t_{LS} - t_{LS,\mathrm{trig}},
+   \qquad
+   t_{HS}[i] = i\,\Delta t_{HS} - t_{HS,\mathrm{trig}}
+
+The ``+1`` on the block count and the ``−1`` on the delay are the FPGA's
+off-by-one conventions, not arithmetic errors. **[DOC]** section 4.6.5 gives the
+same equations.
+
+Fragment assembly and duplicate handling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``_populate_bit_strings()``. Fragments are stored in
+``fragments_by_scitype: dict[Scitype, dict[int, bytes]]``, keyed by
+``IDX__SCI0FRAGOFF``, rather than being concatenated on arrival. That choice is
+what makes retransmission handling possible. The resolution rules, in order:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 60
+
+   * - Situation
+     - Action
+   * - Slot empty
+     - Store the fragment.
+   * - New bytes identical to stored bytes
+     - Warn, discard the duplicate.
+   * - New fragment **longer** than stored
+     - Warn, **replace** - a longer retransmit is assumed more complete.
+   * - New fragment **shorter** than stored
+     - Warn, discard the shorter copy.
+   * - Same length, different bytes
+     - Warn, record the slot in ``conflicting_fragment_slots``.
+
+Any event with a non-empty ``conflicting_fragment_slots`` set is **skipped
+entirely** by ``process()`` - it returns ``None`` and the event never reaches the
+CDF. This is intentional: a silently corrupt waveform is worse than a missing
+event.
+
+``_assemble_bits(scitype)`` then joins the stored fragments in ascending
+fragment-offset order into a single binary string.
+
+Waveform decoding
+^^^^^^^^^^^^^^^^^
+
+Two paths, chosen by the per-event ``IDX__SCI0COMP`` flag (stored as
+``self.compressed``, tested as ``self.compressed.raw_value == 1``).
+
+**Uncompressed** - ``_read_waveform_bits()`` slices fixed bit patterns out of
+32-bit words:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 34 48
+
+   * - Rate
+     - 32-bit word layout
+     - Post-processing
+   * - High
+     - 2 pad + 10 + 10 + 10
+     - **The last 4 samples are dropped** - the code comment says "the very last
+       four numbers are usually bad."
+   * - Low
+     - 8 pad + 12 + 12
+     - none
+
+**Compressed** - ``decode.rice_decode()`` (241 lines, originally by Corinne
+Wuerthner). Rice-Golomb with per-subframe predictor selection:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 12 88
+
+   * - Bits
+     - Predictor
+   * - ``00``
+     - Constant. Every sample equals the first; only the first is stored.
+   * - ``01``
+     - Verbatim. Store every sample at full NBIT width - the escape hatch for
+       uncorrelated data where Rice coding would expand rather than compress.
+   * - ``10``
+     - Linear #1: :math:`X(n) = X(n-1)`. Needs one uncompressed warm-up sample.
+   * - ``11``
+     - Linear #2: :math:`X(n) = 2X(n-1) - X(n-2)`.
+
+A compressed frame starts on a byte boundary with the marker ``0xF5``.
+Subframes are 64 samples (``SUB_FRAME_SIZE``) and are **not** aligned to any
+byte or word boundary. The Rice parameter ``k`` is ``ceil(log2(NBITS))`` bits
+wide - 4 bits for 10-bit data - and is omitted entirely for the ``00`` and
+``01`` predictors.
+
+The compressed path requests ``sample_count = MAX_BLOCKS * SAMPLES_PER_BLOCK``
+(8192 high, 512 low) and then trims the **last 3** high-rate samples.
+
+.. note::
+
+   The two paths trim different amounts (4 uncompressed, 3 compressed) and must
+   still produce equal-length arrays, because ``xr.concat`` over ``epoch`` in
+   ``_create_science_dataset`` would otherwise broadcast or fail when a 10-day
+   window contains both compressed and uncompressed events. In practice both
+   land on **8189** high-rate samples, which is the length assumed in
+   ``idex_l2a.time_to_mass``'s docstring. **Nothing asserts this.** If you touch
+   either decoder, check the other.
+
+Metadata preservation and the AID substitution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** Every header telemetry item past the first 7 (the CCSDS header
+fields) is carried forward to the L1A dataset as a lowercased, event-indexed
+variable - ``idx__txhdrblocks``, ``idx__txhdrtrigid``, ``idx__txhdrhgtrigmode``
+and so on. Two exceptions:
+
+* ``idx__sci0aid`` is **skipped**. **[DOC]** section 4.6.7: "SCI0AID is skipped
+  because it is not updated properly by the flight software."
+* ``idx__txhdrfswaidcopy`` is **renamed to** ``aid`` and is the acquisition
+  identifier the products use.
+
+Incomplete event filtering
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After decoding, ``process()`` checks each waveform's length against the length
+of its time coordinate. Any mismatch means a dropped packet somewhere; the event
+is logged (``"Missing packet for event number %s. Skipping event.."``) and
+returns ``None``. **[DOC]** Section 4.6.8 records that this behavior was
+requested by the IDEX team: warn, but still produce the CDF from the events that
+are complete.
+
+.. warning::
+
+   If **every** event in a file is skipped, ``xr.concat`` is called on an empty
+   list and raises. There is no guard for the all-events-bad case.
+
+Finally the dataset is sorted by ``epoch`` and the index and label coordinates
+(``time_{low,high}_sample_rate_index``, ``..._label``) are attached.
+
+Event classification at L1A
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** Before returning, ``process()`` calls ``classify_event_flags()`` and
+attaches ten ``uint8`` flags to the event. **This has no counterpart in the
+algorithm document.** It is covered on its own page:
+:ref:`idex-event-classification`.
+
+L1A event messages
+------------------
+
+**[CODE]** ``PacketParser._create_evt_msg_data()``, from the **raw** APID 1418
+dataset.
+
+The epoch comes from ``elsec_evtpkt + 20e-6 * elssec_evtpkt``. Only three
+time-related variables are carried into the output (``epoch``,
+``elsec_evtpkt``, ``elssec_evtpkt``); the event identifier and parameter bytes
+are consumed to build the message string and are **not** preserved as separate
+variables.
+
+Message rendering uses ``idex_evt_msg_parsing_dictionaries.json``, which
+contains at least ``eventMsgDictionary`` (id → template) and
+``logEntryIdDictionary`` (id → short name), plus value-lookup dictionaries. JSON
+stringifies object keys, so the code converts every key back to ``int`` before
+use.
+
+Each message has an id (``elid_evtpkt``) and four parameter bytes
+(``el1par_evtpkt`` … ``el4par_evtpkt``) stacked into an ``(n_events, 4)``
+array. ``evt_msg_decode_utils.render_event_template()`` substitutes them into
+the template. The placeholder grammar is::
+
+   {p<idx>}                  one parameter byte, rendered as hex
+   {p<idx>+<n>}              n bytes combined big-endian, rendered as hex
+   {p<idx>|<dictName>}       looked up in dictName, rendered as dictName(value)
+   {p<idx>+<n>|<dictName>}   both
+
+Unresolved lookups fall back to the raw hex value; an event id with no template
+falls back to ``"<EVENT_NAME> (0xAA, 0xBB, 0xCC, 0xDD)"``; a template that
+raises falls back to a string containing the exception. The pipeline never drops
+a message for being unrenderable.
+
+.. important::
+
+   **The rendered strings keep the dictionary-name wrapper.** A lookup for
+   dictionary ``sciState16Dictionary`` renders as
+   ``sciState16Dictionary(ACQ)``, not ``ACQ``. This is why the constants in
+   ``idex_l1b.EventMessage`` look the way they do, and why they do **not**
+   match the strings quoted in the algorithm document (section 4.7.2). Any
+   change to ``render_event_template``'s output format silently breaks the L1B
+   state reduction, which compares whole strings for equality.
+
+L1B: engineering units and geometry
+-----------------------------------
+
+**[CODE]** ``imap_processing/idex/idex_l1b.py``. ``idex_l1b(l1a_dataset,
+descriptor)`` dispatches on the descriptor prefix: ``sci-10days`` → science
+path, ``msg-10days`` → message path, anything else → ``ValueError``.
+
+Waveform conversion
+^^^^^^^^^^^^^^^^^^^
+
+A single multiply per channel, :math:`Q = \mathrm{DN} \times C`, using
+``idex_constants.ConversionFactors``.
+
+.. important::
+
+   **The code and the algorithm document disagree here, on both the numbers and
+   the units, for the three TOF channels.**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 16 12 20 20 32
+
+   * - Channel
+     - Rate (MHz)
+     - **[CODE]** factor
+     - **[CODE]** unit
+     - **[DOC]** Table 4.2 factor (pC/DN)
+   * - ``TOF_High``
+     - 260
+     - 7.50e-5
+     - mA
+     - 2.89e-4
+   * - ``TOF_Mid``
+     - 260
+     - 2.93e-3
+     - mA
+     - 1.13e-2
+   * - ``TOF_Low``
+     - 260
+     - 1.34e-1
+     - mA
+     - 5.14e-1
+   * - ``Target_High``
+     - 4.0625
+     - 1.63e-1
+     - pC
+     - 1.63e-1
+   * - ``Target_Low``
+     - 4.0625
+     - 1.58e+1
+     - pC
+     - 1.58e+1
+   * - ``Ion_Grid``
+     - 4.0625
+     - 7.46e-4
+     - pC
+     - 7.46e-4
+
+The three low-rate channels agree exactly. The three TOF channels were
+**reinterpreted as a current, not a charge**, and rescaled by a factor of about
+0.26 in the process. The code is the newer of the two: the ``UNITS`` in
+``imap_idex_l1b_variable_attrs.yaml`` say ``mA`` for the TOF channels and ``pC``
+for the low-rate channels, and ``test_idex_l1b.py`` explicitly rescales the IDEX
+team's own validation file, whose TOF arrays "use the legacy pC factors", before
+comparing. Do not revert the code to Table 4.2.
+
+Instrument setting unpacking and EU conversion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Two mechanisms, in sequence, driven by
+``idex_variable_unpacking_and_eu_conversion.csv`` (31 settings).
+
+**Step 1 - bit unpacking** (``unpack_instrument_settings``). Many settings are
+packed two-to-a-word into ADC readout telemetry (``idx__txhdrprochkch01``
+carries both ``current_1v_pol`` and ``current_1p9v_pol``, and so on). For each
+row:
+
+.. math::
+
+   M = 2^{N_{bits}} - 1,
+   \qquad
+   x_{unpacked} = \left(x_{raw} \gg (b_{start} - b_{pad})\right)\ \&\ M
+
+using the CSV's ``unsigned_nbits``, ``starting_bit`` and
+``nbits_padding_before``. Rows are de-duplicated on ``mnemonic`` first, because
+segmented-polynomial conversions occupy several rows per setting and each
+setting must be unpacked exactly once.
+
+**Step 2 - polynomial conversion** (``convert_raw_to_eu`` from
+``imap_processing/utils.py``, the shared helper). Same CSV, now read for the
+``c0``-``c7`` coefficients:
+
+.. math::
+
+   P(x) = \sum_{i=0}^{7} C_i x^i
+
+Both ``UNSEGMENTED_POLY`` and segmented conversions (different coefficient sets
+over different raw-DN ranges) are supported.
+
+The 31 settings are three groups: processor housekeeping (bus currents, board
+temperatures, FPGA temperature), HVPS housekeeping (detector, sensor, target,
+rejection and reflectron voltages and HVPS currents), and low-voltage
+housekeeping (±5 V, ±6 V, 16 V, 3.3 V, 2.5 V bus voltages and currents). See
+:ref:`idex-ancillary`.
+
+Dead time
+^^^^^^^^^
+
+**[CODE]** ``get_event_dead_time()``, from the same packed
+``idx__txhdrblocks`` word L1A used for pre-trigger blocks:
+
+.. math::
+
+   N_{shift} = (\mathtt{blocks} \gg 20)\ \&\ \mathtt{0b1111},
+   \qquad
+   N_{base}  = (\mathtt{blocks} \gg 24)\ \&\ \mathtt{0b111111}
+
+.. math::
+
+   t_{dead} = N_{base}\, 2^{N_{shift}}\, \Delta t_{block},
+   \qquad
+   \Delta t_{block} = \frac{8}{4.0625\times 10^{6}} \approx 1.96923\ \mu\mathrm{s}
+
+Stored as the event-indexed variable ``dead_time`` in seconds. **[DOC]** section
+4.7.1 gives the identical formula.
+
+Trigger mode and threshold level
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``get_trigger_mode_and_level()``, run for each of the three TOF gain
+channels (``lg``, ``mg``, ``hg``), producing six variables:
+``trigger_mode_{lg,mg,hg}`` and ``trigger_level_{lg,mg,hg}``.
+
+For each channel, ``idx__txhdr{ch}trigmode``:
+
+* ``0`` → that channel did not arm a trigger for this event; both outputs are
+  ``None`` / ``NaN``.
+* ``1`` → ``Threshold``, ``2`` → ``SinglePulse``, ``3`` → ``DoublePulse``.
+  The label written out is the channel prefix plus the mode name, e.g.
+  ``"HGThreshold"``.
+
+The threshold level comes from the **upper 10 bits** of
+``idx__txhdr{ch}trigctrl1``:
+
+.. math::
+
+   L_{trig} = (\mathtt{trigctrl1} \gg 22)\ \&\ \mathtt{0b1111111111}
+
+and is then multiplied by that channel's TOF conversion factor, so it is
+reported in the same units as the converted waveform (**mA**, per the note
+above).
+
+.. note::
+
+   ``compute_trigger_values`` is applied through ``xr.apply_ufunc(...,
+   vectorize=True)`` and the mode array is then explicitly rebuilt as an
+   ``object`` array with ``pd.isna`` values forced back to ``None``. That dance
+   exists because pandas 3 string inference converts the no-trigger ``None``
+   values to ``NaN``, which is not writable as a CDF string. Don't simplify it.
+
+Trigger origin
+^^^^^^^^^^^^^^
+
+**[CODE]** ``get_trigger_origin()``, from the **lower 10 bits** of
+``idx__txhdrtrigid``. Bits 0-5 are checked:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 8 30 62
+
+   * - Bit
+     - ``TriggerOrigin``
+     - Label
+   * - 0
+     - ``HS_ADC0I_TOF_HG``
+     - ``HS ADC0I trigger (TOF HG)``
+   * - 1
+     - ``HS_ADC0Q_TOF_LG``
+     - ``HS ADC0Q trigger (TOF LG)``
+   * - 2
+     - ``HS_ADC1Q_TOF_MG``
+     - ``HS ADC1Q trigger (TOF MG)``
+   * - 3
+     - ``LS_ADC1_TARGET_HG``
+     - ``LS ADC1 trigger (Target HG / low range)``
+   * - 4
+     - ``SW_TRIGGER``
+     - ``SW trigger``
+   * - 5
+     - ``EXTERNAL_TRIGGER``
+     - ``external trigger``
+
+**Multiple bits can be set.** The labels are joined with ``", "`` into a single
+string variable ``trigger_origin``. No bits set yields
+``"Unknown trigger origin"``.
+
+.. note::
+
+   The algorithm document writes the bit-4 label as "software trigger" and
+   bit-5 as "external trigger"; the code writes ``"SW trigger"`` and
+   ``"external trigger"``. The strings are compared nowhere, so this is
+   cosmetic - but if you ever filter on them, use the code's spelling.
+
+   Note also that the same ``idx__txhdrtrigid`` field is read three times for
+   three different purposes: to select the TOF sample delay (L1A, bits 0-2 in a
+   priority order), to label the trigger origin (L1B, bits 0-5 as a set), and
+   to classify the event type (L1A flags, bits 0-3 plus 4-5). The three readings
+   are consistent but independent.
+
+SPICE geometry, pointing and spin phase
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``get_spice_data()``. Ten variables, all event-indexed, all from the
+shared ``imap_processing/spice/`` helpers:
+
+.. code-block:: python
+
+   et   = ttj2000ns_to_et(l1a_dataset["epoch"].data)
+   met  = et_to_met(et)
+
+   spin_phase   = get_spin_angle(get_spacecraft_spin_phase(query_met_times=met),
+                                 degrees=True)
+   ephemeris    = imap_state(et, observer=SpiceBody.SUN)          # ECLIPJ2000
+   idex_pointing= instrument_pointing(et, SpiceFrame.IMAP_IDEX,
+                                      IDEX_EVENT_REFERENCE_FRAME, cartesian=True)
+   solar_lon    = solar_longitude(et, degrees=True)
+   lon, lat     = cartesian_to_spherical(idex_pointing)[:, 1:].T
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 66
+
+   * - Variable(s)
+     - Meaning
+   * - ``ephemeris_position_{x,y,z}``
+     - IMAP position relative to the **Sun**, ECLIPJ2000.
+   * - ``ephemeris_velocity_{x,y,z}``
+     - IMAP velocity relative to the Sun, ECLIPJ2000.
+   * - ``longitude``, ``latitude``
+     - The **IDEX boresight** direction at the event epoch, transformed from
+       the ``IMAP_IDEX`` frame into ``IDEX_EVENT_REFERENCE_FRAME``
+       (= ``SpiceFrame.ECLIPJ2000``) and converted to spherical. These are the
+       two coordinates L2C bins its sky maps on - they are a *pointing*
+       direction, not a dust arrival direction.
+   * - ``solar_longitude``
+     - Solar longitude at the event epoch, degrees.
+   * - ``spin_phase``
+     - Spacecraft spin phase at the event MET, converted from fractional phase
+       to **degrees**. Binned into quadrants by L2B.
+
+The IDEX frame is ``SpiceFrame.IMAP_IDEX`` (NAIF id ``-43700``), with boresight
+``[0, 1, 0]`` in ``imap_processing/spice/geometry.py`` and a spin-phase offset
+of ``179.9229 / 360``.
+
+**[DOC]** Section 4.7.1 stresses that these are attached for event context and
+downstream interpretation only - they do not alter any L1B waveform
+conversion. **[CODE]** The code comment says the same: "Spice data is not used
+for calculations yet but are saved in the CDF for reference." That stops being
+true at L2B/L2C, which bin on ``spin_phase``, ``longitude`` and ``latitude``.
+
+L1B event messages
+------------------
+
+**[CODE]** ``idex_l1b_msg()``. Reduces the L1A message log to two state
+variables by **exact string comparison** against ``class EventMessage``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
+
+   * - Constant
+     - String
+   * - ``SCIENCE_ON``
+     - ``SCI state change: sciState16Dictionary(ACQSETUP) ==> sciState16Dictionary(ACQ)``
+   * - ``SCIENCE_OFF``
+     - ``SCI state change: sciState16Dictionary(ACQ) ==> sciState16Dictionary(CHILL)``
+   * - ``PULSER_ON``
+     - ``SEQ success (len=0x0580, opCodeLCDictionary(enstim))``
+   * - ``PULSER_OFF``
+     - ``UPK stim pulser operation completed, , PulserSel=0x00000007``
+
+``science_on`` is a straightforward 1 / 0 / 255 mapping on those two strings.
+
+``pulser_on`` is **not**. The code only marks a pulser transition when a
+``PULSER_ON`` message is **immediately followed** by a ``PULSER_OFF`` message:
+
+.. code-block:: python
+
+   consecutive = np.where((messages[:-1] == PULSER_ON) & (messages[1:] == PULSER_OFF))[0]
+   pulser_on = np.full(len(messages), 255)
+   pulser_on[consecutive]     = 1
+   pulser_on[consecutive + 1] = 0
+
+An unpaired ``PULSER_ON``, or a ``PULSER_OFF`` whose predecessor was something
+else, leaves the state at 255 (unchanged). **[DOC]** Section 4.7.2 describes the
+simple unconditional exact-match behavior instead, so the document is out of
+date on this point. The code's own comment explains the intent: "susprel but
+previous message was NOT enstim → pulser_on stays whatever it was."
+
+Finally, rows where **both** flags are 255 are dropped. The L1B message product
+is therefore a **state-change log, not a copy of the L1A event log**. If no
+transitions are present, ``idex_l1b_msg()`` returns ``None`` and no file is
+written - which means L2B can legitimately find no uptime information for a
+period.
+
+.. warning::
+
+   All four of these are literal, whole-string, exact comparisons against
+   strings produced by ``render_event_template()``. Any change to the
+   event-message JSON dictionaries, to the template grammar, or to the
+   ``dictName(value)`` wrapper format will silently turn every message into
+   255, empty the L1B message product, and make every L2B rate fall back to
+   ``-1`` / NaN with ``rate_calculation_quality_flags = 0``. This is the most
+   brittle coupling in the IDEX pipeline.
