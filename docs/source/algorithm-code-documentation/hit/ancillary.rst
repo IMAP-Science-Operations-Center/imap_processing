@@ -155,8 +155,8 @@ inside the XTCE at
 ``use_derived_value=True``. **To change a housekeeping conversion, edit the
 XTCE, not Python.**
 
-SPICE
------
+HIT SPICE Usage
+---------------
 
 **[CODE]** HIT uses SPICE for **time conversion only**:
 

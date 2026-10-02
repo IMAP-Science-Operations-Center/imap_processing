@@ -1,4 +1,5 @@
-.. _swe:
+:orphan:
+.. _swe-index:
 
 SWE
 ===

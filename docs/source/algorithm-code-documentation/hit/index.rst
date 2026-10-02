@@ -1,4 +1,5 @@
-.. _hit:
+:orphan:
+.. _hit-index:
 
 HIT
 ===

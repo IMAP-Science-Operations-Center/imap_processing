@@ -1,4 +1,5 @@
-.. _idex:
+:orphan:
+.. _idex-index:
 
 IDEX
 ====

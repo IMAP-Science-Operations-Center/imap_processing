@@ -1,4 +1,5 @@
-.. _glows:
+:orphan:
+.. _glows-index:
 
 GLOWS
 =====

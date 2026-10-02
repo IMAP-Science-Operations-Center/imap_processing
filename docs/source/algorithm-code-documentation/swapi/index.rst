@@ -1,4 +1,5 @@
-.. _swapi:
+:orphan:
+.. _swapi-index:
 
 SWAPI
 =====
