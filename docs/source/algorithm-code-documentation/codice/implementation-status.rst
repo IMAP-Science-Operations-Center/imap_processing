@@ -29,7 +29,7 @@ Summary
      - **Mostly complete**
      - Eleven of fourteen science products implemented, plus housekeeping. The
        SCI-LUT unpacking machinery, all seven compression modes, segmented
-       direct events and the full P3 NSO masking rules all work. 
+       direct events and the full P3 NSO masking rules all work.
    * - L1B
      - **Complete for what L1A produces**
      - Every implemented L1A product has a working rate conversion. The three

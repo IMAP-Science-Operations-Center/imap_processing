@@ -1,0 +1,31 @@
+.. _codice:
+
+CoDICE
+======
+
+.. currentmodule:: imap_processing.codice
+
+This is the CoDICE (Compact Dual Ion Composition Experiment) Instrument module,
+which contains the code for processing data from the CoDICE instrument.
+
+The processing code to decommutate the CCSDS packets (L0) and create higher level data products can be found below:
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    codice_l1a
+    codice_l1b
+    codice_l2
+
+The modules below contain various utility classes and functions to support L0 to
+L2 processing:
+
+.. autosummary::
+    :toctree: generated/
+    :template: autosummary.rst
+    :recursive:
+
+    utils
+    decompress

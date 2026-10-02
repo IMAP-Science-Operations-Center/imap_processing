@@ -27,7 +27,7 @@ Packet structure
 **[DOC]** All CoDICE packets share the standard CCSDS primary header plus
 ``SHCOARSE`` (32-bit spacecraft seconds).
 
-Non-PHA science packets then carry the fields below. The latest version of the CoDICE algorithm document 
+Non-PHA science packets then carry the fields below. The latest version of the CoDICE algorithm document
 dropped the "Max Length in Bits" column from these tables. The widths shown here come from a
 January 2026 draft, and are included for reference only. The XTCE files are the authority.
 

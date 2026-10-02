@@ -301,7 +301,7 @@ Operation modes
    * - Normal science operations
      - Day and Night modes as above. The overwhelming majority of the data.
    * - Regular in-flight tests
-     - **Monthly.** HV gain test, comparation voltage test, threshold voltage
+     - **Monthly.** HV gain test, comparison voltage test, threshold voltage
        test. Data structures are *identical* to normal science, so they arrive
        in the same packets and must be flagged out:
        ``is_hv_test_in_progress`` / ``is_test_pulse_in_progress``.

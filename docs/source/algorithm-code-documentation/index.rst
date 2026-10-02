@@ -15,15 +15,15 @@ Instruments
 .. toctree::
    :maxdepth: 1
 
-   codice/index
-   glows/index
+   codice
+   glows
    hi
-   hit/index
-   idex/index
-   lo/index
-   mag/index
-   swapi/index
-   swe/index
+   hit
+   idex
+   lo
+   mag
+   swapi
+   swe
    ultra
    quicklooks
 
