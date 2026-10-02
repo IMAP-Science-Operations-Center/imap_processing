@@ -18,7 +18,6 @@ import logging
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from importlib.metadata import version
 from pathlib import Path
 from time import sleep
 from typing import final
@@ -540,7 +539,7 @@ class ProcessInstrument(ABC):
         3. Post-processing actions such as uploading files to the IMAP SDC.
         4. Final cleanup actions.
         """
-        imap_processing_version = version("imap_processing")
+        imap_processing_version = imap_processing.__version__
         logger.info(f"IMAP Processing Version: {imap_processing_version}")
         logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
         logger.info("Beginning preprocessing (download dependencies)")
