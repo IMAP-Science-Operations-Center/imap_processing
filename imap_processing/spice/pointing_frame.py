@@ -137,7 +137,10 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
     try:
         yield handle
     finally:
-        spiceypy.ckcls(handle)
+        # dafcls rather than ckcls: ckcls also raises SPICE(NOSEGMENTSFOUND)
+        # when no segment was written, which would leave the file open and
+        # replace the original error.
+        spiceypy.dafcls(handle)
 
 
 def write_pointing_frame_ck(
@@ -208,7 +211,15 @@ def write_constant_attitude_ck(
         rotates vectors from this frame into `frame`.
     comments : list[str]
         Lines to write to the comment area of the CK.
+
+    Raises
+    ------
+    ValueError
+        If `segment_data` is empty.
     """
+    if len(segment_data) == 0:
+        raise ValueError(f"No segments to write to {kernel_path.name}.")
+
     with open_spice_ck_file(kernel_path) as handle:
         # Write the comments to the file
         spiceypy.dafac(handle, comments)

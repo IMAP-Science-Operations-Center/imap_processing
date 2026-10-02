@@ -221,10 +221,24 @@ def test_generate_lo_pivot_kernel_write_failure(nhk_files, monkeypatch, tmp_path
     def failing_ckw02(*args, **kwargs):
         raise spiceypy.utils.exceptions.SpiceyError("simulated write failure")
 
+    ckopn = spiceypy.ckopn
+    handles = []
+
+    def recording_ckopn(*args):
+        handles.append(ckopn(*args))
+        return handles[-1]
+
     with monkeypatch.context() as m:
         m.setattr(spiceypy, "ckw02", failing_ckw02)
-        with pytest.raises(spiceypy.utils.exceptions.SpiceyError):
+        m.setattr(spiceypy, "ckopn", recording_ckopn)
+        with pytest.raises(
+            spiceypy.utils.exceptions.SpiceyError, match="simulated write failure"
+        ):
             generate_lo_pivot_kernel(nhk_files["paths"][100], "repoint00100", 1)
+
+    # The CK was closed, which Windows needs to delete the temporary file.
+    with pytest.raises(spiceypy.utils.exceptions.SpiceyError):
+        spiceypy.dafhsf(handles[0])
 
     ck_dir = tmp_path / "imap/spice/ck"
     assert list(ck_dir.iterdir()) == []
