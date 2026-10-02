@@ -3,34 +3,20 @@
 Mission Overview
 ================
 
-This page is the mission-level context that the per-instrument pages assume but
-never state. It answers three questions: what IMAP is trying to find out, why
+This page is the mission-level context. It answers three questions: what IMAP is trying to find out, why
 that requires these particular ten instruments, and why several of them appear
 to measure the same thing.
 
 It is deliberately short. Each instrument's own ``overview`` page covers how
 that instrument works; this page only covers **why it is on the spacecraft.**
 
-.. important::
-
-   **Source convention on this page.**
-
-   * **[PAPER]** marks a statement from the IMAP mission paper, McComas et al.
-     (2025) - see :ref:`mission-overview-sources`. This is the authority for
-     everything mission-level.
-   * **[REPO]** marks a statement from an instrument algorithm document as
-     already summarised in these pages, with the page cited.
-
-   Where the two give different numbers, that is called out in
-   :ref:`mission-overview-discrepancies` rather than silently reconciled.
-
 What IMAP is
 ------------
 
-**[PAPER]** The Interstellar Mapping and Acceleration Probe is a NASA
+The Interstellar Mapping and Acceleration Probe is a NASA
 Heliophysics Solar Terrestrial Probe built by a team of 25 partner institutions.
 It carries **ten instruments** on a simple Sun-pointed spinner orbiting the
-**Sun-Earth L1 Lagrange point**, and launched on **24 September 2025**.
+**Sun-Earth L1 Lagrange point**, and launched on **24 September 2025**. Its design is a follow up to the IBEX mission.
 
 * Spins at **4 RPM**, like IBEX.
 * Unlike IBEX, the spin axis is **repointed roughly 1° each day** to track the
@@ -45,16 +31,17 @@ It carries **ten instruments** on a simple Sun-pointed spinner orbiting the
   expanded ENA imaging after IBEX, one for in-situ particle acceleration
   measurements.
 
-That merger matters, and it is the reason this payload looks like two missions
-bolted together. **[PAPER]** The Decadal Survey group judged the two proposals
+That merger matters, and it is the reason this payload can look like two missions
+bolted together. The Decadal Survey group judged the two proposals
 *"not just complementary, but synergistic, as some of the particles accelerated
 in the inner heliosphere are ultimately 'recycled' through charge exchange in
 the outer heliosphere and return to L1 as ENAs."*
 
+
 The science objectives
 ----------------------
 
-**[PAPER]** The abstract frames IMAP around **two coupled topics**:
+IMAP is framed around **two coupled topics**:
 
 1. the **acceleration of charged particles**, and
 2. the **interaction of the solar wind with the local interstellar medium**
@@ -87,14 +74,14 @@ refer to these as O1-O4:
        acceleration** near the Sun, in the heliosphere and heliosheath.
 
 A third, operational goal explains a large amount of code in this repository.
-**[PAPER]** **I-ALiRT** (IMAP Active Link for Real-Time) continuously
+**I-ALiRT** (IMAP Active Link for Real-Time) continuously
 telemeters real-time space weather data from **SWAPI, CoDICE, HIT, SWE and
 MAG**, which the SOC analyses and posts with a **latency of under 5 minutes**.
 
 Imaging a boundary you cannot visit
 -----------------------------------
 
-**[PAPER]** The heliosphere is the bubble the solar wind inflates in the VLISM.
+The heliosphere is the bubble the solar wind inflates in the VLISM.
 Its boundary region - the termination shock, the heliosheath beyond it, and the
 heliopause separating heliospheric plasma from the VLISM - extends from hundreds
 to roughly **1000 au** in the upwind direction. You cannot survey that by flying
@@ -112,18 +99,18 @@ the solar wind's history. **This is why the in-situ instruments exist.** They
 are not a parallel experiment; they supply the boundary conditions that make the
 maps interpretable.
 
-That dependency is concrete, not rhetorical. **[PAPER]** GLOWS light curves
+That dependency is concrete, not rhetorical. GLOWS light curves
 yield heliolatitude profiles of the ISN hydrogen ionization rate; those decompose
 into photoionization and charge-exchange rates, and the charge-exchange rates
 into **profiles of 3-D solar wind speed and density**. Those profiles are then
 *"used to calculate survival probabilities of ENAs observed by IMAP."* In this
 repository that appears as GLOWS L3 producing ENA survival probabilities for Lo,
-Hi and Ultra. **[REPO]** (:ref:`glows`)
+Hi and Ultra. (:ref:`glows`)
 
 Why pickup ions
 ---------------
 
-**[PAPER]** The solar wind *"picks up locally ionized interstellar neutrals
+The solar wind *"picks up locally ionized interstellar neutrals
 drifting into the heliosphere, creating the PUI population."* Interstellar
 neutrals cross into the heliosphere unimpeded because they carry no charge; once
 ionized, the solar wind sweeps them up and carries them outward. They are
@@ -131,7 +118,7 @@ recognised in an E/q spectrum by a characteristic **PUI cutoff**, and SWAPI is
 specified to observe the He+ distribution *"from low energies to beyond the PUI
 cutoff."*
 
-Pickup ions serve both goals at once. **[PAPER]**
+Pickup ions serve both goals at once.
 
 * **They are a sample of the LISM delivered to 1 au.** Combining SWAPI, CoDICE,
   IMAP-Lo and GLOWS *"allows determination of the LISM flow properties with
@@ -153,7 +140,7 @@ shares the spacecraft.
 The ten instruments
 -------------------
 
-**[PAPER]** Ranges, resolutions and cadences are from Table 4 of the mission
+Ranges, resolutions and cadences are from Table 4 of the mission
 paper; the objective mapping is from each instrument's own section where the
 paper states it explicitly.
 
@@ -231,7 +218,7 @@ paper states it explicitly.
 The energy ladder and deliberate overlaps
 ------------------------------------------
 
-**[PAPER]** The three ENA cameras *"have overlapping energy ranges that roughly
+The three ENA cameras *"have overlapping energy ranges that roughly
 match in-situ ion measurements above."* That matching is the design, not a
 coincidence:
 
@@ -246,7 +233,7 @@ coincidence:
                        IMAP-Hi      0.41 - 15.6 keV
                        IMAP-Ultra   3    - 300  keV
 
-The overlaps were engineered and then verified on the ground. **[PAPER]** Three
+The overlaps were engineered and then verified on the ground. Three
 pairs - **SWAPI & CoDICE, IMAP-Lo & IMAP-Hi, and IMAP-Hi & IMAP-Ultra** - were
 cross-calibrated *"as separate pairs in the same vacuum chamber at the same
 time"*, rotated into steady ion and neutral beams across their overlapping
@@ -269,7 +256,7 @@ Why two instruments measure pickup ions
 
 SWAPI and CoDICE both observe pickup ions and are the cross-calibrated pair in
 that energy range - but they measure different properties, and the paper's own
-wording separates them cleanly. **[PAPER]** SWAPI measures *"the lighter species
+wording separates them cleanly. SWAPI measures *"the lighter species
 of PUIs (H+ and He+)"*; CoDICE-Lo measures *"interstellar pickup He, O, and Ne
 ions"* with composition and charge state.
 
@@ -308,10 +295,10 @@ present.
 
 CoDICE has a second, unrelated solar wind job worth knowing about: charge-state
 ratios such as O7+/O6+ and C6+/C5+ freeze in close to the Sun and are unchanged
-by transport, so they reach L1 as a record of coronal conditions. **[PAPER]**
+by transport, so they reach L1 as a record of coronal conditions. The mission paper
 notes these charge-state ratios as one of the novel I-ALiRT measurements
 improving on ACE. In this repository they are the L3a ratio products and the
-I-ALiRT pseudo-density ratios. **[REPO]** (:ref:`codice-l3-scope`,
+I-ALiRT pseudo-density ratios.(:ref:`codice-l3-scope`,
 :ref:`codice-ialirt`)
 
 .. _mission-overview-discrepancies:
@@ -367,7 +354,7 @@ Sources
    `doi:10.1007/s11214-025-01224-z
    <https://doi.org/10.1007/s11214-025-01224-z>`_
 
-Unlike the instrument algorithm documents, this paper is **open access**
+This paper is **open access**
 (CC BY-NC-ND 4.0), so it can be linked and quoted freely. It is also the citable
 reference for the mission-level **CMAD** (Calibration and Measurement Algorithms
 Document), supplied as a supplemental file to the paper.
@@ -404,7 +391,7 @@ an instrument page here lacks the background you need, the relevant paper is:
      - Lee et al. 2025
      - Observatory - Hegarty et al. 2025
 
-The **[REPO]** statements on this page come from the instrument overview pages
+The statements on this page come from the instrument overview pages
 cited inline, each of which names its own algorithm document; see the
 ``Source documents`` section of any instrument index, for example
 :ref:`codice-source-documents`.

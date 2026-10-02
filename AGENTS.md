@@ -7,7 +7,8 @@ at a time.
 
 ## Big picture
 
-- A high level overview of the mission lives in [docs/source/mission-overview.rst](docs/source/mission-overview.rst).
+- A high level overview of the mission lives in [docs/source/mission-overview.rst](docs/source/mission-overview.rst). This document is not needed for
+  software development, but provides a helpful reference for connecting together instrument-spanning questions or ideas.
 - Every product is produced by a single invocation of `imap_cli` for one
   `(instrument, data-level, descriptor, start-date)` combination. See [imap_processing/cli.py](imap_processing/cli.py).
 - [imap_processing/cli.py](imap_processing/cli.py) is the only entry point. It defines an abstract
