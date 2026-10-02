@@ -666,6 +666,9 @@ def flag_low_voltage(
 
     low_voltage_times = status_dataset["shcoarse"].data[low_voltage_inds]
     # For each low voltage time, find the corresponding spin time
+    # Remove the last bin edge of spin_tbin_edges so any trailing spins
+    # (not assigned a bin) end up in the last bin. This ensures that
+    # a low voltage event during a trailing spin is flagged.
     lv_spin_inds = np.atleast_1d(
         np.searchsorted(spin_tbin_edges[:-1], low_voltage_times, side="right") - 1
     )
