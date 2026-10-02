@@ -43,6 +43,8 @@ class UltraConstants:
         SSD-specific correction to DMIN for time-of-flight normalization
     """
 
+    NOMINAL_SPIN_PERIOD_SEC: float = 15.0
+
     D_SLIT_FOIL: float = 3.39
     SLIT_Z: float = 44.89
     YF_ESTIMATE_LEFT: float = 40.0
