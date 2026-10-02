@@ -691,7 +691,8 @@ def get_de_product_name(repoint: str, sensor: int, ancillary_files: dict) -> str
 class ExtendedSpinConfig:
     """Pointing dependent l1b culling configurations."""
 
-    energy_thresholds: np.ndarray  # energy thresholds for culling (counts per 20-spin bin)
+    energy_thresholds: np.ndarray  # energy thresholds for culling
+    # (counts per 20-spin bin)
     voltage_threshold: float  # voltage threshold for culling
     date: datetime.datetime  # Date when configuration changed
     priority: str  # Which de product to use priority 1-4 de or raw de. e.g. p0-p4
