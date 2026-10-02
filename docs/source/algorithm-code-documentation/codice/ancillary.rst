@@ -254,8 +254,8 @@ Files in the repository that are *not* used
 Both predate the SCI-LUT-driven design. Treat them as documentation of what a
 nominal table looks like, not as inputs.
 
-SPICE
------
+CoDICE SPICE Usage
+------------------
 
 **[CODE]** CoDICE processing uses ``imap_processing.spice.time.met_to_ttj2000ns``
 to convert acquisition times to CDF epochs. It does **not** use SPICE kernels,
