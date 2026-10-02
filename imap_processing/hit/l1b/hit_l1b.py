@@ -114,7 +114,7 @@ def process_science_data(
         dataset = process_standard_rates_data(l1a_counts_dataset, livetime)
         logical_source = "imap_hit_l1b_standard-rates"
     elif descriptor == "summed-rates":
-        dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
+        dataset = process_summed_rates_data(l1a_counts_dataset, livetime, attr_mgr)
         logical_source = "imap_hit_l1b_summed-rates"
     elif descriptor == "sectored-rates":
         dataset = process_sectored_rates_data(l1a_counts_dataset, livetime)
@@ -123,7 +123,7 @@ def process_science_data(
     # Update attributes and dimensions
     if dataset and logical_source:
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
-        # TODO: Add CDF attributes to yaml
+
         for field in dataset.data_vars.keys():
             try:
                 # Create a dict of dimensions using the DEPEND_I keys in the attributes
@@ -305,7 +305,9 @@ def sum_livetime_10min(livetime: xr.DataArray) -> xr.DataArray:
 
 
 def process_summed_rates_data(
-    l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
+    l1a_counts_dataset: xr.Dataset,
+    livetime: xr.DataArray,
+    attr_mgr: ImapCdfAttributes | None = None,
 ) -> xr.Dataset:
     """
     Will process L1B summed rates data from L1A raw counts data.
@@ -329,6 +331,12 @@ def process_summed_rates_data(
         1D array of livetime values calculated from the livetime counter.
         Shape equals the number of epochs in the dataset.
 
+    attr_mgr : ImapCdfAttributes
+        The attribute manager for the L1B data level. Used to set CDF
+        attributes on the per-particle energy coordinate variables, which
+        are created fresh here (unlike the other coordinates, they aren't
+        inherited from the L1A dataset).
+
     Returns
     -------
     xr.Dataset
@@ -346,6 +354,7 @@ def process_summed_rates_data(
             l1a_counts_dataset,
             particle,
             energy_ranges,
+            attr_mgr,
         )
         # Calculate rates using livetime
         l1b_summed_rates_dataset = calculate_rates(
@@ -432,7 +441,6 @@ def process_sectored_rates_data(
     # # Compute rates, skipping fill values, and add to the L1B dataset
     for var in data_vars:
         if "sectored_counts" in var:
-            # Determine the new variable name for the L1B dataset
             if "_sectored_counts" in var:
                 new_var = var.replace("_sectored_counts", "")
             else:
