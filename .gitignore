@@ -194,8 +194,3 @@ imap_processing/tests/lo/test_cdfs/imap_lo_l1c_pset_20260101-repoint01261_v001.c
 **/de440*.bsp
 **/pck0001*.tpc
 **/earth_*_combined.bpc
-
-# Instrument algorithm documents and other mission reference material.
-# These are not ours to redistribute; drop a local copy in docs/reference/ if
-# you have one. Everything the pipeline needs is derived into docs/source/.
-/docs/reference/
