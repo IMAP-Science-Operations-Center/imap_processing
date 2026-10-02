@@ -262,17 +262,3 @@ Where the code lives
    imap_processing/cli.py (class Hit)    dependency wiring per level
    imap_processing/tests/hit/            tests, L0 test data, ancillary CSVs,
                                          validation CSVs
-
-API reference
--------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    hit_utils
-    l0.decom_hit
-    l1a.hit_l1a
-    l1b.hit_l1b
-    l2.hit_l2

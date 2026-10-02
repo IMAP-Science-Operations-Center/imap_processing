@@ -227,24 +227,3 @@ Where the code lives
    imap_processing/cdf/config/imap_mag_*.yaml                CDF attributes
    imap_processing/tests/mag/                                tests + validation data
    imap_processing/cli.py (class Mag)                        dependency wiring per level
-
-API reference
--------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    constants
-    l0.decom_mag
-    l0.mag_l0_data
-    l1a.mag_l1a
-    l1a.mag_l1a_data
-    l1b.mag_l1b
-    l1c.mag_l1c
-    l1c.interpolation_methods
-    l1d.mag_l1d
-    l1d.mag_l1d_data
-    l2.mag_l2
-    l2.mag_l2_data

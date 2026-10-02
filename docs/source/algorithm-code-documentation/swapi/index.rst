@@ -199,16 +199,3 @@ Where the code lives
    imap_processing/quality_flags.py (class SWAPIFlags)
    imap_processing/cli.py (class Swapi)  dependency wiring per level
    imap_processing/tests/swapi/          tests, L0 test data, validation CSVs, LUTs
-
-API reference
--------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    l1.swapi_l1
-    l2.swapi_l2
-    swapi_utils
-    constants

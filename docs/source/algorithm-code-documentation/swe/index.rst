@@ -211,18 +211,3 @@ Where the code lives
    imap_processing/quality_flags.py (class SweL1bFlags)
    imap_processing/cli.py (class Swe)   dependency wiring per level
    imap_processing/tests/swe/           tests, L0 test data, validation CSVs, LUTs
-
-API reference
--------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    l1a.swe_l1a
-    l1a.swe_science
-    l1b.swe_l1b
-    l2.swe_l2
-    utils.swe_utils
-    utils.swe_constants

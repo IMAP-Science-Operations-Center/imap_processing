@@ -261,22 +261,3 @@ Where the code lives
    imap_processing/cdf/config/imap_idex_l2c_variable_attrs.yaml
    imap_processing/cli.py (class Idex)        dependency wiring per level
    imap_processing/tests/idex/                tests, L0 test data, calibration CSVs
-
-API reference
--------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    idex_l0
-    idex_l1a
-    decode
-    evt_msg_decode_utils
-    idex_event_flags
-    idex_l1b
-    idex_l2a
-    idex_l2b
-    idex_constants
-    idex_utils

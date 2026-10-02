@@ -215,32 +215,3 @@ Where the code lives
    ``__init__.py``. Only ``l0/`` and ``utils/`` do. Imports work because the
    package is installed and Python treats these as namespace packages, but be
    aware of it if you are debugging an import or packaging problem.
-
-API reference
--------------
-
-.. currentmodule:: imap_processing.ccsds
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    ccsds_data
-
-.. currentmodule:: imap_processing.glows
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    l0.decom_glows
-    l0.glows_l0_data
-    l1a.glows_l1a
-    l1a.glows_l1a_data
-    l1b.glows_l1b
-    l1b.glows_l1b_data
-    l2.glows_l2
-    l2.glows_l2_data
-    utils.constants

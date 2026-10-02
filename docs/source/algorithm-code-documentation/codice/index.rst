@@ -232,18 +232,3 @@ Where the code lives
    imap_processing/cdf/config/imap_codice_*.yaml   CDF global + variable attributes
    imap_processing/tests/codice/                   tests + validation data
    imap_processing/cli.py (class Codice)           dependency wiring per level
-
-API reference
--------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: autosummary.rst
-    :recursive:
-
-    codice_l1a
-    codice_l1b
-    codice_l2
-    constants
-    utils
-    decompress
