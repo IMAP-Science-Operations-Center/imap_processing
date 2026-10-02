@@ -670,11 +670,15 @@ def test_qf(norm_dataset):
     cdf_filepath = write_cdf(output)
     with cdflib.CDF(cdf_filepath) as cdf_file:
         qf_attrs = cdf_file.varattsget("quality_flags")
+        qf_info = cdf_file.varinq("quality_flags")
         qf_bitmask_attrs = cdf_file.varattsget("quality_bitmask")
         qf_bitmask_info = cdf_file.varinq("quality_bitmask")
 
+    assert qf_info.Data_Type_Description == "CDF_UINT1"
     assert qf_attrs["FORMAT"] == "I1"
+    assert int(qf_attrs["VALIDMIN"]) == 0
     assert int(qf_attrs["VALIDMAX"]) == 1
+    assert int(qf_attrs["FILLVAL"]) == 255
     assert qf_bitmask_info.Data_Type_Description == "CDF_UINT2"
     assert qf_bitmask_attrs["FORMAT"] == "I3"
     assert int(qf_bitmask_attrs["FILLVAL"]) == 65535
