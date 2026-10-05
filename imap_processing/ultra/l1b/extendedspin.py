@@ -68,7 +68,9 @@ def calculate_extendedspin(
     # Events with no aux data coverage (AUXOUTLIER, flagged in de.py) have a
     # fill-valued "spin" that isn't a real spin number and must be excluded
     # from per-spin binning to avoid using an invalid spin.
-    has_spin_mask = priority_1_de_dataset["spin"].values != FILLVAL_UINT32
+    has_spin_mask = (
+        priority_1_de_dataset["spin"].values != UltraConstants.FILLVAL_UINT32
+    )
     spin_number = priority_1_de_dataset["spin"].values[has_spin_mask]
     de_energy = priority_1_de_dataset["energy"].values[has_spin_mask]
 
