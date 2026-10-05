@@ -370,6 +370,7 @@ unc_c:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_c_label
+  LABLAXIS: 'C uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -387,6 +388,7 @@ unc_fe:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_fe_label
+  LABLAXIS: 'Fe uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -404,6 +406,7 @@ unc_h:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_h_label
+  LABLAXIS: 'H uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -421,6 +424,7 @@ unc_he3:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_he3_label
+  LABLAXIS: 'He3 uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -438,6 +442,7 @@ unc_he4:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_he4_label
+  LABLAXIS: 'He4 uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -455,6 +460,7 @@ unc_junk:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_junk_label
+  LABLAXIS: 'Junk uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -475,6 +481,7 @@ unc_ne_mg_si:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_ne_mg_si_label
+  LABLAXIS: 'Ne-Si uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -492,6 +499,7 @@ unc_o:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_o_label
+  LABLAXIS: 'O uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -509,6 +517,7 @@ unc_uh:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_uh_label
+  LABLAXIS: 'Ultra-heavy uncertainty'
   SCALETYP: log
   SI_CONVERSION: ' > '
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -527,6 +536,7 @@ c:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_c_label
+  LABLAXIS: 'C Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -545,6 +555,7 @@ fe:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_fe_label
+  LABLAXIS: 'Fe Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -563,6 +574,7 @@ h:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_h_label
+  LABLAXIS: 'H Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -581,6 +593,7 @@ he3:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_he3_label
+  LABLAXIS: 'He3 Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -599,6 +612,7 @@ he4:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_he4_label
+  LABLAXIS: 'He4 Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -617,6 +631,7 @@ junk:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_junk_label
+  LABLAXIS: 'Junk Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -638,6 +653,7 @@ ne_mg_si:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_ne_mg_si_label
+  LABLAXIS: 'Ne-Si Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -656,6 +672,7 @@ o:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_o_label
+  LABLAXIS: 'O Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
@@ -674,6 +691,7 @@ uh:
   FILLVAL: *real_fillval
   FORMAT: F32.1
   LABL_PTR_1: energy_uh_label
+  LABLAXIS: 'Ultra-heavy Diff. Int.'
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
   VALIDMAX: 16777216.0
