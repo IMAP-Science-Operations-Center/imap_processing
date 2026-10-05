@@ -106,6 +106,8 @@ def test_mag_l2_attributes(
         assert vectors_attrs["FORMAT"] == "F13.5"
         assert np.isclose(vectors_attrs["VALIDMIN"], -1.0e5)
         assert np.isclose(vectors_attrs["VALIDMAX"], 1.0e5)
+        assert np.isclose(vectors_attrs["SCALEMIN"], -100)
+        assert np.isclose(vectors_attrs["SCALEMAX"], 100)
         expected_vector_text = {
             "SRF": (
                 "Magnetic field in the Spacecraft Reference Frame (SRF)",
