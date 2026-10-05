@@ -1892,10 +1892,32 @@ class TestStarBinOffset:
 class TestL1bStar:
     """Tests for l1b_star function."""
 
+    @pytest.fixture
+    def pivot_angle(self):
+        """Lo pivot angle held by the test CK; parametrize to override."""
+        return 90.0
+
+    @pytest.fixture
+    def pointing_mid_met(self, pivot_angle, lo_pivot_ck, furnish_kernels):
+        """
+        Load the kernels l1b_star needs and return a pointing mid-time MET.
+
+        l1b_star gets the star sensor azimuth from SPICE at the pointing
+        mid-time, so that time must fall inside the Lo pivot CK.
+        """
+        kernels = [
+            "naif0012.tls",
+            "imap_sclk_0036.tsc",
+            "imap_140.tf",
+            lo_pivot_ck(pivot_angle),
+        ]
+        with furnish_kernels(kernels):
+            yield float(et_to_met(str_to_et("2026-09-09T12:00:00")))
+
     @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
     def test_initializes_with_spin_data(
-        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b, pointing_mid_met
     ):
         """Test successful initialization of L1B star dataset with spin data."""
         # Arrange - Create 150 records to produce multiple groups
@@ -1903,7 +1925,7 @@ class TestL1bStar:
         mock_repoint.return_value = pd.DataFrame(
             {"repoint_in_progress": [False] * n_records}
         )
-        mock_pointing_mid.return_value = 1000.0  # Mock pointing mid time in MET
+        mock_pointing_mid.return_value = pointing_mid_met
         np.random.seed(42)
         met_times = np.arange(n_records, dtype=np.float64) * 15.0
         l1a_star = xr.Dataset(
@@ -1982,17 +2004,17 @@ class TestL1bStar:
         assert l1b_star_ds["avg_amplitude"].shape == (3, 720)
         assert l1b_star_ds["count_per_bin"].shape == (3, 720)
         # Check pointing_mid_met is a scalar with expected value
-        assert float(l1b_star_ds.attrs["pointing_mid_met"]) == 1000.0
+        assert float(l1b_star_ds.attrs["pointing_mid_met"]) == pointing_mid_met
 
     @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
     def test_dataset_structure_and_attributes(
-        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b, pointing_mid_met
     ):
         """Test that L1B star dataset has correct structure and attributes."""
         # Arrange
         mock_repoint.return_value = pd.DataFrame({"repoint_in_progress": [False]})
-        mock_pointing_mid.return_value = 1000.0
+        mock_pointing_mid.return_value = pointing_mid_met
         l1a_star = xr.Dataset(
             {
                 "count": ("epoch", [720]),
@@ -2061,11 +2083,11 @@ class TestL1bStar:
     @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
     def test_start_and_end_doy_variables(
-        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b, pointing_mid_met
     ):
         """Test that start_doy and end_doy variables are computed correctly."""
         # Arrange
-        mock_pointing_mid.return_value = 1000.0  # Mock pointing mid time in MET
+        mock_pointing_mid.return_value = pointing_mid_met
         mock_repoint.return_value = pd.DataFrame(
             {"repoint_in_progress": [False, False, False]}
         )
@@ -2127,12 +2149,12 @@ class TestL1bStar:
     @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
     @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
     def test_multiple_groups_created(
-        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b
+        self, mock_repoint, mock_pointing_mid, attr_mgr_l1b, pointing_mid_met
     ):
         """Test that multiple 64-spin groups are created correctly."""
         # Arrange - Create 150 records to produce 3 groups (64 + 64 + 22)
         n_records = 150
-        mock_pointing_mid.return_value = 1000.0  # Mock pointing mid time in MET
+        mock_pointing_mid.return_value = pointing_mid_met
         mock_repoint.return_value = pd.DataFrame(
             {"repoint_in_progress": [False] * n_records}
         )
@@ -2192,6 +2214,72 @@ class TestL1bStar:
         assert (
             l1b_star_ds.coords["epoch"].values[2] == met_to_ttj2000ns([128 * 15.0])[0]
         )
+
+    @pytest.mark.parametrize("pivot_angle", [65.0, 90.0, 105.0])
+    @patch("imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time")
+    @patch("imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data")
+    def test_l1b_star_angle_offset_from_spice(
+        self,
+        mock_repoint,
+        mock_pointing_mid,
+        attr_mgr_l1b,
+        pivot_angle,
+        pointing_mid_met,
+    ):
+        """l1b_star offsets spin angles by the star sensor azimuth from SPICE."""
+        n_records = 64
+        mock_repoint.return_value = pd.DataFrame(
+            {"repoint_in_progress": [False] * n_records}
+        )
+        met_times = np.arange(n_records, dtype=np.float64) * 15.0
+        l1a_star = xr.Dataset(
+            {
+                "count": ("epoch", [720] * n_records),
+                "shcoarse": ("epoch", met_times),
+                "data": (
+                    ("epoch", "samples"),
+                    np.full((n_records, 720), 150, dtype=np.uint16),
+                ),
+            },
+            coords={
+                "epoch": met_to_ttj2000ns(met_times),
+                "samples": np.arange(720),
+            },
+        )
+        l1b_nhk = xr.Dataset(
+            {
+                "ifb_data_interval": ("epoch", [21.0] * n_records),
+                "ifb_ctrl_star_sync": ("epoch", ["DS"] * n_records),
+            },
+            coords={"epoch": list(range(n_records))},
+        )
+        spin_data = xr.Dataset(
+            {
+                "acq_start_sec": ("epoch", [0, 15]),
+                "acq_start_subsec": ("epoch", [0, 0]),
+                "acq_end_sec": ("epoch", [420, 435]),
+                "acq_end_subsec": ("epoch", [0, 0]),
+                "num_completed": ("epoch", [28, 28]),
+            },
+            coords={"epoch": [0, 1]},
+        )
+        sci_dependencies = {
+            "imap_lo_l1a_star": l1a_star,
+            "imap_lo_l1b_nhk": l1b_nhk,
+            "imap_lo_l1a_spin": spin_data,
+        }
+
+        mock_pointing_mid.return_value = pointing_mid_met
+        with patch(
+            "imap_processing.lo.l1b.lo_l1b.calculate_star_sensor_profiles_by_group",
+            wraps=calculate_star_sensor_profiles_by_group,
+        ) as mock_profiles:
+            l1b_star(sci_dependencies, attr_mgr_l1b, group_size=64)
+
+        # The pivot tilts the star sensor in elevation; azimuth stays near 60 deg.
+        # Allow for 0.75 degrees of mounting error, as in test_geometry.py.
+        offset = mock_profiles.call_args.kwargs["start_angle_offset"]
+        np.testing.assert_allclose(offset, 60.0, atol=0.75)
 
 
 def test_get_pivot_angle_from_nhk():

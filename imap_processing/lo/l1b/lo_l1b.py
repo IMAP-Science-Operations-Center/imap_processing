@@ -2338,7 +2338,6 @@ def l1b_star(
     first_met = l1a_star["shcoarse"].values[0]
     pointing_mid_met = get_pointing_mid_time(first_met)
 
-
     et = ttj2000ns_to_et(met_to_ttj2000ns(pointing_mid_met))
     sc_to_inst_angle_offset = float(
         get_instrument_mounting_az_el(SpiceFrame.IMAP_LO_STAR_SENSOR, et)[0]
