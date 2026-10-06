@@ -129,7 +129,7 @@ met:
   VAR_TYPE: support_data
 
 spin_angle:
-  CATDESC: Spin angle in degrees
+  CATDESC: Star sensor spin angle from spacecraft spin phase 0 (spin table)
   FIELDNAM: Spin Angle
   FILLVAL: -1.0e31
   FORMAT: F8.3
