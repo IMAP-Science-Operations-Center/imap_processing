@@ -24,6 +24,7 @@ from imap_processing.spice.geometry import (
 from imap_processing.spice.spin import get_spin_data
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.lookup_utils import (
+    ExtendedSpinConfig,
     get_scattering_coefficients,
     get_scattering_thresholds,
 )
@@ -630,7 +631,7 @@ def count_rejected_events_per_spin(
 def flag_low_voltage(
     spin_tbin_edges: NDArray,
     status_dataset: xr.Dataset,
-    voltage_threshold: float = UltraConstants.LOW_VOLTAGE_CULL_THRESHOLD,
+    voltage_threshold: float,
 ) -> NDArray:
     """
     Flag low voltage events.
@@ -665,8 +666,11 @@ def flag_low_voltage(
 
     low_voltage_times = status_dataset["shcoarse"].data[low_voltage_inds]
     # For each low voltage time, find the corresponding spin time
+    # Remove the last bin edge of spin_tbin_edges so any trailing spins
+    # (not assigned a bin) end up in the last bin. This ensures that
+    # a low voltage event during a trailing spin is flagged.
     lv_spin_inds = np.atleast_1d(
-        np.searchsorted(spin_tbin_edges, low_voltage_times, side="right") - 1
+        np.searchsorted(spin_tbin_edges[:-1], low_voltage_times, side="right") - 1
     )
     # Ensure that the indices are within the valid range of spin groups
     valid_bin_inds = (lv_spin_inds >= 0) & (lv_spin_inds < spin_bin_size)
@@ -684,33 +688,35 @@ def flag_low_voltage(
 
 
 def flag_high_energy(
-    de_dataset: xr.Dataset,
+    de_counts_summary: np.ndarray,
     spin_tbin_edges: NDArray,
     energy_ranges: NDArray,
+    energy_thresholds: NDArray,
     mask: NDArray = None,
-    energy_thresholds: np.ndarray = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS,
-    sensor_id: int = 90,
+    combine_spin_bin_radius: int = UltraConstants.HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS,
 ) -> NDArray:
     """
     Flag high energy events.
 
     Parameters
     ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
+    de_counts_summary : numpy.ndarray
+        Array containing the valid counts of direct events in each spin bin and
+        energy range.
     spin_tbin_edges : NDArray
         Edges of the spin time bins.
     energy_ranges : numpy.ndarray
         Array of energy range edges.
+    energy_thresholds : numpy.ndarray
+        Array of count thresholds for flagging high energy events corresponding to
+         each energy range.
     mask : numpy.ndarray, optional
         Mask indicating which events to consider for high energy flagging
          (e.g., after low voltage culling). True indicates the spin bins that should
          NOT be considered for high energy flagging.
-    energy_thresholds : numpy.ndarray
-        Array of count thresholds for flagging high energy events corresponding to
-         each energy range.
-    sensor_id : int
-        Sensor ID (e.g., 45 or 90).
+    combine_spin_bin_radius : int
+        Number of spin bins to combine on either side of the current bin to get a
+        smoother estimate of the counts per bin (see ``combine_de_counts_summary``).
 
     Returns
     -------
@@ -736,16 +742,13 @@ def flag_high_energy(
     # Initialize all spin bins to have no high energy flag
     spin_bin_size = len(spin_tbin_edges) - 1
     quality_flags: np.ndarray = np.zeros((n_energy_bins, spin_bin_size), dtype=bool)
-    # Get valid events and counts at each spin bin for the
-    # designated culling channel.
-    de_counts = get_valid_de_count_summary(
-        de_dataset,
-        energy_ranges,
-        spin_tbin_edges,
-        UltraConstants.HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS,
-        sensor_id,
+
+    # Combine de counts across spin bins to get a smoother estimate of the counts
+    # per bin.
+    de_counts_combined = combine_de_counts_summary(
+        de_counts_summary, combine_spin_bin_radius
     )
-    cull_channel_counts = de_counts[cull_channel]
+    cull_channel_counts = de_counts_combined[cull_channel]
     # flag spins where the counts in the cull channel exceed the threshold for that
     # energy range
     flagged = (
@@ -767,11 +770,10 @@ def flag_high_energy(
 
 
 def flag_statistical_outliers(
-    de_dataset: xr.Dataset,
+    de_counts_summary: np.ndarray,
     spin_tbin_edges: NDArray,
     energy_ranges: NDArray,
     mask: NDArray,
-    sensor_id: int = 90,
     n_iterations: int = UltraConstants.STAT_CULLING_N_ITER,
     std_threshold: float = UltraConstants.STAT_CULLING_STD_THRESHOLD,
     combine_flags_across_energy_bins: bool = True,
@@ -794,8 +796,9 @@ def flag_statistical_outliers(
 
     Parameters
     ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
+    de_counts_summary : numpy.ndarray
+        Array containing the valid counts of direct events in each spin bin and
+        energy range.
     spin_tbin_edges : numpy.ndarray
         Edges of the spin time bins.
     energy_ranges : numpy.ndarray
@@ -806,8 +809,6 @@ def flag_statistical_outliers(
         True indicates the spin bins that have been flagged in previous steps (e.g.,
         after low voltage and high energy culling) and should be excluded from the
         outlier flagging process.
-    sensor_id : int
-        Sensor ID (e.g., 45 or 90).
     n_iterations : int
         Maximum number of iterations to perform for outlier flagging.
     std_threshold : float
@@ -852,13 +853,11 @@ def flag_statistical_outliers(
     iterations = np.zeros(n_energy_bins)
     # keep track of the standard deviation difference from poisson stats per energy bin
     std_diff: np.ndarray = np.zeros(n_energy_bins, dtype=float)
-    count_summary = get_valid_de_count_summary(
-        de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
-    )  # shape (n_energy_bins, n_spin_bins)
+
     for e_idx in range(n_energy_bins):
         good_mask = ~curr_mask[e_idx]  # spin bins that are not currently flagged
         for it in range(n_iterations):
-            counts = count_summary[e_idx, good_mask]
+            counts = de_counts_summary[e_idx, good_mask]
             # Step 1. check if there are less than three valid counts.
             # If so, flag all spins for that energy bin and skip to the next iteration
             if len(counts) < 3:
@@ -892,7 +891,7 @@ def flag_statistical_outliers(
         for e_idx in range(n_energy_bins):
             if not convergence[e_idx]:
                 # Select counts that have not been flagged in any channel.
-                counts = count_summary[e_idx, ~all_channel_mask]
+                counts = de_counts_summary[e_idx, ~all_channel_mask]
                 std_ratio, _ = get_poisson_stats(counts)
                 if std_ratio < std_threshold:
                     convergence[e_idx] = True
@@ -943,22 +942,19 @@ def get_poisson_stats(counts: NDArray) -> tuple[float, NDArray]:
 
 
 def flag_upstream_ion(
-    de_dataset: xr.Dataset,
-    spin_tbin_edges: NDArray,
+    de_counts_summary: np.ndarray,
     energy_ranges: NDArray,
     mask: NDArray,
     channels: list,
-    sensor_id: int = 90,
 ) -> NDArray:
     """
     Flag upstream ion events.
 
     Parameters
     ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
-    spin_tbin_edges : NDArray
-        Edges of the spin time bins.
+    de_counts_summary : numpy.ndarray
+        Array containing the valid counts of direct events in each spin bin and
+        energy range.
     energy_ranges : NDArray
         Array of energy range edges.
     mask : NDArray
@@ -968,8 +964,6 @@ def flag_upstream_ion(
         and should be excluded from the upstream ion flagging process.
     channels : list
         List of energy channel indices to use for upstream ion flagging.
-    sensor_id : int
-        Sensor ID (e.g., 45 or 90).
 
     Returns
     -------
@@ -985,9 +979,7 @@ def flag_upstream_ion(
             f" of the energy ranges. Provided channels: {channels}, number of energy"
             f" ranges: {len(energy_ranges) - 1}."
         )
-    counts_sum = get_valid_de_count_summary(
-        de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
-    )[channels, :]  # shape (num_channels, n_spin_bins)
+    counts_sum = de_counts_summary[channels, :]  # shape (num_channels, n_spin_bins)
     flagged = np.zeros(counts_sum.shape[1], dtype=bool)
     channel_mask = ~mask[channels, :]
     weights = channel_mask.sum(axis=0)
@@ -1019,27 +1011,22 @@ def flag_upstream_ion(
 
 
 def flag_spectral_events(
-    de_dataset: xr.Dataset,
-    spin_tbin_edges: NDArray,
+    de_counts_summary: NDArray,
     energy_ranges: NDArray,
     channels: list,
-    sensor_id: int = 90,
 ) -> NDArray:
     """
     Flag spectral events.
 
     Parameters
     ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
-    spin_tbin_edges : NDArray
-        Edges of the spin time bins.
+    de_counts_summary : numpy.ndarray
+        Array containing the valid counts of direct events in each spin bin and
+        energy range.
     energy_ranges : NDArray
         Array of energy range edges.
     channels : list
         List of energy channel indices to use for spectral flagging.
-    sensor_id : int
-        Sensor ID (e.g., 45 or 90).
 
     Returns
     -------
@@ -1055,9 +1042,7 @@ def flag_spectral_events(
             f" of the energy ranges. Provided channels: {channels}, number of energy"
             f" ranges: {len(energy_ranges) - 1}."
         )
-    counts_sum = get_valid_de_count_summary(
-        de_dataset, energy_ranges, spin_tbin_edges, sensor_id=sensor_id
-    )[channels, :]  # shape (num_channels, n_spin_bins)
+    counts_sum = de_counts_summary[channels, :]  # shape (num_channels, n_spin_bins)
     # Flag spin bins where the signed count difference between adjacent selected
     # energy channels exceeds a Poisson-based threshold. For each pair of
     # adjacent channels, compute np.diff(counts_sum, axis=0) and compare that
@@ -1080,113 +1065,80 @@ def flag_spectral_events(
 
 
 def get_valid_de_count_summary(
-    de_dataset: xr.Dataset,
+    de_datasets: dict[str, xr.Dataset],
     energy_ranges: NDArray,
     spin_tbin_edges: NDArray,
-    combine_spin_bin_radius: int | None = None,
+    spin_config: ExtendedSpinConfig,
     sensor_id: int = 90,
+    earth_ang_45: float = UltraConstants.EARTH_ANGLE_45_THRESHOLD,
 ) -> NDArray:
     """
     Get a summary of valid counts per energy range and spin bin.
 
     Parameters
     ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
+    de_datasets : dict[str, xr.Dataset]
+        Dictionary of raw, and priority 1-4 direct event datasets.
     energy_ranges : numpy.ndarray
         Array of energy range edges.
     spin_tbin_edges : numpy.ndarray
         Array of spin time bin edges.
-    combine_spin_bin_radius : int
-        If not None, average counts across this many spin bins x 2 to get a smoother
-        estimate of the counts per bin.
+    spin_config : ExtendedSpinConfig
+        Spin configuration object containing the direct event priority to use.
     sensor_id : int
         Sensor ID (e.g., 45 or 90).
+    earth_ang_45 : float
+        Earth angle to use for culling in ULTRA 45.
 
     Returns
     -------
     counts : numpy.ndarray
         A 2D array of counts per energy range and spin bin for valid events.
     """
-    valid_events = get_valid_events_per_energy_range(
-        de_dataset, energy_ranges, UltraConstants.EARTH_ANGLE_45_THRESHOLD, sensor_id
-    )
+    # Get the specified de priority. E.g. "p0" for raw de or "p1" for priority 1 de.
+    priority_conf = spin_config.priority
+    n_energy_ranges = len(energy_ranges) - 1
     counts: np.ndarray = np.zeros(
-        (len(energy_ranges) - 1, len(spin_tbin_edges) - 1), dtype=float
+        (n_energy_ranges, len(spin_tbin_edges) - 1), dtype=float
     )
+    for i in range(n_energy_ranges):
+        # By default, use priority 1 de unless it's the last energy bin and the
+        # config is p0 or if the config is set to use raw de only.
+        de = de_datasets["p1"]
+        if i == n_energy_ranges - 1 and priority_conf == "p0":
+            de = de_datasets["p0"]
 
-    for i in range(len(energy_ranges) - 1):
-        counts[i, :], _ = np.histogram(
-            de_dataset["de_event_met"].values[valid_events[i, :]], bins=spin_tbin_edges
+        valid_outliers = de["quality_outliers"].values == 0
+        valid_scattering = de["quality_scattering"].values == 0
+        # TODO what about species non-proton? For those psets dont cull based on
+        #   High energy?
+        valid_ebin = np.isin(
+            de["ebin"].values, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"]
         )
-
-    if combine_spin_bin_radius is not None and combine_spin_bin_radius > 0:
-        # Pad array along the spin bin axis to ensure sliding_window_view returns
-        # an array of the correct shape.
-        counts_padded = np.pad(
-            counts,
-            ((0, 0), (combine_spin_bin_radius, combine_spin_bin_radius)),
-            mode="edge",
-        )
-        window_size = combine_spin_bin_radius * 2 + 1
-        windows = sliding_window_view(counts_padded, window_shape=window_size, axis=1)
-        counts = np.mean(windows, axis=-1)
-    return counts
-
-
-def get_valid_events_per_energy_range(
-    de_dataset: xr.Dataset, energy_ranges: NDArray, earth_ang_45: float, sensor_id: int
-) -> NDArray:
-    """
-    Get valid events per energy range.
-
-    Parameters
-    ----------
-    de_dataset : xr.Dataset
-        Direct event dataset.
-    energy_ranges : numpy.ndarray
-        Array of energy range edges.
-    earth_ang_45 : float
-        Earth angle to use for culling in ULTRA 45.
-    sensor_id : int
-        Sensor ID (e.g., 45 or 90).
-
-    Returns
-    -------
-    valid_events_per_range : numpy.ndarray
-        A boolean array of shape (n_energy_ranges, n_events).
-    """
-    event_energies = de_dataset["energy_spacecraft"].values
-    valid_events: np.ndarray = np.zeros(
-        (len(energy_ranges) - 1, len(event_energies)), dtype=bool
-    )
-    valid_outliers = de_dataset["quality_outliers"].values == 0
-    valid_scattering = de_dataset["quality_scattering"].values == 0
-    # TODO what about species non-proton? For those psets dont cull based on
-    #   High energy?
-    ebin = de_dataset["ebin"].values
-    valid_ebin = np.isin(ebin, UltraConstants.TOFXPH_SPECIES_GROUPS["proton"])
-    for i in range(len(energy_ranges) - 1):
-        energy_mask = (event_energies >= energy_ranges[i]) & (
-            event_energies < energy_ranges[i + 1]
+        # Exclude events with invalid (fill) event times.
+        valid_event_times = de["event_times"].values > 0
+        energy_mask = (
+            (de["energy_spacecraft"].values >= energy_ranges[i])
+            & (de["energy_spacecraft"].values < energy_ranges[i + 1])
+            & valid_event_times
         )
         if not np.any(energy_mask):
             continue
         # subset the dataset to events within the energy range
-        de_dataset_subset = de_dataset.isel(epoch=energy_mask)
+        de_dataset_subset = de.isel(epoch=energy_mask)
         valid_earth_angle: np.ndarray = np.full(np.sum(energy_mask), True, dtype=bool)
         # For ultra45, also apply an Earth angle cut to remove times when
-        # the Earth is in the field of view. ULTRA 90 does not require this since Earth
-        # is always outside the field of view.
+        # the Earth is in the field of view. ULTRA 90 does not require this since
+        # Earth is always outside the field of view.
         if sensor_id == 45:
             valid_earth_angle = get_valid_earth_angle_events(
                 de_dataset_subset, earth_ang_45
             )
 
-        # Flag events at the valid energy ranges if they meet all the criteria for
+        # Count events at the valid energy ranges if they meet all the criteria for
         # valid events: not flagged as outliers, not flagged as scattering,
         # in a valid ebin, and (for ultra45) have a valid Earth angle.
-        valid_events[i, energy_mask] = np.logical_and.reduce(
+        valid_events = np.logical_and.reduce(
             [
                 valid_outliers[energy_mask],
                 valid_scattering[energy_mask],
@@ -1194,8 +1146,46 @@ def get_valid_events_per_energy_range(
                 valid_earth_angle,
             ]
         )
+        counts[i, :], _ = np.histogram(
+            de_dataset_subset["de_event_met"].values[valid_events],
+            bins=spin_tbin_edges,
+        )
 
-    return valid_events
+    return counts
+
+
+def combine_de_counts_summary(
+    de_counts_summary: np.ndarray,
+    combine_spin_bin_radius: int = UltraConstants.HIGH_ENERGY_COMBINED_SPIN_BIN_RADIUS,
+) -> np.ndarray:
+    """
+    Combine counts across spin bins to get a smoother estimate of the counts per bin.
+
+    Parameters
+    ----------
+    de_counts_summary : numpy.ndarray
+        A 2D array of counts per energy range and spin bin for valid events.
+    combine_spin_bin_radius : int
+        The number of spin bins to combine on either side of the current bin.
+
+    Returns
+    -------
+    combined : numpy.ndarray
+        A 2D array of counts per energy range and spin bin for valid events, with
+        counts combined across spin bins.
+    """
+    # Pad array along the spin bin axis with NaN so that sliding_window_view returns
+    # an array of the correct shape. To be consistent with the ULTRA IT
+    # implementation, the padded values are ignored in the mean, so edge bins are
+    # averaged over only the bins that exist.
+    counts_padded = np.pad(
+        de_counts_summary.astype(float),
+        ((0, 0), (combine_spin_bin_radius, combine_spin_bin_radius)),
+        constant_values=np.nan,
+    )
+    window_size = combine_spin_bin_radius * 2 + 1
+    windows = sliding_window_view(counts_padded, window_shape=window_size, axis=1)
+    return np.nanmean(windows, axis=-1)
 
 
 def get_valid_earth_angle_events(
@@ -1216,8 +1206,8 @@ def get_valid_earth_angle_events(
     Returns
     -------
     valid_earth_angle_events : NDArray
-        A boolean array indicating which events have Earth angle greater than the
-        specified threshold.
+        A boolean array indicating which events have an angle greater than the
+        specified threshold from both the Earth and anti-Earth directions.
     """
     velocity_dps_sc = de_dataset_subset["velocity_dps_sc"].values
     # Use the mean event time to compute the Earth unit vector since the spacecraft
@@ -1244,13 +1234,9 @@ def get_valid_earth_angle_events(
     )  # shape (n_events, 3)
     # Get cos(theta) between each particle look direction and Earth direction
     cos_sep = np.dot(unit_look_dirs, earth_unit_vector)  # shape (n_events,)
-    # Clip cos_sep to the valid range of [-1, 1] to avoid numerical issues with arccos
-    cos_sep = np.clip(cos_sep, -1.0, 1.0)
-    sep_angle = np.arccos(cos_sep)
-    # An event is valid if the separation angle between the particle look
-    # direction and Earth direction is greater than the Earth angle limit
-    # (i.e., the Earth is outside the field of view).
-    return sep_angle > earth_ang_45
+    # An event is valid if the particle look direction is more than the Earth angle
+    # limit away from both the Earth direction and the anti-Earth direction.
+    return np.abs(cos_sep) < np.cos(earth_ang_45)
 
 
 def get_energy_range_flags(energy_ranges_edges: NDArray) -> NDArray:
@@ -1418,5 +1404,8 @@ def expand_bin_flags_to_spins(
         )
         repeated_flags = repeated_flags[:n_spins]
     quality_flags[: len(repeated_flags)] = repeated_flags
+    # Spins in an incomplete trailing bin inherit the flag of the last complete bin.
+    if len(repeated_flags) < n_spins:
+        quality_flags[len(repeated_flags) :] = binned_quality_flags[-1]
 
     return quality_flags

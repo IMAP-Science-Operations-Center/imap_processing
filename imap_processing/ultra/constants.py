@@ -174,7 +174,7 @@ class UltraConstants:
             "imap_spk_demo.bsp",
             "sim_1yr_imap_attitude.bc",
             "imap_001.tf",
-            "imap_science_120.tf",
+            "imap_science_130.tf",
             "sim_1yr_imap_pointing_frame.bc",
         ]
     ]
@@ -207,13 +207,6 @@ class UltraConstants:
     # Angle threshold in radians for ULTRA 45 degree culling.
     # This is only needed for ULTRA 45 since Earth may be in the FOV.
     EARTH_ANGLE_45_THRESHOLD = np.radians(15)
-    # An array of energy thresholds to use for culling. Each one corresponds to
-    # the number of energy bins used.
-    # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
-    # an error will be raised if this does not match n_bins
-    HIGH_ENERGY_CULL_THRESHOLDS = (
-        np.array([4.0, 2.0, 1.20, 0.45, 0.1, 0.1]) * SPIN_BIN_SIZE
-    )
     # Use the channel defined below to determine which spins are contaminated
     HIGH_ENERGY_CULL_CHANNEL = 5
     # For the high energy cull, we want to combine spin bins because an SEP event is

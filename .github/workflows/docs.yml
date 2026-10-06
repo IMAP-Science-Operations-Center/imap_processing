@@ -22,6 +22,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[doc]
 
+    - name: Check installed version
+      # Run outside the checkout so cwd doesn't shadow site-packages
+      working-directory: /tmp
+      run: python -c "import imap_processing as m; assert m.__version__ != '0.0.0'"
+
     - name: Build documentation
       run: |
         # SPHINXOPTS="-W --keep-going" is used to turn warnings into errors

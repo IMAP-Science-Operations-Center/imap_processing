@@ -52,6 +52,8 @@ vector_attrs: &vectors_default
     FILLVAL: -1.0e31
     FORMAT: F13.5
     LABL_PTR_1: direction_label
+    SCALEMAX: 100.0
+    SCALEMIN: -100.0
     UNITS: nT
     VALIDMAX: 1.0e+5
     VALIDMIN: -1.0e+5

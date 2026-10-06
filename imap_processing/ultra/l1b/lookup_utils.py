@@ -1,6 +1,8 @@
 """Contains tools for lookup tables for l1b."""
 
+import datetime
 import logging
+from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
@@ -622,9 +624,8 @@ def get_scattering_thresholds(ancillary_files: dict) -> dict:
     return threshold_dict
 
 
-def get_de_product_name(
-    repoint: str, sensor: int, data_level: str, ancillary_files: dict
-) -> str:
+# TODO move to l1c_lookup_utils.py
+def get_de_product_name(repoint: str, sensor: int, ancillary_files: dict) -> str:
     """
     Get the name of the de product to use for processing.
 
@@ -642,8 +643,6 @@ def get_de_product_name(
         number.
     sensor : int
         Sensor number, either 45 or 90.
-    data_level : str
-        Data level, either "l1b" or "l1c".
     ancillary_files : dict
             Ancillary files containing the lookup tables to determine which DE product
             to use based on the repointing ID.
@@ -653,13 +652,11 @@ def get_de_product_name(
     de_product_name : str
         Name of the de product to use for processing.
     """
-    if data_level not in ["l1b", "l1c"]:
-        raise ValueError(f"Invalid data level: {data_level}. Must be 'l1b' or 'l1c'.")
     # load the lookup table.
     # The lookup table will have columns for repointing_id_start, repointing_id_end,
     # and de_product. If repointing_id_end is NaN that indicates that the de_product
     # should be used for all repoint IDs greater than or equal to repointing_id_start.
-    file_name = f"{data_level}-{sensor}sensor-de-product-lookup"
+    file_name = f"l1c-{sensor}sensor-de-product-lookup"
     de_lookup = pd.read_csv(ancillary_files[file_name])
     repoint_id = int(repoint.replace("repoint", ""))
     # Filter the dataset to find where the current repoint ID falls within the
@@ -688,3 +685,76 @@ def get_de_product_name(
         f"Using DE product {product} for repoint ID {repoint_id} based on lookup table"
     )
     return product
+
+
+@dataclass
+class ExtendedSpinConfig:
+    """Pointing dependent l1b culling configurations."""
+
+    energy_thresholds: np.ndarray  # energy thresholds for culling
+    # (counts per 20-spin bin)
+    voltage_threshold: float  # voltage threshold for culling
+    date: datetime.datetime  # Date when configuration changed
+    priority: str  # Which de product to use priority 1-4 de or raw de. e.g. p0-p4
+    calibration: str  # Calibration label
+
+    @classmethod
+    def from_csv(cls, config_file_path: str, repointing: str) -> "ExtendedSpinConfig":
+        """
+        Construct an ExtendedSpinConfig object from inputs.
+
+        Parameters
+        ----------
+        config_file_path : str
+            Path to the CSV file containing the configuration data.
+        repointing : str
+            The current pointing number for which to retrieve the
+             configuration.
+
+        Returns
+        -------
+        ExtendedSpinConfig
+            An instance of ExtendedSpinConfig with the thresholds, date,
+             priority, and calibration values for the specified pointing number.
+        """
+        repoint_int = int(repointing.replace("repoint", ""))
+        df = pd.read_csv(config_file_path)
+        # Each row applies from its pointing number up to (but not including) the
+        # next row's pointing number. The last row applies to all later pointings.
+        pointings = np.append(df["pointing"].values, np.inf)
+        filtered_df = df[
+            ((repoint_int < pointings[1:]) & (repoint_int >= pointings[:-1]))
+        ]
+        if filtered_df.empty:
+            raise ValueError(
+                f"The ancillary file: {config_file_path} contains no "
+                f"configurations for {repointing}"
+            )
+        if filtered_df.shape[0] > 1:
+            raise ValueError(
+                f"The ancillary file: {config_file_path} contains multiple "
+                f"configurations for {repointing}. It should only contain one"
+                f" per pointing."
+            )
+        config = filtered_df.iloc[0]
+        # Get the column names that contain "cullThresh" and sort them ascending.
+        thresh_colnames = sorted(
+            [col for col in df.columns if "cullThresh" in col],
+            key=lambda threshold: int(threshold.split("_")[-1]),
+        )
+        # The thresholds are counts per spin bin of UltraConstants.SPIN_BIN_SIZE (20)
+        # spins, so they are used as is. If SPIN_BIN_SIZE changes, the thresholds in
+        # the config file need to be updated for the new bin size.
+        e_thresholds = np.array([config[col] for col in thresh_colnames])
+        # The config provides thresholds for bins 0-4; bin 5 (>
+        # UltraConstands.MAX_ENERGY_THRESHOLD keV) reuses the bin 4 threshold
+        e_thresholds = np.append(e_thresholds, e_thresholds[-1])
+        date = datetime.datetime.strptime(config["date"], "%m/%d/%y")
+
+        return cls(
+            energy_thresholds=e_thresholds,
+            voltage_threshold=config["deflector_Vthresh"],
+            date=date,
+            priority=config["pri_config"],
+            calibration=config["cal_config"],
+        )

@@ -960,11 +960,15 @@ class RawDustEvent:
             # rename idx__txhdrfswaidcopy to aid for better readability in the final
             # dataset
             var_name = "aid" if var == "idx__txhdrfswaidcopy" else var
+            # Str variables don't need schema attributes like
+            # UNITS/VALIDMIN/VALIDMAX/DISPLAY_TYPE so skip the schema check for them.
             trigger_vars[var_name] = xr.DataArray(
                 name=var_name,
                 data=[value],
                 dims=("epoch"),
-                attrs=idex_attrs.get_variable_attributes(var),
+                attrs=idex_attrs.get_variable_attributes(
+                    var, check_schema=not isinstance(value, str)
+                ),
             )
 
         data_vars = {

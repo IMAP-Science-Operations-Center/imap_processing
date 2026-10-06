@@ -2024,16 +2024,21 @@ class TestMarkOverflowPackets:
 class TestGetSweepIndices:
     """Test suite for _get_sweep_indices() helper function."""
 
+    @staticmethod
+    def _one_set_per_entry(esa_step):
+        """Return esa_step_met values giving each entry its own 8-spin set."""
+        return 1000.0 + 120.0 * np.arange(len(esa_step))
+
     def test_empty_array(self):
         """Test with empty input."""
-        result = _get_sweep_indices(np.array([]))
+        result = _get_sweep_indices(np.array([]), np.array([]))
         assert len(result) == 0
         assert result.dtype == np.int32
 
     def test_single_sweep(self):
         """Test with single complete ESA sweep (no transitions)."""
         esa_step = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
-        result = _get_sweep_indices(esa_step)
+        result = _get_sweep_indices(esa_step, self._one_set_per_entry(esa_step))
 
         # All should be in sweep 0
         np.testing.assert_array_equal(result, np.zeros(9, dtype=np.int32))
@@ -2041,7 +2046,7 @@ class TestGetSweepIndices:
     def test_two_sweeps_standard_transition(self):
         """Test with two sweeps with standard 9->1 transition."""
         esa_step = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-        result = _get_sweep_indices(esa_step)
+        result = _get_sweep_indices(esa_step, self._one_set_per_entry(esa_step))
 
         # First 9 should be sweep 0, next 9 should be sweep 1
         expected = np.array(
@@ -2049,10 +2054,18 @@ class TestGetSweepIndices:
         )
         np.testing.assert_array_equal(result, expected)
 
+    def test_ten_step_sweeps(self):
+        """Test with 10-step sweeps (9 science steps + ESA step 10)."""
+        esa_step = np.tile(np.arange(1, 11), 2)
+        result = _get_sweep_indices(esa_step, self._one_set_per_entry(esa_step))
+
+        expected = np.repeat([0, 1], 10).astype(np.int32)
+        np.testing.assert_array_equal(result, expected)
+
     def test_multiple_sweeps(self):
         """Test with multiple sweeps."""
         esa_step = np.array([3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3])
-        result = _get_sweep_indices(esa_step)
+        result = _get_sweep_indices(esa_step, self._one_set_per_entry(esa_step))
 
         # Transitions at index 6->7 (9->1) and 15->16 (9->1)
         expected = np.array(
@@ -2063,27 +2076,55 @@ class TestGetSweepIndices:
     def test_non_standard_transition(self):
         """Test with non-standard ESA step decrease (e.g., 5->2)."""
         esa_step = np.array([5, 6, 7, 8, 9, 2, 3, 4, 5])
-        result = _get_sweep_indices(esa_step)
+        result = _get_sweep_indices(esa_step, self._one_set_per_entry(esa_step))
 
         # Transition at index 4->5 (9->2, diff=-7, negative so boundary)
         expected = np.array([0, 0, 0, 0, 0, 1, 1, 1, 1], dtype=np.int32)
         np.testing.assert_array_equal(result, expected)
 
-    def test_no_decreases_only_increases(self):
-        """Test with only increasing steps (no sweep boundaries)."""
-        esa_step = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
-        result = _get_sweep_indices(esa_step)
+    def test_truncated_sweep_repeated_step(self):
+        """Test a sweep cut short after its first 8-spin set (repeated ESA 1).
 
-        # All in sweep 0
-        np.testing.assert_array_equal(result, np.zeros(9, dtype=np.int32))
+        Mimics repoint 152 gain test cycling, where each HVSCI segment holds one
+        full sweep plus the first 8-spin set of the next sweep before HV drops
+        out of HVSCI; the next segment restarts the sweep at ESA step 1.
+        """
+        sweep = list(range(1, 10))
+        esa_step = np.array([*sweep, 1, *sweep, 1, *sweep])
+        result = _get_sweep_indices(esa_step, self._one_set_per_entry(esa_step))
+
+        # The truncated [1] sweeps are their own sweeps, so no ESA step
+        # repeats within a sweep.
+        expected = np.array([0] * 9 + [1] + [2] * 9 + [3] + [4] * 9, dtype=np.int32)
+        np.testing.assert_array_equal(result, expected)
 
     def test_constant_esa_step(self):
-        """Test with constant ESA step (no transitions)."""
+        """Test with constant ESA step in separate 8-spin sets."""
         esa_step = np.array([5, 5, 5, 5, 5])
-        result = _get_sweep_indices(esa_step)
+        result = _get_sweep_indices(esa_step, self._one_set_per_entry(esa_step))
 
-        # All in sweep 0
-        np.testing.assert_array_equal(result, np.zeros(5, dtype=np.int32))
+        # Each repeat is a new 8-spin set at the same step, so a new sweep
+        np.testing.assert_array_equal(result, np.arange(5, dtype=np.int32))
+
+    def test_multiple_packets_per_set(self):
+        """Test that packets within the same 8-spin set share one sweep."""
+        # Four packets per 8-spin set, two sweeps of 3 steps each
+        esa_step = np.repeat([1, 2, 3, 1, 2, 3], 4)
+        esa_step_met = np.repeat(1000.0 + 120.0 * np.arange(6), 4)
+        result = _get_sweep_indices(esa_step, esa_step_met)
+
+        expected = np.repeat([0, 1], 12).astype(np.int32)
+        np.testing.assert_array_equal(result, expected)
+
+    def test_multiple_packets_per_set_truncated_sweep(self):
+        """Test a truncated sweep with multiple packets per 8-spin set."""
+        steps = [1, 2, 3, 1, 1, 2, 3]
+        esa_step = np.repeat(steps, 4)
+        esa_step_met = np.repeat(1000.0 + 120.0 * np.arange(len(steps)), 4)
+        result = _get_sweep_indices(esa_step, esa_step_met)
+
+        expected = np.repeat([0, 0, 0, 1, 2, 2, 2], 4).astype(np.int32)
+        np.testing.assert_array_equal(result, expected)
 
 
 class TestAddSweepIndices:
@@ -2094,6 +2135,7 @@ class TestAddSweepIndices:
         ds = xr.Dataset(
             {
                 "ccsds_met": (["epoch"], np.array([1000.0, 1060.0, 1120.0])),
+                "esa_step_met": (["epoch"], np.array([1000.0, 1060.0, 1120.0])),
                 "esa_step": (["epoch"], np.array([1, 2, 3], dtype=np.uint8)),
             },
             coords={"epoch": np.arange(3)},
@@ -2109,6 +2151,7 @@ class TestAddSweepIndices:
         ds = xr.Dataset(
             {
                 "ccsds_met": (["epoch"], np.arange(1000.0, 1000.0 + 18 * 60, 60)),
+                "esa_step_met": (["epoch"], np.arange(1000.0, 1000.0 + 18 * 60, 60)),
                 "esa_step": (
                     ["epoch"],
                     np.tile([1, 2, 3, 4, 5, 6, 7, 8, 9], 2).astype(np.uint8),
@@ -2130,6 +2173,7 @@ class TestAddSweepIndices:
         ds = xr.Dataset(
             {
                 "ccsds_met": (["epoch"], np.array([1000.0, 1060.0, 1120.0])),
+                "esa_step_met": (["epoch"], np.array([1000.0, 1060.0, 1120.0])),
                 "esa_step": (["epoch"], np.array([1, 2, 1], dtype=np.uint8)),
                 "other_var": (["epoch"], np.array([10, 20, 30])),
             },
@@ -2186,6 +2230,11 @@ class TestComputeNormalizedCountsPerSweep:
         ds = xr.Dataset(
             {
                 "ccsds_met": (["epoch"], ccsds_met),
+                # Packets of the same 8-spin set share the same esa_step_met
+                "esa_step_met": (
+                    ["epoch"],
+                    np.repeat(ccsds_met[::packets_per_esa_step], packets_per_esa_step),
+                ),
                 "esa_step": (["epoch"], esa_step),
                 "esa_energy_step": (["epoch"], esa_energy_step),
                 "tof_ab": (["event_met"], tof_ab),
@@ -2284,6 +2333,7 @@ class TestComputeNormalizedCountsPerSweep:
         ds = xr.Dataset(
             {
                 "ccsds_met": (["epoch"], np.array([1000.0, 1060.0])),
+                "esa_step_met": (["epoch"], np.array([1000.0, 1060.0])),
                 "esa_step": (["epoch"], np.array([1, 2], dtype=np.uint8)),
             },
             coords={"epoch": np.arange(2)},
@@ -2378,6 +2428,7 @@ class TestStatisticalFilter0:
                 "coincidence_type": (["event_met"], coincidence_type),
                 "ccsds_index": (["event_met"], ccsds_index),
                 "ccsds_met": (["epoch"], ccsds_met),
+                "esa_step_met": (["epoch"], ccsds_met),
                 "esa_step": (["epoch"], esa_step, {"FILLVAL": 255}),
                 "esa_energy_step": (["epoch"], esa_energy_step, {"FILLVAL": 255}),
             },
@@ -2481,6 +2532,7 @@ class TestStatisticalFilter0:
                 "coincidence_type": (["event_met"], coincidence_type),
                 "ccsds_index": (["event_met"], ccsds_index),
                 "ccsds_met": (["epoch"], ccsds_met),
+                "esa_step_met": (["epoch"], ccsds_met),
                 "esa_step": (["epoch"], esa_step, {"FILLVAL": 255}),
                 "esa_energy_step": (["epoch"], esa_energy_step, {"FILLVAL": 255}),
             },
@@ -2814,6 +2866,13 @@ class TestComputeQualifiedCountsPerSweep:
                     ["epoch"],
                     np.arange(1000.0, 1000.0 + n_packets * 60, 60),
                 ),
+                # Two packets per 8-spin set share the same esa_step_met
+                "esa_step_met": (
+                    ["epoch"],
+                    np.repeat(np.arange(1000.0, 1000.0 + n_packets * 60, 120), 2)[
+                        :n_packets
+                    ],
+                ),
                 "esa_step": (["epoch"], esa_step),
                 "esa_energy_step": (["epoch"], esa_energy_step),
             },
@@ -2857,6 +2916,7 @@ class TestComputeQualifiedCountsPerSweep:
                 "coincidence_type": (["event_met"], np.array([12, 4], dtype=np.uint8)),
                 "ccsds_index": (["event_met"], np.array([0, 0], dtype=np.uint16)),
                 "ccsds_met": (["epoch"], np.array([1000.0])),
+                "esa_step_met": (["epoch"], np.array([1000.0])),
                 "esa_step": (["epoch"], np.array([1], dtype=np.uint8)),
             },
             coords={"event_met": np.arange(2), "epoch": np.arange(1)},
@@ -2897,6 +2957,11 @@ class TestBuildPerSweepDatasets:
                 "ccsds_met": (
                     ["epoch"],
                     np.arange(base_met, base_met + n_packets * 60, 60),
+                ),
+                # Two packets per 8-spin set share the same esa_step_met
+                "esa_step_met": (
+                    ["epoch"],
+                    np.repeat(np.arange(base_met, base_met + n_packets * 60, 120), 2),
                 ),
                 "esa_step": (["epoch"], esa_step),
                 "esa_energy_step": (["epoch"], esa_energy_step),
@@ -3119,6 +3184,10 @@ class TestComputeMedianAndSigmaPerEsa:
                         ["esa_sweep", "esa_energy_step"],
                         np.full_like(counts_2d, 1000.0),
                     ),
+                    "esa_step_met": (
+                        ["esa_sweep", "esa_energy_step"],
+                        np.full_like(counts_2d, 1000.0),
+                    ),
                 },
                 coords={
                     "esa_sweep": np.arange(n_sweeps),
@@ -3151,6 +3220,10 @@ class TestComputeMedianAndSigmaPerEsa:
                 {
                     "qualified_count": (["esa_sweep", "esa_energy_step"], counts_2d),
                     "ccsds_met": (
+                        ["esa_sweep", "esa_energy_step"],
+                        np.full_like(counts_2d, 1000.0),
+                    ),
+                    "esa_step_met": (
                         ["esa_sweep", "esa_energy_step"],
                         np.full_like(counts_2d, 1000.0),
                     ),
@@ -3235,6 +3308,7 @@ class TestStatisticalFilter1:
                 "coincidence_type": (["event_met"], coincidence_types),
                 "ccsds_index": (["event_met"], ccsds_index),
                 "ccsds_met": (["epoch"], ccsds_met),
+                "esa_step_met": (["epoch"], ccsds_met),
                 "esa_step": (["epoch"], esa_step),
                 "esa_energy_step": (["epoch"], esa_energy_step),
             },
@@ -3310,6 +3384,7 @@ class TestStatisticalFilter1:
                 "coincidence_type": (["event_met"], new_coincidence),
                 "ccsds_index": (["event_met"], new_ccsds_index),
                 "ccsds_met": current_ds["ccsds_met"],
+                "esa_step_met": current_ds["esa_step_met"],
                 "esa_step": current_ds["esa_step"],
                 "esa_energy_step": current_ds["esa_energy_step"],
             },
@@ -3417,6 +3492,7 @@ class TestStatisticalFilter1:
                 "coincidence_type": (["event_met"], new_coincidence),
                 "ccsds_index": (["event_met"], new_ccsds_index),
                 "ccsds_met": current_ds["ccsds_met"],
+                "esa_step_met": current_ds["esa_step_met"],
                 "esa_step": current_ds["esa_step"],
                 "esa_energy_step": current_ds["esa_energy_step"],
             },
@@ -3766,6 +3842,7 @@ class TestStatisticalFilter2:
             {
                 # Packet-level variables (epoch dimension)
                 "ccsds_met": (["epoch"], packet_mets),
+                "esa_step_met": (["epoch"], packet_mets),
                 "esa_step": (["epoch"], packet_esa_steps),
                 # Event-level variables (event dimension)
                 "ccsds_index": (["event_met"], ccsds_index),
@@ -3835,6 +3912,7 @@ class TestStatisticalFilter2:
         l1b_de = xr.Dataset(
             {
                 "ccsds_met": (["epoch"], packet_mets),
+                "esa_step_met": (["epoch"], packet_mets),
                 "esa_step": (["epoch"], packet_esa_steps),
                 "ccsds_index": (["event_met"], ccsds_index),
                 "coincidence_type": (["event_met"], coincidence_type),
@@ -4104,6 +4182,7 @@ class TestStatisticalFilter2:
                 "coincidence_type": (["event_met"], coincidence_type),
                 "nominal_bin": (["event_met"], nominal_bin),
                 "ccsds_met": (["epoch"], np.array([1000.0])),
+                "esa_step_met": (["epoch"], np.array([1000.0])),
                 "esa_step": (["epoch"], np.array([1], dtype=np.uint8)),
             },
             coords={
