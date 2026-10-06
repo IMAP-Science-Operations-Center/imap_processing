@@ -35,7 +35,7 @@ classifiers = [
 dependencies = [
     "astropy-healpix>=1.0",
     "cdflib>=1.3.11",
-    "imap-data-access>=0.42.0",
+    "imap-data-access>=1.3.0",
     "space_packet_parser>=6.0.0",
     "spiceypy>=6.0.0",
     "xarray>=2024.10.0,<2026",
@@ -47,8 +47,7 @@ dependencies = [
 [tool.poetry]
 # Exclude tests from build
 exclude = ["imap_processing/tests"]
-include = ["imap_processing/_version.py",
-           "imap_processing/ultra/l1c/sim_spice_kernels/*"]
+include = ["imap_processing/ultra/l1c/sim_spice_kernels/*"]
 version = "0.0.0"
 
 [tool.poetry.requires-plugins]
@@ -123,14 +122,6 @@ ignore-words-list = "livetime,nd"
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
-
-[tool.poetry-dynamic-versioning.files."imap_processing/_version.py"]
-persistent-substitution = true
-initial-content = """
-  # These version placeholders will be replaced later during substitution.
-  __version__ = "0.0.0"
-  __version_tuple__ = (0, 0, 0)
-"""
 
 [tool.numpydoc_validation]
 checks = ["all", #report on all checks, except the following

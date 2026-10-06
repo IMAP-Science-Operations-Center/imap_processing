@@ -3,13 +3,9 @@
 import numpy as np
 import xarray as xr
 
+from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1b.quality_flag_filters import SPIN_QUALITY_FLAG_FILTERS
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset, extract_data_dict
-
-FILLVAL_UINT16 = 65535
-FILLVAL_FLOAT32 = -1.0e31
-FILLVAL_FLOAT64 = -1.0e31
-FILLVAL_UINT32 = 4294967295
 
 
 def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Dataset:
@@ -57,72 +53,84 @@ def calculate_goodtimes(extendedspin_dataset: xr.Dataset, name: str) -> xr.Datas
     goodtimes_dataset = create_dataset(data_dict, name, "l1b")
     if goodtimes_dataset["spin_number"].size == 0:
         goodtimes_dataset = goodtimes_dataset.drop_dims("spin_number")
-        goodtimes_dataset = goodtimes_dataset.expand_dims(spin_number=[FILLVAL_UINT32])
+        goodtimes_dataset = goodtimes_dataset.expand_dims(
+            spin_number=[UltraConstants.FILLVAL_UINT32]
+        )
         goodtimes_dataset["spin_start_time"] = xr.DataArray(
-            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_FLOAT], dtype="float64"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["spin_period"] = xr.DataArray(
-            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_FLOAT], dtype="float64"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["spin_rate"] = xr.DataArray(
-            np.array([FILLVAL_FLOAT64], dtype="float64"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_FLOAT], dtype="float64"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["start_pulses_per_spin"] = xr.DataArray(
-            np.array([FILLVAL_FLOAT32], dtype="float32"),
+            np.array([UltraConstants.FILLVAL_FLOAT], dtype="float32"),
             dims=["spin_number"],
         )
         goodtimes_dataset["stop_pulses_per_spin"] = xr.DataArray(
-            np.array([FILLVAL_FLOAT32], dtype="float32"),
+            np.array([UltraConstants.FILLVAL_FLOAT], dtype="float32"),
             dims=["spin_number"],
         )
         goodtimes_dataset["coin_pulses_per_spin"] = xr.DataArray(
-            np.array([FILLVAL_FLOAT32], dtype="float32"),
+            np.array([UltraConstants.FILLVAL_FLOAT], dtype="float32"),
             dims=["spin_number"],
         )
         goodtimes_dataset["rejected_events_per_spin"] = xr.DataArray(
-            np.array([FILLVAL_UINT32], dtype="uint32"),
+            np.array([UltraConstants.FILLVAL_UINT32], dtype="uint32"),
             dims=["spin_number"],
         )
         goodtimes_dataset["quality_attitude"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["quality_low_voltage"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["quality_high_energy"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["quality_upstream_ion_1"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["quality_upstream_ion_2"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["quality_spectral"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["quality_statistics"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"), dims=["spin_number"]
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
+            dims=["spin_number"],
         )
         goodtimes_dataset["quality_hk"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"),
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
             dims=["spin_number"],
         )
         goodtimes_dataset["quality_instruments"] = xr.DataArray(
-            np.array([FILLVAL_UINT16], dtype="uint16"),
+            np.array([UltraConstants.FILLVAL_UINT16], dtype="uint16"),
             dims=["spin_number"],
         )
         goodtimes_dataset["quality_ena_rates"] = (
             ("energy_bin_geometric_mean", "spin_number"),
-            np.full((n_bins, 1), FILLVAL_UINT16, dtype="uint16"),
+            np.full((n_bins, 1), UltraConstants.FILLVAL_UINT16, dtype="uint16"),
         )
         goodtimes_dataset["ena_rates"] = (
             ("energy_bin_geometric_mean", "spin_number"),
-            np.full((n_bins, 1), FILLVAL_FLOAT64, dtype="float64"),
+            np.full((n_bins, 1), UltraConstants.FILLVAL_FLOAT, dtype="float64"),
         )
         goodtimes_dataset["ena_rates_threshold"] = (
             ("energy_bin_geometric_mean", "spin_number"),
-            np.full((n_bins, 1), FILLVAL_FLOAT32, dtype="float32"),
+            np.full((n_bins, 1), UltraConstants.FILLVAL_FLOAT, dtype="float32"),
         )
 
     return goodtimes_dataset

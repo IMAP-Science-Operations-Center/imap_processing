@@ -142,7 +142,7 @@ def test_ecliptic_coords_computation(furnish_kernels):
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_140.tf",
-        "imap_science_120.tf",
+        "imap_science_130.tf",
         "sim_1yr_imap_pointing_frame.bc",
     ]
 

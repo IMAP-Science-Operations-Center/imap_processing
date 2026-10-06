@@ -1862,6 +1862,44 @@ def get_pivot_angle_from_nhk(ds_nhk: xr.Dataset) -> float:
     return ds_nhk["pcc_cumulative_cnt_pri"].isel(epoch=nitems // 2).item()
 
 
+def get_median_pivot_angle(ds_nhk: xr.Dataset) -> float:
+    """
+    Get the median pivot angle from the NHK dataset.
+
+    The median of ``pcc_coarse_pot_pri`` is taken over the samples between
+    ``PIVOT_HK_HOUR_RANGE`` hours after the first NHK sample, which avoids the
+    pivot platform motion at the start of a pointing.
+
+    Parameters
+    ----------
+    ds_nhk : xr.Dataset
+        The NHK dataset containing pivot angle information.
+
+    Returns
+    -------
+    pivot_angle : float
+        The median pivot angle [degrees], or NaN if the dataset has no records
+        or there are no valid samples within the time range.
+    """
+    if ds_nhk.sizes.get("epoch", 0) == 0:
+        return np.nan
+
+    hk_epoch_ets = ttj2000ns_to_et(ds_nhk["epoch"])
+    start_et_hk = (
+        hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[0]).total_seconds()
+    )
+    end_et_hk = (
+        hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[1]).total_seconds()
+    )
+
+    coarse_pot_pri = ds_nhk["pcc_coarse_pot_pri"].values
+    return float(
+        np.nanmedian(
+            coarse_pot_pri[(hk_epoch_ets >= start_et_hk) & (hk_epoch_ets <= end_et_hk)]
+        )
+    )
+
+
 def _get_esa_level_indices(epochs: np.ndarray, anc_dependencies: list) -> np.ndarray:
     """
     Get the ESA level indices (reswept indices) for the given epochs.
@@ -2485,18 +2523,7 @@ def l1b_bgrates_and_goodtimes(  # noqa: PLR0912
     pivot: float = 90.0
     cdf_hk = sci_dependencies.get("imap_lo_l1b_nhk")
     if cdf_hk is not None and "pcc_coarse_pot_pri" in cdf_hk:
-        hk_epoch_ets = ttj2000ns_to_et(cdf_hk["epoch"])
-        start_et_hk = (
-            hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[0]).total_seconds()
-        )
-        end_et_hk = (
-            hk_epoch_ets[0] + timedelta(hours=c.PIVOT_HK_HOUR_RANGE[1]).total_seconds()
-        )
-
-        coarse_pot_pri = cdf_hk["pcc_coarse_pot_pri"].values
-        pivot = np.nanmedian(  # type: ignore
-            coarse_pot_pri[(hk_epoch_ets >= start_et_hk) & (hk_epoch_ets <= end_et_hk)]
-        )
+        pivot = get_median_pivot_angle(cdf_hk)
         if np.isnan(pivot):
             pivot = 90.0
 

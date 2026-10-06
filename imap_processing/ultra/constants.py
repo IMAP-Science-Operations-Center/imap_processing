@@ -43,6 +43,14 @@ class UltraConstants:
         SSD-specific correction to DMIN for time-of-flight normalization
     """
 
+    # Define fillvals
+    FILLVAL_UINT8 = 255
+    FILLVAL_UINT16 = 65535
+    FILLVAL_UINT32 = 4294967295
+    FILLVAL_FLOAT = -1.0e31
+
+    NOMINAL_SPIN_PERIOD_SEC: float = 15.0
+
     D_SLIT_FOIL: float = 3.39
     SLIT_Z: float = 44.89
     YF_ESTIMATE_LEFT: float = 40.0
@@ -174,7 +182,7 @@ class UltraConstants:
             "imap_spk_demo.bsp",
             "sim_1yr_imap_attitude.bc",
             "imap_001.tf",
-            "imap_science_120.tf",
+            "imap_science_130.tf",
             "sim_1yr_imap_pointing_frame.bc",
         ]
     ]
@@ -195,7 +203,6 @@ class UltraConstants:
     DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * N_RE
 
     # L1b extended spin culling parameters
-    LOW_VOLTAGE_CULL_THRESHOLD = 3400.0
     SPIN_BIN_SIZE = 20
     # Number of energy bins to use in energy dependent culling
     N_CULL_EBINS = 8
@@ -207,13 +214,6 @@ class UltraConstants:
     # Angle threshold in radians for ULTRA 45 degree culling.
     # This is only needed for ULTRA 45 since Earth may be in the FOV.
     EARTH_ANGLE_45_THRESHOLD = np.radians(15)
-    # An array of energy thresholds to use for culling. Each one corresponds to
-    # the number of energy bins used.
-    # n_bins=len(PSET_ENERGY_BIN_EDGES)[BASE_CULL_EBIN:] // N_CULL_EBINS
-    # an error will be raised if this does not match n_bins
-    HIGH_ENERGY_CULL_THRESHOLDS = (
-        np.array([4.0, 2.0, 1.20, 0.45, 0.1, 0.1]) * SPIN_BIN_SIZE
-    )
     # Use the channel defined below to determine which spins are contaminated
     HIGH_ENERGY_CULL_CHANNEL = 5
     # For the high energy cull, we want to combine spin bins because an SEP event is
@@ -254,7 +254,3 @@ class UltraConstants:
     # When True, applies the scattering rejection mask based on the FWHM thresholds
     # to the L1C fine energy bin maps.
     APPLY_SCATTERING_REJECTION_L1C: bool = False
-
-    # When true, only use raw direct events for culling in extendedspin.py. Otherwise,
-    # refer to the priority specified in the extendedspin-config ancillary file.
-    L1B_USE_RAW_DE_ONLY = False

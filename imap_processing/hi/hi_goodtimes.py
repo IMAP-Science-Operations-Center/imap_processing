@@ -1433,17 +1433,26 @@ def mark_bad_tdc_cal(
     logger.info(f"Dropped {n_times_removed} time(s) due to bad TDC calibration")
 
 
-def _get_sweep_indices(esa_step: np.ndarray) -> np.ndarray:
+def _get_sweep_indices(esa_step: np.ndarray, esa_step_met: np.ndarray) -> np.ndarray:
     """
     Assign sweep indices to each MET based on ESA step transitions.
 
-    A new sweep starts when ESA step transitions from high to low
-    (e.g., 9 -> 1), detected using np.diff().
+    Consecutive entries sharing the same esa_step_met belong to the same
+    8-spin set (e.g., the multiple DE packets of one set). A new sweep starts
+    at an 8-spin set whose ESA step is less than or equal to the previous
+    set's ESA step (e.g., 9 -> 1, or 1 -> 1). Treating a repeated ESA step as
+    a sweep boundary guarantees that each ESA step appears at most once per
+    sweep, which downstream per-(sweep, ESA step) logic relies on. Repeats
+    occur, for example, when a sweep is cut short after its first 8-spin set
+    by a drop out of HVSCI mode, and the next sweep restarts at ESA step 1.
 
     Parameters
     ----------
     esa_step : numpy.ndarray
         ESA step values for each MET (epoch dimension).
+    esa_step_met : numpy.ndarray
+        MET at which the ESA was stepped for each entry. Used to identify
+        which entries belong to the same 8-spin set.
 
     Returns
     -------
@@ -1453,10 +1462,13 @@ def _get_sweep_indices(esa_step: np.ndarray) -> np.ndarray:
     if len(esa_step) == 0:
         return np.array([], dtype=np.int32)
 
-    # Find sweep boundaries where ESA step transitions from high to low
+    # Only compare ESA steps across 8-spin set transitions, not between
+    # packets within the same 8-spin set.
+    new_set = np.diff(esa_step_met) != 0
     esa_diff = np.diff(esa_step.astype(np.int32))
-    # Negative diff indicates high-to-low transition (e.g., 9 -> 1 = -8)
-    sweep_boundaries = esa_diff < 0
+    # A non-increasing ESA step at a new 8-spin set starts a new sweep
+    # (e.g., 9 -> 1 = -8, or a repeated step 1 -> 1 = 0)
+    sweep_boundaries = new_set & (esa_diff <= 0)
 
     # Create sweep indices using cumsum on boundaries
     # Prepend False so first MET is in sweep 0
@@ -1474,7 +1486,8 @@ def _add_sweep_indices(l1b_de: xr.Dataset) -> xr.Dataset:
     Parameters
     ----------
     l1b_de : xarray.Dataset
-        L1B Direct Event dataset or goodtimes dataset.
+        L1B Direct Event dataset (with "esa_step_met") or goodtimes dataset
+        (with "met").
 
     Returns
     -------
@@ -1482,7 +1495,10 @@ def _add_sweep_indices(l1b_de: xr.Dataset) -> xr.Dataset:
         Dataset with esa_sweep coordinate added on the time dimension
         (either 'epoch' or 'met').
     """
-    sweep_indices = _get_sweep_indices(l1b_de["esa_step"].values)
+    met_name = "esa_step_met" if "esa_step_met" in l1b_de else "met"
+    sweep_indices = _get_sweep_indices(
+        l1b_de["esa_step"].values, l1b_de[met_name].values
+    )
     # Determine which dimension to use (epoch for CDF data, met for in-memory)
     time_dim = "epoch" if "epoch" in l1b_de.dims else "met"
     return l1b_de.assign_coords(esa_sweep=(time_dim, sweep_indices))
