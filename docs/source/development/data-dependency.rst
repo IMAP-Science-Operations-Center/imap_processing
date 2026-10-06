@@ -201,8 +201,8 @@ frequently, and processing jobs should not be triggered when these files are upd
 Setting this to false allows for more controlled processing and may require additional
 review before updating these types of dependencies.
 
-[Past_days, Future_days] (Optional)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+date_range: [Past_days, Future_days] (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Default:**
 
@@ -241,13 +241,13 @@ The YAML config has the following structure:
          descriptor
          required(bool)
          trigger_job(bool)
-         [past_days, future_days]
+         date_range: [past_days, future_days]
        - source
          data_type
          descriptor
          required(bool)
          trigger_job(bool)
-         [past_days, future_days]
+         date_range: [past_days, future_days]
        ....
      outputs:
        - source
