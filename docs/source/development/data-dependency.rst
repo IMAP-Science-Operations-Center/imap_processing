@@ -227,6 +227,19 @@ Days can be used to support longer durations and different cadences. For example
 processing can use 7 days, and yearly processing can use 365 days.
 
 
+Dependency config assumptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The major version of each job output must be greater than or equal to the major version
+  of any data products on which that job output depends within the same instrument.
+- For any job with outputs that have the same descriptor but different data levels
+  (e.g., SWAPI's ``(l1a, hk)``), the major versions of such outputs must match.
+- A job's data level should match at least one of its output data products' data levels.
+
+These dependency assumptions are enforced by a Github action running
+on every PR in the sds-data-manager repo.
+
+
 File content structure
 ~~~~~~~~~~~~~~~~~~~~~~
 The YAML config has the following structure:
