@@ -24,10 +24,7 @@ from imap_processing.ena_maps.utils.naming import (
 from imap_processing.quality_flags import ImapPSETUltraFlags
 from imap_processing.ultra.constants import UltraConstants
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
-from imap_processing.ultra.l1c.ultra_l1c_pset_bins import (
-    FILLVAL_FLOAT32,
-    get_energy_delta_minus_plus,
-)
+from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +249,10 @@ def bin_pset_energy_bins(
     )
     # Count number of pixels
     non_zero_pixels_per_group = (
-        ((pset[vars_to_average] != 0) & (pset[vars_to_average] != FILLVAL_FLOAT32))
+        (
+            (pset[vars_to_average] != 0)
+            & (pset[vars_to_average] != UltraConstants.FILLVAL_FLOAT)
+        )
         .astype(int)
         .groupby("energy_bin_index")
         .sum()

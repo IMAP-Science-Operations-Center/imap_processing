@@ -28,9 +28,6 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
-FILLVAL_UINT16 = 65535
-FILLVAL_FLOAT32 = -1.0e31
-
 
 def calculate_extendedspin(
     dict_datasets: dict[str, xr.Dataset],
@@ -68,20 +65,34 @@ def calculate_extendedspin(
     # The energy dependent culling selects its de dataset per energy range.
     priority_1_de_dataset = de_datasets["p1"]
 
+    # Events with no aux data coverage (AUXOUTLIER, flagged in de.py) have a
+    # fill-valued "spin" that isn't a real spin number and must be excluded
+    # from per-spin binning to avoid using an invalid spin.
+    has_spin_mask = (
+        priority_1_de_dataset["spin"].values != UltraConstants.FILLVAL_UINT32
+    )
+    spin_number = priority_1_de_dataset["spin"].values[has_spin_mask]
+    de_energy = priority_1_de_dataset["energy"].values[has_spin_mask]
+
+    # check if there are no valid spins.
+    if spin_number.size == 0:
+        raise ValueError(
+            "All Spins are invalid. Please ensure that the l1a aux dataset "
+            "has the correct spin information."
+        )
+
     extendedspin_dict = {}
     rates_qf, spin, energy_bin_geometric_mean, n_sigma_per_energy = flag_rates(
-        priority_1_de_dataset["spin"].values,
-        priority_1_de_dataset["energy"].values,
+        spin_number,
+        de_energy,
     )
-    count_rates, _, _counts, _ = get_energy_histogram(
-        priority_1_de_dataset["spin"].values, priority_1_de_dataset["energy"].values
-    )
+    count_rates, _, _counts, _ = get_energy_histogram(spin_number, de_energy)
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(
-        priority_1_de_dataset["spin"].values, aux_dataset
+        spin_number, aux_dataset
     )
     # TODO: We will add to this later
-    hk_qf = flag_hk(priority_1_de_dataset["spin"].values)
-    inst_qf = flag_imap_instruments(priority_1_de_dataset["spin"].values)
+    hk_qf = flag_hk(spin_number)
+    inst_qf = flag_imap_instruments(spin_number)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
     spin_tbin_edges = get_binned_spins_edges(
@@ -156,9 +167,9 @@ def calculate_extendedspin(
     # Track rejected events in each spin based on
     # quality flags in de l1b data.
     rejected_counts = count_rejected_events_per_spin(
-        priority_1_de_dataset["spin"].values,
-        priority_1_de_dataset["quality_scattering"].values,
-        priority_1_de_dataset["quality_outliers"].values,
+        spin_number,
+        priority_1_de_dataset["quality_scattering"].values[has_spin_mask],
+        priority_1_de_dataset["quality_outliers"].values[has_spin_mask],
     )
 
     # These will be the coordinates.
@@ -177,9 +188,15 @@ def calculate_extendedspin(
     # Validate that the spin values match
     valid = (idx < pulses.unique_spins.size) & (pulses.unique_spins[idx] == spin)
 
-    start_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
-    stop_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
-    coin_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+    start_per_spin: np.ndarray = np.full(
+        len(spin), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    stop_per_spin: np.ndarray = np.full(
+        len(spin), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    coin_per_spin: np.ndarray = np.full(
+        len(spin), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
 
     # Fill only the valid ones
     start_per_spin[valid] = pulses.start_per_spin[idx[valid]]
@@ -253,7 +270,9 @@ def calculate_extendedspin(
     # energy ranges. Set the length to be the max number of energy bins we expect to
     # use for culling. The number of edges is one more than the number of bins (17).
     ranges: np.ndarray = np.full(
-        (UltraConstants.MAX_ENERGY_RANGE_EDGES,), FILLVAL_FLOAT32, dtype=np.float32
+        (UltraConstants.MAX_ENERGY_RANGE_EDGES,),
+        UltraConstants.FILLVAL_FLOAT,
+        dtype=np.float32,
     )
     ranges[: len(energy_ranges)] = energy_ranges
     extendedspin_dict["energy_range_edges"] = ranges

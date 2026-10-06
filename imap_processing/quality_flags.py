@@ -47,6 +47,7 @@ class ImapDEOutliersUltraFlags(FlagNameMixin):
     INVALID_ENERGY = 2**3  # bit 3
     DURINGREPOINT = 2**4  # bit 4 # event during a repointing
     BACKTOF = 2**5  # bit 5 # Back TOF outlier
+    AUXOUTLIER = 2**6  # bit 6 # Event time is outside of aux dataset range.
 
 
 class ImapHkUltraFlags(FlagNameMixin):

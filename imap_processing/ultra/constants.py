@@ -43,6 +43,14 @@ class UltraConstants:
         SSD-specific correction to DMIN for time-of-flight normalization
     """
 
+    # Define fillvals
+    FILLVAL_UINT8 = 255
+    FILLVAL_UINT16 = 65535
+    FILLVAL_UINT32 = 4294967295
+    FILLVAL_FLOAT = -1.0e31
+
+    NOMINAL_SPIN_PERIOD_SEC: float = 15.0
+
     D_SLIT_FOIL: float = 3.39
     SLIT_Z: float = 44.89
     YF_ESTIMATE_LEFT: float = 40.0
@@ -195,7 +203,6 @@ class UltraConstants:
     DEFAULT_EARTH_CULLING_RADIUS = EARTH_RADIUS_KM * N_RE
 
     # L1b extended spin culling parameters
-    LOW_VOLTAGE_CULL_THRESHOLD = 3400.0
     SPIN_BIN_SIZE = 20
     # Number of energy bins to use in energy dependent culling
     N_CULL_EBINS = 8
