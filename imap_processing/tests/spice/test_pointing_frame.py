@@ -20,6 +20,8 @@ from imap_processing.spice.pointing_frame import (
     _mean_spin_axis,
     calculate_pointing_attitude_segments,
     generate_pointing_attitude_kernel,
+    open_spice_ck_file,
+    write_constant_attitude_ck,
     write_pointing_frame_ck,
 )
 from imap_processing.spice.time import TICK_DURATION, met_to_sclkticks, sct_to_et
@@ -183,6 +185,34 @@ def test_write_pointing_frame_ck(
     assert all_lines_returned
     assert n_lines == 7
     assert parent_file in lines[5]
+
+
+def test_open_spice_ck_file_error_closes_file(tmp_path):
+    """An error before any segment is written closes the CK and is re-raised.
+
+    ckcls would raise SPICE(NOSEGMENTSFOUND) here, leaving the file open and
+    replacing the original error.
+    """
+    ck_path = tmp_path / "empty.bc"
+    with pytest.raises(RuntimeError, match="original error"):
+        with open_spice_ck_file(ck_path) as handle:
+            raise RuntimeError("original error")
+    with pytest.raises(spiceypy.utils.exceptions.SpiceyError):
+        spiceypy.dafhsf(handle)
+
+
+def test_write_constant_attitude_ck_no_segments(tmp_path):
+    """No segments is an error, and no file is created."""
+    ck_path = tmp_path / "empty.bc"
+    with pytest.raises(ValueError, match="No segments to write"):
+        write_constant_attitude_ck(
+            ck_path,
+            np.zeros(0, dtype=POINTING_SEGMENT_DTYPE),
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+            ["comment"],
+        )
+    assert not ck_path.exists()
 
 
 @pytest.mark.external_test_data

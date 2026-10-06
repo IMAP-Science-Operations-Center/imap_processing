@@ -66,6 +66,7 @@ from imap_processing.idex.idex_l1a import idex_l1a
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
+from imap_processing.lo import lo_pivot_kernel
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
@@ -472,6 +473,33 @@ class ProcessInstrument(ABC):
             msg = f"No version provided for descriptor: '{descriptor}'"
             logger.warning(msg)
         return self.version_map.get(descriptor, self._fallback_version)
+
+    def _resolve_kernel_minor_version(self, descriptor: str) -> int:
+        """
+        Return the minor version to use in the filename of a generated kernel.
+
+        Parameters
+        ----------
+        descriptor : str
+            The descriptor of the kernel job, e.g. "pointing-attitude".
+
+        Returns
+        -------
+        int
+            The minor version for the kernel filename.
+        """
+        resolved_version = self._resolve_version(descriptor)
+        if resolved_version is None:
+            raise ValueError(
+                f"No version provided for {descriptor} processing. "
+                f"Provide a version for the '{descriptor}' descriptor in "
+                "the dependency JSON's version block, or a fallback --version."
+            )
+        return (
+            resolved_version.minor
+            if isinstance(resolved_version, Version)
+            else int(resolved_version.lstrip("v"))
+        )
 
     def upload_products(self, products: list[Path]) -> None:
         """
@@ -1430,9 +1458,48 @@ class Lo(ProcessInstrument):
 
         return filtered_dependencies
 
+    def _generate_pivot_kernel(
+        self, dependencies: ProcessingInputCollection
+    ) -> list[Path]:
+        """
+        Generate the Lo pivot platform CK for the pointing given by repointing.
+
+        Parameters
+        ----------
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+
+        Returns
+        -------
+        list[Path]
+            The generated Lo pivot kernel.
+        """
+        if self.repointing is None:
+            raise ValueError(
+                "repointing must be provided for pivot-ckernel processing."
+            )
+        nhk_files = dependencies.get_file_paths(
+            source="lo", data_type="l1b", descriptor="nhk"
+        )
+        if len(nhk_files) != 1:
+            raise ValueError(
+                f"Unexpected dependencies found for IMAP-Lo pivot-ckernel: "
+                f"{nhk_files}. Expected exactly one L1B NHK file."
+            )
+        # The repoint table provides the pointing start and end times.
+        if not dependencies.get_file_paths(data_type=RepointInput.data_type):
+            raise ValueError(
+                "A repoint table dependency is required for IMAP-Lo pivot-ckernel "
+                "processing."
+            )
+        minor_version = self._resolve_kernel_minor_version(self.descriptor)
+        return lo_pivot_kernel.generate_lo_pivot_kernel(
+            nhk_files[0], self.repointing, minor_version
+        )
+
     def do_processing(
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset]:
+    ) -> list[xr.Dataset | Path]:
         """
         Perform IMAP-Lo specific processing.
 
@@ -1443,12 +1510,15 @@ class Lo(ProcessInstrument):
 
         Returns
         -------
-        dataset : xr.Dataset
-            Xr.Dataset of output files.
+        datasets : list[xarray.Dataset | Path]
+            The list of processed products.
         """
         print(f"Processing IMAP-Lo {self.data_level}")
-        datasets: list[xr.Dataset] = []
-        if self.data_level == "l1a":
+        datasets: list[xr.Dataset | Path] = []
+        if self.data_level == "l1b" and self.descriptor == "pivot-ckernel":
+            datasets.extend(self._generate_pivot_kernel(dependencies))
+
+        elif self.data_level == "l1a":
             # L1A packet / products are 1 to 1. Should only have
             # one dependency file
             science_files = dependencies.get_file_paths(source="lo", data_type="l0")
@@ -1859,18 +1929,7 @@ class Spacecraft(ProcessInstrument):
                 data_type=SPICESource.SPICE.value
             )
             ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
-            resolved_version = self._resolve_version(self.descriptor)
-            if resolved_version is None:
-                raise ValueError(
-                    "No version provided for pointing-attitude processing. "
-                    "Provide a version for the 'pointing-attitude' descriptor in "
-                    "the dependency JSON's version block, or a fallback --version."
-                )
-            minor_version = (
-                resolved_version.minor
-                if isinstance(resolved_version, Version)
-                else int(resolved_version.lstrip("v"))
-            )
+            minor_version = self._resolve_kernel_minor_version(self.descriptor)
             pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
                 ah_paths, self.start_date, minor_version
             )
