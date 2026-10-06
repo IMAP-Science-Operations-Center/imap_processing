@@ -173,3 +173,8 @@ class LoConstants:
     STAR_END_BINS_TO_EXCLUDE: int = 2
     # Minimum COUNT value for a star-sensor record to be considered valid.
     STAR_MIN_COUNT_THRESHOLD: int = 700
+    # Sub-second ticks per second of the L1A spin start_subsec_spin field. The
+    # XTCE labels it microseconds, but it only ever spans 0-65535 and matches the
+    # spin table when read as 1/65536 s.
+    # TODO: confirm the units with SwRI.
+    SPIN_SUBSEC_PER_SEC: float = 65536.0

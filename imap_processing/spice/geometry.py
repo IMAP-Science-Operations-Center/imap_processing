@@ -49,6 +49,7 @@ class SpiceFrame(IntEnum):
     IMAP_LO_BASE = -43100
     IMAP_LO = -43101
     IMAP_LO_STAR_SENSOR = -43102
+    IMAP_LO_INSTR = -43103
     IMAP_HI_45 = -43150
     IMAP_HI_90 = -43151
     IMAP_ULTRA_45 = -43200
@@ -96,6 +97,7 @@ BORESIGHT_LOOKUP = {
     SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
     SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
     SpiceFrame.IMAP_LO_STAR_SENSOR: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO_INSTR: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -146,7 +148,9 @@ def imap_state(
     return np.asarray(state)
 
 
-def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
+def get_instrument_mounting_az_el(
+    instrument: SpiceFrame, et: float = 0.0
+) -> np.ndarray:
     """
     Calculate the azimuth and elevation angle of instrument mounting.
 
@@ -158,6 +162,11 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
     ----------
     instrument : SpiceFrame
         Instrument to get the azimuth and elevation angles for.
+    et : float
+        Ephemeris time at which to evaluate the mounting. Only matters for
+        frames that move relative to the spacecraft: IMAP_LO_INSTR and
+        IMAP_LO_STAR_SENSOR ride on the Lo pivot platform, so a Lo pivot CK
+        covering `et` must be loaded. Defaults to 0.
 
     Returns
     -------
@@ -172,6 +181,8 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
     # Most of these vectors are the same as the instrument boresight vector.
     mounting_normal_vector = {
         SpiceFrame.IMAP_LO_BASE: np.array([0, 0, -1]),
+        SpiceFrame.IMAP_LO_INSTR: np.array([0, -1, 0]),
+        SpiceFrame.IMAP_LO_STAR_SENSOR: np.array([0, -1, 0]),
         SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
         SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
         SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -187,9 +198,8 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
     }
 
     # Get the instrument mounting normal vector expressed in the spacecraft frame
-    # The reference frames are fixed, so the et argument can be fixed at 0
     instrument_normal_sc = frame_transform(
-        0, mounting_normal_vector[instrument], instrument, SpiceFrame.IMAP_SPACECRAFT
+        et, mounting_normal_vector[instrument], instrument, SpiceFrame.IMAP_SPACECRAFT
     )
     # Convert the cartesian coordinate to azimuth/elevation angles in degrees
     return np.rad2deg(
@@ -223,7 +233,7 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
         The spin phase offset from the spacecraft to the instrument.
     """
     phase_offset_lookup = {
-        # Phase offset values based on imap_130.tf frame kernel
+        # Phase offset values based on imap_140.tf frame kernel
         # See docstring notes for details on how these values were determined.
         SpiceFrame.IMAP_LO: 60 / 360,  # (330 + 90) % 360 = 60
         SpiceFrame.IMAP_HI_45: 344.8264 / 360,  # 255 + 90 = 345
