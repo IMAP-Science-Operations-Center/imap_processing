@@ -1,5 +1,6 @@
 import logging
 from collections import namedtuple
+from contextlib import ExitStack
 from unittest.mock import patch
 
 import numpy as np
@@ -24,6 +25,7 @@ from imap_processing.lo.l1b.lo_l1b import (
     create_datasets,
     filter_valid_star_records,
     get_avg_spin_durations_per_cycle,
+    get_lo_spin_start_phase_offset,
     get_pivot_angle_from_nhk,
     get_sampling_cadence_from_nhk,
     get_spin_start_times,
@@ -2280,6 +2282,181 @@ class TestL1bStar:
         # Allow for 0.75 degrees of mounting error, as in test_geometry.py.
         offset = mock_profiles.call_args.kwargs["start_angle_offset"]
         np.testing.assert_allclose(offset, 60.0, atol=0.75)
+
+
+# Tests for the Lo spin-start offset (spin table) in l1b_star.
+#
+# Everything happens on 2026-09-09, the day the lo_pivot_ck fixture covers. Star
+# records, Lo's spins and the fake spin table all start at STAR_START_MET, one
+# per 15 s spin, and the pointing mid-time is 6 hours later.
+STAR_START_MET = 526_629_600.0  # ~2026-09-09T06:00 UTC
+SPIN_PERIOD = 15.0
+POINTING_MID_MET = STAR_START_MET + 6 * 3600
+
+
+def make_lo_l1a_spin(
+    n_cycles: int = 2, lag_ticks: int = 0, first_spin_met: float = STAR_START_MET
+) -> xr.Dataset:
+    """
+    Build a Lo L1A spin product: `n_cycles` cycles of 28 spins each.
+
+    Spin k starts at `first_spin_met` + 15 s * k, delayed by `lag_ticks`
+    sub-second ticks (1/65536 s) relative to the fake spin table's spin k.
+    """
+    lag = lag_ticks / LoConstants.SPIN_SUBSEC_PER_SEC
+    spin_start = first_spin_met + SPIN_PERIOD * np.arange(n_cycles * 28) + lag
+    sec = np.floor(spin_start)
+    subsec = np.round((spin_start - sec) * LoConstants.SPIN_SUBSEC_PER_SEC)
+    cycle_start = first_spin_met + 28 * SPIN_PERIOD * np.arange(n_cycles)
+    per_spin = ("epoch", "spin")
+    return xr.Dataset(
+        {
+            # Per cycle: the acquisition window and how many spins completed
+            "acq_start_sec": ("epoch", cycle_start.astype(np.uint32)),
+            "acq_start_subsec": ("epoch", np.zeros(n_cycles, dtype=np.uint32)),
+            "acq_end_sec": (
+                "epoch",
+                (cycle_start + 28 * SPIN_PERIOD).astype(np.uint32),
+            ),
+            "acq_end_subsec": ("epoch", np.zeros(n_cycles, dtype=np.uint32)),
+            "num_completed": ("epoch", np.full(n_cycles, 28)),
+            # Per spin: when Lo started each of the cycle's 28 spins
+            "start_sec_spin": (per_spin, sec.reshape(n_cycles, 28).astype(np.uint32)),
+            "start_subsec_spin": (
+                per_spin,
+                subsec.reshape(n_cycles, 28).astype(np.uint32),
+            ),
+            "valid_phase_spin": (per_spin, np.ones((n_cycles, 28), dtype=np.uint32)),
+        },
+        coords={"epoch": np.arange(n_cycles)},
+    )
+
+
+def make_star_dependencies(n_records: int, lag_ticks: int = 0) -> dict:
+    """
+    Build the l1b_star inputs.
+
+    - imap_lo_l1a_star: `n_records` valid records (COUNT 720), one per spin
+      from STAR_START_MET, with every sample at 150 mV.
+    - imap_lo_l1b_nhk: a 21 ms star sampling interval and star sync "DS"
+      (bin-centre binning) at every star record.
+    - imap_lo_l1a_spin: two cycles from make_lo_l1a_spin, with Lo's spins
+      starting `lag_ticks` after the fake spin table's.
+    """
+    met = STAR_START_MET + SPIN_PERIOD * np.arange(n_records)
+    epoch = met_to_ttj2000ns(met)
+    l1a_star = xr.Dataset(
+        {
+            "count": ("epoch", np.full(n_records, 720)),
+            "shcoarse": ("epoch", met),
+            "data": (("epoch", "samples"), np.full((n_records, 720), 150, np.uint16)),
+        },
+        coords={"epoch": epoch, "samples": np.arange(720)},
+    )
+    l1b_nhk = xr.Dataset(
+        {
+            "ifb_data_interval": ("epoch", np.full(n_records, 21.0)),
+            "ifb_ctrl_star_sync": ("epoch", np.full(n_records, "DS")),
+        },
+        coords={"epoch": epoch},
+    )
+    return {
+        "imap_lo_l1a_star": l1a_star,
+        "imap_lo_l1b_nhk": l1b_nhk,
+        "imap_lo_l1a_spin": make_lo_l1a_spin(lag_ticks=lag_ticks),
+    }
+
+
+@pytest.mark.parametrize("lag_ticks", [0, 3277, -3277])
+def test_get_lo_spin_start_phase_offset(lag_ticks, use_fake_spin_data_for_time):
+    """The offset is how far Lo's spin starts lag the spin table's, as an angle."""
+    use_fake_spin_data_for_time(STAR_START_MET)
+    # Start Lo one table spin in, so a negative lag stays inside the spin table
+    spin_data = make_lo_l1a_spin(
+        lag_ticks=lag_ticks, first_spin_met=STAR_START_MET + SPIN_PERIOD
+    )
+
+    offset = get_lo_spin_start_phase_offset(spin_data)
+
+    lag_seconds = lag_ticks / LoConstants.SPIN_SUBSEC_PER_SEC
+    np.testing.assert_allclose(offset, 360.0 * lag_seconds / SPIN_PERIOD, atol=1e-6)
+
+
+def test_get_lo_spin_start_phase_offset_without_spin_start_fields(caplog):
+    """A spin product without Lo's per-spin start times gives an offset of 0."""
+    spin_data = make_lo_l1a_spin().drop_vars(["start_sec_spin", "start_subsec_spin"])
+
+    with caplog.at_level(logging.WARNING):
+        offset = get_lo_spin_start_phase_offset(spin_data)
+
+    assert offset == 0.0
+    assert "start_sec_spin" in caplog.text
+
+
+class TestL1bStarSpinStartOffset:
+    """l1b_star adds Lo's spin-start offset to the star sensor azimuth."""
+
+    @pytest.fixture
+    def l1b_star_setup(
+        self, use_fake_spin_data_for_time, lo_pivot_ck, furnish_kernels, monkeypatch
+    ):
+        """
+        Set up everything l1b_star reads apart from its inputs.
+
+        Returns a function. Calling it with a pivot angle (default 90):
+        - writes a fake spin table starting at STAR_START_MET,
+        - loads the SPICE kernels, including a Lo pivot CK holding that angle,
+        - stubs the repoint table: no repoint in progress, and a pointing
+          mid-time of POINTING_MID_MET, inside the pivot CK.
+        The kernels stay loaded until the test ends.
+        """
+        with ExitStack() as loaded_kernels:
+
+            def setup(pivot_angle: float = 90.0) -> None:
+                use_fake_spin_data_for_time(STAR_START_MET)
+                kernels = ["naif0012.tls", "imap_sclk_0036.tsc", "imap_140.tf"]
+                loaded_kernels.enter_context(
+                    furnish_kernels([*kernels, lo_pivot_ck(pivot_angle)])
+                )
+                monkeypatch.setattr(
+                    "imap_processing.lo.l1b.lo_l1b.interpolate_repoint_data",
+                    lambda met: pd.DataFrame(
+                        {"repoint_in_progress": np.zeros(np.size(met), dtype=bool)}
+                    ),
+                )
+                monkeypatch.setattr(
+                    "imap_processing.lo.l1b.lo_l1b.get_pointing_mid_time",
+                    lambda met: POINTING_MID_MET,
+                )
+
+            yield setup
+
+    @pytest.mark.parametrize("lag_ticks", [0, 3277])
+    def test_spin_angles_include_spin_start_offset(
+        self, lag_ticks, l1b_star_setup, attr_mgr_l1b
+    ):
+        """The first star sample sits at azimuth + spin-start offset + half a bin."""
+        l1b_star_setup()
+        sci_dependencies = make_star_dependencies(n_records=64, lag_ticks=lag_ticks)
+
+        l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
+
+        lag_seconds = lag_ticks / LoConstants.SPIN_SUBSEC_PER_SEC
+        expected_offset = 360.0 * lag_seconds / SPIN_PERIOD
+        assert l1b_star_ds.attrs["spin_start_offset_deg"] == pytest.approx(
+            expected_offset, abs=1e-6
+        )
+        # The pivot tilts the star sensor in elevation; azimuth stays near 60 deg
+        azimuth = l1b_star_ds.attrs["star_sensor_azimuth_deg"]
+        assert azimuth == pytest.approx(60.0, abs=0.75)
+        # Star sync "DS" puts each sample at its bin centre
+        deg_per_bin = 360.0 * 0.021 / SPIN_PERIOD
+        first_sample = l1b_star_ds["spin_angle"].where(
+            l1b_star_ds["spin_angle_bin"] == 0, drop=True
+        )
+        np.testing.assert_allclose(
+            first_sample.values, [azimuth + expected_offset + 0.5 * deg_per_bin]
+        )
 
 
 def test_get_pivot_angle_from_nhk():

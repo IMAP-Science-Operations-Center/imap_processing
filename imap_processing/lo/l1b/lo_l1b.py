@@ -2256,6 +2256,67 @@ def calculate_star_sensor_profiles_by_group(
     return spin_angle, group_mets, avg_amplitudes, counts_per_bin
 
 
+def get_lo_spin_start_phase_offset(spin_data: xr.Dataset) -> float:
+    """
+    Get the spacecraft spin angle at which Lo starts each spin.
+
+    Lo starts its star-sensor sampling on its own spin pulse, which lags the
+    spacecraft spin phase 0 of the spin table slightly. This returns that lag as
+    an angle, the circular mean over all spins where both Lo and the spin table
+    flag the phase as valid.
+
+    Parameters
+    ----------
+    spin_data : xr.Dataset
+        The L1A Spin dataset, with start_sec_spin and start_subsec_spin.
+
+    Returns
+    -------
+    offset : float
+        Spin angle [degrees] of Lo's spin start, in (-180, 180]. 0.0 if the spin
+        product has no spin start fields, or no spin start can be matched to the
+        spin table.
+    """
+    spin_fields = ["start_sec_spin", "start_subsec_spin", "valid_phase_spin"]
+    missing = [field for field in spin_fields if field not in spin_data]
+    if missing:
+        logger.warning(f"Spin data lacks {missing}; using spin start offset 0.")
+        return 0.0
+
+    start_met = (
+        spin_data["start_sec_spin"].values
+        + spin_data["start_subsec_spin"].values / c.SPIN_SUBSEC_PER_SEC
+    ).ravel()
+    valid = (spin_data["valid_phase_spin"].values.ravel() == 1) & (start_met > 0)
+
+    # interpolate_spin_data raises on times outside the spin table, so drop them
+    spin_table = get_spin_data()
+    table_start = spin_table["spin_start_met"].values[0]
+    table_end = (
+        spin_table["spin_start_met"].values[-1]
+        + spin_table["actual_spin_period"].values[-1]
+    )
+    start_met = start_met[valid & (start_met >= table_start) & (start_met < table_end)]
+    if start_met.size == 0:
+        logger.warning("No Lo spin starts within the spin table; using offset 0.")
+        return 0.0
+
+    # sc_spin_phase is NaN where the spin table flags the phase as invalid
+    phase = interpolate_spin_data(start_met)["sc_spin_phase"].values
+    phase = phase[np.isfinite(phase)]
+    if phase.size == 0:
+        logger.warning("No valid spin-table phase at Lo spin starts; using offset 0.")
+        return 0.0
+
+    # Circular mean
+    offset = float(np.degrees(np.angle(np.mean(np.exp(2j * np.pi * phase)))))
+    logger.info(
+        f"Lo spin start offset from spin table: {offset:.4f} deg "
+        f"over {phase.size} spins"
+    )
+    return offset
+
+
 def get_sampling_cadence_from_nhk(l1b_nhk: xr.Dataset) -> float:
     """
     Extract ifb_data_interval from NHK dataset.
@@ -2342,6 +2403,7 @@ def l1b_star(
     sc_to_inst_angle_offset = float(
         get_instrument_mounting_az_el(SpiceFrame.IMAP_LO_STAR_SENSOR, et)[0]
     )
+    spin_start_offset = get_lo_spin_start_phase_offset(spin_data)
     end_bins_to_exclude = c.STAR_END_BINS_TO_EXCLUDE
     min_count_threshold = c.STAR_MIN_COUNT_THRESHOLD
 
@@ -2365,7 +2427,7 @@ def l1b_star(
         sampling_cadence,
         spin_duration,
         group_size=group_size,
-        start_angle_offset=sc_to_inst_angle_offset,
+        start_angle_offset=sc_to_inst_angle_offset + spin_start_offset,
         end_bins_to_exclude=end_bins_to_exclude,
         min_count_threshold=min_count_threshold,
         bin_offset=bin_offset,
@@ -2429,6 +2491,8 @@ def l1b_star(
     l1b_star_ds.attrs["start_doy"] = start_doy
     l1b_star_ds.attrs["end_doy"] = end_doy
     l1b_star_ds.attrs["pointing_mid_met"] = pointing_mid_met
+    l1b_star_ds.attrs["star_sensor_azimuth_deg"] = sc_to_inst_angle_offset
+    l1b_star_ds.attrs["spin_start_offset_deg"] = spin_start_offset
     l1b_star_ds.attrs["sampling_cadence_ms"] = sampling_cadence
     l1b_star_ds.attrs["spin_duration_sec"] = spin_duration
     l1b_star_ds.attrs["end_bins_excluded"] = end_bins_to_exclude
