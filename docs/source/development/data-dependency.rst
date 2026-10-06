@@ -236,25 +236,25 @@ The YAML config has the following structure:
    (level, descriptor):
      partition: daily
      inputs:
-       - source,
-         data_type,
-         descriptor,
-         required(bool),
-         trigger_job(bool),
+       - source
+         data_type
+         descriptor
+         required(bool)
+         trigger_job(bool)
          [past_days, future_days]
-       - source,
-         data_type,
-         descriptor,
-         required(bool),
-         trigger_job(bool),
+       - source
+         data_type
+         descriptor
+         required(bool)
+         trigger_job(bool)
          [past_days, future_days]
        ....
      outputs:
-       - source,
-         data_type,
+       - source
+         data_type
          descriptor
-       - source,
-         data_type,
+       - source
+         data_type
          descriptor
        ....
 
