@@ -37,12 +37,20 @@ def set_global_spin_table_paths(paths: list[Path]) -> None:
     config._spin_table_paths = paths
 
 
-def get_spin_data() -> pd.DataFrame:
+def get_spin_data(use_corrected_spin_start: bool = True) -> pd.DataFrame:
     """
     Read spin-tables and return spin data.
 
     The spin-tables to read are stored in the mutable module level attribute
     named `spin_table_paths`.
+
+    Parameters
+    ----------
+    use_corrected_spin_start : bool
+        If True (default), use the corrected spin start times
+        (`spin_start_sec_sclk_corr`, `spin_start_subsec_sclk_corr`); otherwise
+        use the original spin start times (`spin_start_sec_sclk`,
+        `spin_start_subsec_sclk`).
 
     Returns
     -------
@@ -52,11 +60,19 @@ def get_spin_data() -> pd.DataFrame:
             * `spin_number`: Unique integer spin number.
             * `spin_start_sec_sclk`: MET seconds of spin start time.
             * `spin_start_subsec_sclk`: MET microseconds of spin start time.
-            * `spin_start_met`: Floating point MET seconds of spin start.
+            * `spin_start_met`: Floating point MET seconds of spin start, from
+              the corrected or original spin start time per
+              `use_corrected_spin_start`.
             * `spin_start_utc`: UTC string of spin start time.
+            * `spin_start_sec_sclk_corr`: MET seconds of the corrected spin start
+              time.
+            * `spin_start_subsec_sclk_corr`: MET microseconds of the corrected
+              spin start time.
+            * `spin_start_utc_corr`: UTC string of the corrected spin start time.
             * `spin_period_sec`: Floating point spin period in seconds (estimated).
             * `actual_spin_period`: Floating point actual spin period computed from
-              consecutive spin start times. More accurate than spin_period_sec.
+              consecutive `spin_start_met` values. More accurate than
+              spin_period_sec.
             * `spin_period_valid`: Boolean indicating whether spin period is valid.
             * `spin_phase_valid`: Boolean indicating whether spin phase is valid.
             * `spin_period_source`: Source used for determining spin period.
@@ -74,11 +90,15 @@ def get_spin_data() -> pd.DataFrame:
             "module attribute spin_table_paths."
         )
 
-    return _load_spin_data_with_cache(tuple(config._spin_table_paths))
+    return _load_spin_data_with_cache(
+        tuple(config._spin_table_paths), use_corrected_spin_start
+    )
 
 
 @functools.cache
-def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
+def _load_spin_data_with_cache(
+    csv_paths: tuple[Path], use_corrected_spin_start: bool
+) -> pd.DataFrame:
     """
     Load spin-table data from csv files and combine them.
 
@@ -86,16 +106,29 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
     ----------
     csv_paths : tuple[Path]
         Locations of spin-table csv files.
+    use_corrected_spin_start : bool
+        If True, use the corrected spin start times
+        (`spin_start_sec_sclk_corr`, `spin_start_subsec_sclk_corr`); otherwise
+        use the original spin start times (`spin_start_sec_sclk`,
+        `spin_start_subsec_sclk`).
 
     Returns
     -------
     combined_df: pandas.DataFrame
         The dataframe containing all spin data.
+
+    Raises
+    ------
+    ValueError
+        If a spin-table lacks the corrected spin start time columns.
     """
     logger.debug(
         f"Merging the following spin tables files: {[sp.name for sp in csv_paths]}"
     )
 
+    # Reversed sorting is used so that the proper precedence is applied in
+    # the below use of DataFrame.combine_first()
+    sorted_paths = sorted(csv_paths, reverse=True)
     spin_dataframes = [
         pd.read_csv(
             spin_table_path,
@@ -106,6 +139,9 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
                 "spin_start_sec_sclk": int,
                 "spin_start_subsec_sclk": int,
                 "spin_start_utc": str,
+                "spin_start_sec_sclk_corr": int,
+                "spin_start_subsec_sclk_corr": int,
+                "spin_start_utc_corr": str,
                 "spin_period_sec": float,
                 "spin_period_valid": bool,
                 "spin_phase_valid": bool,
@@ -113,20 +149,35 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
                 "thruster_firing": bool,
             },
         )
-        # Reversed sorting is used so that the proper precedence is applied in
-        # the below use of DataFrame.combine_first()
-        for spin_table_path in sorted(csv_paths, reverse=True)
+        for spin_table_path in sorted_paths
     ]
+    corrected_columns = [
+        "spin_start_sec_sclk_corr",
+        "spin_start_subsec_sclk_corr",
+        "spin_start_utc_corr",
+    ]
+    for spin_table_path, spin_dataframe in zip(
+        sorted_paths, spin_dataframes, strict=True
+    ):
+        missing = [col for col in corrected_columns if col not in spin_dataframe]
+        if missing:
+            raise ValueError(
+                f"Spin table {spin_table_path.name} is missing the corrected spin "
+                f"start time columns {missing}."
+            )
     combined_df = reduce(
         lambda left, right: left.combine_first(right),
         spin_dataframes,
     )
     # Duplicate the index so that users can access "spin_numer" by name
     combined_df.insert(0, "spin_number", combined_df.index)
-    # Combine spin_start_sec_sclk and spin_start_subsec_sclk to get the spin start
-    # time in seconds. The spin start subseconds are in microseconds.
+    # Combine spin_start_sec_sclk and spin_start_subsec_sclk (or their corrected
+    # versions) to get the spin start time in seconds. The spin start subseconds
+    # are in microseconds.
+    suffix = "_corr" if use_corrected_spin_start else ""
     combined_df["spin_start_met"] = (
-        combined_df["spin_start_sec_sclk"] + combined_df["spin_start_subsec_sclk"] / 1e6
+        combined_df[f"spin_start_sec_sclk{suffix}"]
+        + combined_df[f"spin_start_subsec_sclk{suffix}"] / 1e6
     )
     # Precompute actual spin periods from consecutive spin start times
     # Only use actual periods when spin numbers increment by exactly 1
@@ -147,7 +198,9 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
     return combined_df
 
 
-def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
+def interpolate_spin_data(
+    query_met_times: float | npt.NDArray, use_corrected_spin_start: bool = True
+) -> pd.DataFrame:
     """
     Interpolate spin table data to the queried MET times.
 
@@ -160,6 +213,11 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
     ----------
     query_met_times : float or np.ndarray
         Query times in Mission Elapsed Time (MET).
+    use_corrected_spin_start : bool
+        If True (default), use the corrected spin start times
+        (`spin_start_sec_sclk_corr`, `spin_start_subsec_sclk_corr`); otherwise
+        use the original spin start times (`spin_start_sec_sclk`,
+        `spin_start_subsec_sclk`).
 
     Returns
     -------
@@ -168,7 +226,7 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
         the columns output from :py:func:`get_spin_data`, the `sc_spin_phase`
         column is added and is uniquely computed for each queried MET time.
     """
-    spin_df = get_spin_data()
+    spin_df = get_spin_data(use_corrected_spin_start)
 
     # Ensure query_met_times is an array
     query_met_times = np.asarray(query_met_times)
@@ -237,7 +295,9 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
     return out_df
 
 
-def get_spin_number(met_time: float | npt.NDArray) -> int | npt.NDArray:
+def get_spin_number(
+    met_time: float | npt.NDArray, use_corrected_spin_start: bool = True
+) -> int | npt.NDArray:
     """
     Get the spin number for the input query time.
 
@@ -248,13 +308,18 @@ def get_spin_number(met_time: float | npt.NDArray) -> int | npt.NDArray:
     ----------
     met_time : float or np.ndarray
         Query time in Mission Elapsed Time (MET).
+    use_corrected_spin_start : bool
+        If True (default), use the corrected spin start times
+        (`spin_start_sec_sclk_corr`, `spin_start_subsec_sclk_corr`); otherwise
+        use the original spin start times (`spin_start_sec_sclk`,
+        `spin_start_subsec_sclk`).
 
     Returns
     -------
     spin_number : int or np.ndarray
         Spin number for the input query time.
     """
-    spin_df = interpolate_spin_data(met_time)
+    spin_df = interpolate_spin_data(met_time, use_corrected_spin_start)
     spin_numbers = spin_df["spin_number"].values
 
     return spin_numbers.item() if np.asarray(met_time).ndim == 0 else spin_numbers
@@ -296,7 +361,7 @@ def get_spin_angle(
 
 
 def get_spacecraft_spin_phase(
-    query_met_times: float | npt.NDArray,
+    query_met_times: float | npt.NDArray, use_corrected_spin_start: bool = True
 ) -> float | npt.NDArray:
     """
     Get the spacecraft spin phase for the input query times.
@@ -308,20 +373,27 @@ def get_spacecraft_spin_phase(
     ----------
     query_met_times : float or np.ndarray
         Query times in Mission Elapsed Time (MET).
+    use_corrected_spin_start : bool
+        If True (default), use the corrected spin start times
+        (`spin_start_sec_sclk_corr`, `spin_start_subsec_sclk_corr`); otherwise
+        use the original spin start times (`spin_start_sec_sclk`,
+        `spin_start_subsec_sclk`).
 
     Returns
     -------
     spin_phase : float or np.ndarray
         Spin phase for the input query times.
     """
-    spin_df = interpolate_spin_data(query_met_times)
+    spin_df = interpolate_spin_data(query_met_times, use_corrected_spin_start)
     if np.asarray(query_met_times).ndim == 0:
         return spin_df["sc_spin_phase"].values[0]
     return spin_df["sc_spin_phase"].values
 
 
 def get_instrument_spin_phase(
-    query_met_times: float | npt.NDArray, instrument: SpiceFrame
+    query_met_times: float | npt.NDArray,
+    instrument: SpiceFrame,
+    use_corrected_spin_start: bool = True,
 ) -> float | npt.NDArray:
     """
     Get the instrument spin phase for the input query times.
@@ -335,6 +407,11 @@ def get_instrument_spin_phase(
         Query times in Mission Elapsed Time (MET).
     instrument : SpiceFrame
         Instrument frame to calculate spin phase for.
+    use_corrected_spin_start : bool
+        If True (default), use the corrected spin start times
+        (`spin_start_sec_sclk_corr`, `spin_start_subsec_sclk_corr`); otherwise
+        use the original spin start times (`spin_start_sec_sclk`,
+        `spin_start_subsec_sclk`).
 
     Returns
     -------
@@ -343,7 +420,9 @@ def get_instrument_spin_phase(
         floating point number in the range [0, 1) corresponding to the
         spin angle / 360.
     """
-    spacecraft_spin_phase = get_spacecraft_spin_phase(query_met_times)
+    spacecraft_spin_phase = get_spacecraft_spin_phase(
+        query_met_times, use_corrected_spin_start
+    )
     instrument_spin_phase_offset = get_spacecraft_to_instrument_spin_phase_offset(
         instrument
     )
