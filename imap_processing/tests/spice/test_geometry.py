@@ -19,7 +19,6 @@ from imap_processing.spice.geometry import (
     get_spacecraft_to_instrument_spin_phase_offset,
     imap_state,
     instrument_pointing,
-    lo_instrument_pointing,
     solar_longitude,
     spherical_to_cartesian,
 )
@@ -551,14 +550,21 @@ def test_instrument_pointing_lo_ck(frame, furnish_kernels):
         (105, [0.483, 0.837, -0.259]),  # Rotated 105°
     ],
 )
-def test_lo_instrument_pointing_pivot_angle(pivot_angle, expected, furnish_kernels):
-    kernels = ["imap_140.tf"]
+def test_lo_pivot_angle_pointing(pivot_angle, expected, lo_pivot_ck, furnish_kernels):
+    """Test the IMAP_LO boresight is the pivot angle away from spacecraft +Z."""
+    # The CK holds a constant pivot for IMAP_LO over 2026-09-09
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+        "imap_140.tf",
+        lo_pivot_ck(pivot_angle),
+    ]
     with furnish_kernels(kernels):
-        et = 0  # Use fixed frames, no time-dependent kernels needed
+        et = spiceypy.str2et("2026-09-09T12:00:00")
 
         # Get Lo boresight in spacecraft frame
-        boresight_sc = lo_instrument_pointing(
-            et, pivot_angle, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        boresight_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
 
         # Verify angle from spacecraft +Z axis equals pivot angle
@@ -584,10 +590,10 @@ def test_lo_instrument_pointing_pivot_angle(pivot_angle, expected, furnish_kerne
     ],
 )
 @pytest.mark.parametrize("pivot_angle", [60.0, 90.0, 120.0])
-def test_lo_sensor_frame_vs_lo_instrument_pointing(
+def test_lo_sensor_frame_vs_lo_pivot_frame(
     sensor, atol, pivot_angle, lo_pivot_ck, furnish_kernels
 ):
-    """Test the Lo frames against the hand-applied pivot."""
+    """Test the Lo sensor frames against the pivot platform frame."""
     # The CK holds a constant pivot for IMAP_LO over 2026-09-09
     kernels = [
         "naif0012.tls",
@@ -597,20 +603,16 @@ def test_lo_sensor_frame_vs_lo_instrument_pointing(
     ]
     with furnish_kernels(kernels):
         et = spiceypy.str2et("2026-09-09T12:00:00")
-        nominal_sc = lo_instrument_pointing(
-            et, pivot_angle, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
-        )
-        # The pivot platform frame (from the CK) matches the hand-applied pivot
+        # The pivot platform frame, from the CK
         lo_sc = instrument_pointing(
             et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
-        np.testing.assert_allclose(lo_sc, nominal_sc, atol=1e-12)
 
         # Each sensor adds a small measured offset to the platform
         sensor_sc = instrument_pointing(
             et, sensor, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
-        np.testing.assert_allclose(sensor_sc, nominal_sc, atol=atol)
+        np.testing.assert_allclose(sensor_sc, lo_sc, atol=atol)
 
         # Outside the CK coverage there is no pivot, so no path to the spacecraft
         et_outside = spiceypy.str2et("2026-09-11T00:00:00")

@@ -39,7 +39,7 @@ from imap_processing.cli import (
     main,
 )
 from imap_processing.spice import config as spice_config
-from imap_processing.spice.geometry import get_lo_pivot_boresight
+from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
 from imap_processing.spice.time import met_to_sclkticks, met_to_ttj2000ns, sct_to_et
 from imap_processing.tests.conftest import generate_repoint_data
 
@@ -1021,10 +1021,11 @@ def test_lo_pivot_kernel_process(monkeypatch, tmp_path, spice_test_data_path):
         ]
     ):
         et = sct_to_et(met_to_sclkticks(repoint_starts[1] + 3 * 3600))
-        boresight = spiceypy.mxv(
-            spiceypy.pxform("IMAP_LO", "IMAP_LO_BASE", et), [0, -1, 0]
+        boresight_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
-    np.testing.assert_allclose(boresight, get_lo_pivot_boresight(75.0), atol=1e-12)
+    # The IMAP_LO boresight is the pivot angle away from spacecraft +Z.
+    np.testing.assert_allclose(np.rad2deg(np.arccos(boresight_sc[2])), 75.0, atol=1e-8)
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")

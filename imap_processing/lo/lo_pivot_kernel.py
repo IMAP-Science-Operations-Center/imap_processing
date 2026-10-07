@@ -155,9 +155,7 @@ def pivot_angle_to_quaternion(pivot_angle: float) -> np.ndarray:
     Get the SPICE quaternion rotating IMAP_LO_BASE vectors into IMAP_LO.
 
     The IMAP_LO frame is the IMAP_LO_BASE frame rotated about its +X axis by
-    the pivot angle. The rotation is consistent with
-    `imap_processing.spice.geometry.get_lo_pivot_boresight`: the IMAP_LO
-    boresight, -Y, expressed in IMAP_LO_BASE is the pivot boresight.
+    the pivot angle.
 
     Parameters
     ----------
