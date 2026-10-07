@@ -76,12 +76,24 @@ imap_lo_l1b_monitorrates:
   Data_type: L1B_monitorrates>Level-1B Monitor Rates
   Logical_source: imap_lo_l1b_monitorrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+  MODS:
+    - >-
+      Major version 1, Aug. 1, 2026 - Initial release.
+    - >-
+      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_lo_l1b_histrates:
   <<: *instrument_base
   Data_type: L1B_histrates>Level-1B Histogram Rates
   Logical_source: imap_lo_l1b_histrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+  MODS:
+    - >-
+      Major version 1, Aug. 1, 2026 - Initial release.
+    - >-
+      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_lo_l1b_derates:
   <<: *instrument_base
@@ -100,12 +112,6 @@ imap_lo_l1b_prostar:
   Data_type: L1B_prostar>Level-1B Processed Star Sensor
   Logical_source: imap_lo_l1b_prostar
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
-    - >-
-      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1b_nhk:
   <<: *instrument_base
@@ -130,12 +136,24 @@ imap_lo_l1b_bgrates:
   Data_type: L1B_goodtimes>Level-1B Background Rates List
   Logical_source: imap_lo_l1b_bgrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+  MODS:
+    - >-
+      Major version 1, Aug. 1, 2026 - Initial release.
+    - >-
+      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_lo_l1b_goodtimes:
   <<: *instrument_base
   Data_type: L1B_goodtimes>Level-1B Goodtimes List
   Logical_source: imap_lo_l1b_goodtimes
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
+  MODS:
+    - >-
+      Major version 1, Aug. 1, 2026 - Initial release.
+    - >-
+      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_lo_l1c_goodtimes:
   <<: *instrument_base
