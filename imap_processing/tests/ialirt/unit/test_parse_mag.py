@@ -67,7 +67,21 @@ def postlaunch_packet_path():
     """Returns the paths to the binary packets."""
     directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
     filenames = [
-        "imap_ialirt_l0_raw_20261001_v001.0001.pkts",
+        "iois_1_packets_2025_284_05_40_25",
+        "iois_1_packets_2025_284_05_41_26",
+        "iois_1_packets_2025_284_05_42_27",
+        "iois_1_packets_2025_284_05_43_28",
+        "iois_1_packets_2025_284_05_44_29",
+        "iois_1_packets_2025_284_05_45_30",
+        "iois_1_packets_2025_284_05_46_31",
+        "iois_1_packets_2025_284_05_47_32",
+        "iois_1_packets_2025_284_05_48_33",
+        "iois_1_packets_2025_284_05_49_34",
+        "iois_1_packets_2025_284_05_50_35",
+        "iois_1_packets_2025_284_05_51_36",
+        "iois_1_packets_2025_284_05_52_37",
+        "iois_1_packets_2025_284_05_53_38",
+        "iois_1_packets_2025_284_05_54_39",
     ]
     return tuple(directory / fname for fname in filenames)
 
