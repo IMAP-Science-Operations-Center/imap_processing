@@ -26,7 +26,7 @@ from imap_processing.spice.time import (
 @pytest.fixture
 def furnish_lo_pivot_kernels(furnish_kernels):
     """Furnish the kernels needed to write and read the Lo pivot kernel."""
-    with furnish_kernels(["naif0012.tls", "imap_sclk_0000.tsc", "imap_130.tf"]):
+    with furnish_kernels(["naif0012.tls", "imap_sclk_0000.tsc", "imap_140.tf"]):
         yield
 
 

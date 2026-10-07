@@ -848,7 +848,7 @@ LO_PIVOT_DEPENDENCY_FILES = (
     '[{"type": "science","files": ['
     '"imap_lo_l1b_nhk_20251110-repoint00100_v001.cdf"]}, '
     '{"type": "spice","files": ["naif0012.tls", "imap_sclk_0005.tsc", '
-    '"imap_130.tf"]}, '
+    '"imap_140.tf"]}, '
     '{"type": "repoint","files": ["imap_2025_315_01.repoint"]}]'
 )
 
@@ -966,7 +966,7 @@ def test_lo_pivot_kernel_process(monkeypatch, tmp_path, spice_test_data_path):
     for subdir, kernel in [
         ("lsk", "naif0012.tls"),
         ("sclk", "imap_sclk_0000.tsc"),
-        ("fk", "imap_130.tf"),
+        ("fk", "imap_140.tf"),
     ]:
         (spice_dir / subdir).mkdir(parents=True)
         shutil.copy(spice_test_data_path / kernel, spice_dir / subdir / kernel)
@@ -999,7 +999,7 @@ def test_lo_pivot_kernel_process(monkeypatch, tmp_path, spice_test_data_path):
                 {"type": "science", "files": [nhk_name]},
                 {
                     "type": "spice",
-                    "files": ["naif0012.tls", "imap_sclk_0000.tsc", "imap_130.tf"],
+                    "files": ["naif0012.tls", "imap_sclk_0000.tsc", "imap_140.tf"],
                 },
                 {"type": "repoint", "files": ["imap_2025_315_01.repoint"]},
             ],
@@ -1016,7 +1016,7 @@ def test_lo_pivot_kernel_process(monkeypatch, tmp_path, spice_test_data_path):
         [
             str(spice_dir / "lsk" / "naif0012.tls"),
             str(spice_dir / "sclk" / "imap_sclk_0000.tsc"),
-            str(spice_dir / "fk" / "imap_130.tf"),
+            str(spice_dir / "fk" / "imap_140.tf"),
             str(kernels[0]),
         ]
     ):
