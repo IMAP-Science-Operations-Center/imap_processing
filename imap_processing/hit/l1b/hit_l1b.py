@@ -331,7 +331,7 @@ def process_summed_rates_data(
         1D array of livetime values calculated from the livetime counter.
         Shape equals the number of epochs in the dataset.
 
-    attr_mgr : ImapCdfAttributes
+    attr_mgr : ImapCdfAttributes, optional
         The attribute manager for the L1B data level. Used to set CDF
         attributes on the per-particle energy coordinate variables, which
         are created fresh here (unlike the other coordinates, they aren't
