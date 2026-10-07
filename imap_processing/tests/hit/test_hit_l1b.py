@@ -1,11 +1,13 @@
 from unittest import mock
 
+import cdflib
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.cdf.utils import write_cdf
 from imap_processing.hit.l1a import hit_l1a
 from imap_processing.hit.l1b.hit_l1b import (
     SUMMED_PARTICLE_ENERGY_RANGE_MAPPING,
@@ -626,3 +628,233 @@ def test_hit_l1b(dependencies, dependency_key, expected_logical_source):
     dataset = hit_l1b(dependency, l1b_descriptor)
     assert isinstance(dataset, xr.Dataset)
     assert dataset.attrs["Logical_source"] == expected_logical_source
+
+
+# Float fill value shared by all floating point L1B variables
+# (double_fillval in imap_hit_l1b_variable_attrs.yaml)
+FLOAT_FILLVAL = -1.0e31
+
+SCIENCE_PRODUCTS = ["standard-rates", "summed-rates", "sectored-rates"]
+
+# One floating point rate variable per product to spot check in the CDF
+REPRESENTATIVE_RATE = {
+    "standard-rates": "sngrates",
+    "summed-rates": "he",
+    "sectored-rates": "cno",
+}
+
+
+def _depend_attrs(data_array):
+    """Return the DEPEND_i attributes of a data array as {index: name}."""
+    return {
+        int(key.split("_")[1]): value
+        for key, value in data_array.attrs.items()
+        if key.startswith("DEPEND_")
+    }
+
+
+@pytest.mark.parametrize("descriptor", SCIENCE_PRODUCTS)
+def test_hit_l1b_dynamic_threshold_state_attrs(dependencies, descriptor):
+    """dynamic_threshold_state is unsigned 8-bit with a matching fill value."""
+    dataset = hit_l1b(dependencies[descriptor], descriptor)
+    state = dataset["dynamic_threshold_state"]
+
+    assert state.dtype == np.uint8
+    assert state.attrs["FILLVAL"] == 255
+    assert state.attrs["DEPEND_0"] == "epoch"
+    # dtype is not a CDF attribute and must not be written to the file
+    assert "dtype" not in state.attrs
+
+
+@pytest.mark.parametrize("descriptor", SCIENCE_PRODUCTS)
+def test_hit_l1b_delta_var_pointers_exist(dependencies, descriptor):
+    """Every DELTA_PLUS_VAR / DELTA_MINUS_VAR points at a variable in the dataset."""
+    dataset = hit_l1b(dependencies[descriptor], descriptor)
+
+    for name, variable in dataset.variables.items():
+        for key in ("DELTA_PLUS_VAR", "DELTA_MINUS_VAR"):
+            if key in variable.attrs:
+                assert variable.attrs[key] in dataset.variables, (
+                    f"{name}: {key} points at missing variable {variable.attrs[key]}"
+                )
+
+
+@pytest.mark.parametrize(
+    "descriptor",
+    [
+        "standard-rates",
+        "summed-rates",
+        pytest.param(
+            "sectored-rates",
+            marks=pytest.mark.xfail(
+                reason="Sectored h/he4/fe share the summed attribute entries and "
+                "do not declare DEPEND_2/DEPEND_3 yet",
+                strict=False,
+            ),
+        ),
+    ],
+)
+def test_hit_l1b_depend_attrs_match_dims(dependencies, descriptor):
+    """Each data variable declares one DEPEND_i per dimension, naming that dim."""
+    dataset = hit_l1b(dependencies[descriptor], descriptor)
+
+    for name, data_array in dataset.data_vars.items():
+        depends = _depend_attrs(data_array)
+        assert len(depends) == data_array.ndim, (
+            f"{name}: {data_array.ndim} dims {data_array.dims} but DEPENDs {depends}"
+        )
+        for index, depend_name in depends.items():
+            assert depend_name in dataset.variables, (
+                f"{name}: DEPEND_{index} points at missing variable {depend_name}"
+            )
+            assert data_array.dims[index] == depend_name, (
+                f"{name}: DEPEND_{index} is {depend_name} but dim {index} is "
+                f"{data_array.dims[index]}"
+            )
+
+
+def test_hit_l1b_standard_rates_attrs(dependencies):
+    """Check representative attributes in the standard rates dataset."""
+    dataset = hit_l1b(dependencies["standard-rates"], "standard-rates")
+
+    sngrates = dataset["sngrates"].attrs
+    assert sngrates["DEPEND_0"] == "epoch"
+    assert sngrates["DEPEND_1"] == "gain"
+    assert sngrates["DEPEND_2"] == "sngrates_index"
+    assert sngrates["LABLAXIS"] == "sngrates Count Rate"
+    assert sngrates["UNITS"] == "counts / livetime fraction"
+    assert sngrates["SCALETYP"] == "log"
+    assert sngrates["VAR_TYPE"] == "data"
+    assert sngrates["DELTA_PLUS_VAR"] == "sngrates_stat_uncert_plus"
+    assert sngrates["DELTA_MINUS_VAR"] == "sngrates_stat_uncert_minus"
+    assert isinstance(sngrates["FILLVAL"], float)
+    assert sngrates["FILLVAL"] == pytest.approx(FLOAT_FILLVAL)
+
+    uncert = dataset["sngrates_stat_uncert_plus"].attrs
+    assert uncert["VAR_TYPE"] == "support_data"
+    assert uncert["DISPLAY_TYPE"] == "no_plot"
+    assert uncert["FILLVAL"] == pytest.approx(FLOAT_FILLVAL)
+
+    # Rate labels should be unique per rate
+    rate_fields = [
+        "sngrates",
+        "coinrates",
+        "pbufrates",
+        "l2fgrates",
+        "l2bgrates",
+        "l3fgrates",
+        "l3bgrates",
+        "penfgrates",
+        "penbgrates",
+        "ialirtrates",
+        "l4fgrates",
+        "l4bgrates",
+    ]
+    labels = [dataset[field].attrs["LABLAXIS"] for field in rate_fields]
+    assert len(set(labels)) == len(rate_fields)
+
+
+def test_hit_l1b_summed_rates_attrs(dependencies):
+    """Check representative attributes in the summed rates dataset."""
+    dataset = hit_l1b(dependencies["summed-rates"], "summed-rates")
+
+    for particle in SUMMED_PARTICLE_ENERGY_RANGE_MAPPING.keys():
+        energy = f"{particle}_energy_mean"
+
+        # Rates and uncertainties depend on the particle's own energy coordinate
+        for var in (
+            particle,
+            f"{particle}_stat_uncert_plus",
+            f"{particle}_stat_uncert_minus",
+        ):
+            attrs = dataset[var].attrs
+            assert attrs["DEPEND_0"] == "epoch", var
+            assert attrs["DEPEND_1"] == energy, var
+            assert attrs["UNITS"] == "1 / integration time", var
+            assert attrs["FILLVAL"] == pytest.approx(FLOAT_FILLVAL), var
+
+        assert dataset[particle].attrs["VAR_TYPE"] == "data"
+        assert dataset[particle].attrs["DISPLAY_TYPE"] == "spectrogram"
+        assert (
+            dataset[f"{particle}_stat_uncert_plus"].attrs["FIELDNAM"]
+            == f"{particle}_plus_uncertainty"
+        )
+        assert (
+            dataset[f"{particle}_stat_uncert_minus"].attrs["FIELDNAM"]
+            == f"{particle}_minus_uncertainty"
+        )
+
+        # Energy coordinate attrs are set from the L1B attribute manager
+        energy_attrs = dataset[energy].attrs
+        assert energy_attrs["UNITS"] == "MeV/nuc"
+        assert energy_attrs["SCALETYP"] == "log"
+        assert energy_attrs["DELTA_PLUS_VAR"] == f"{particle}_energy_delta_plus"
+        assert energy_attrs["DELTA_MINUS_VAR"] == f"{particle}_energy_delta_minus"
+
+        for delta in (
+            f"{particle}_energy_delta_plus",
+            f"{particle}_energy_delta_minus",
+        ):
+            assert dataset[delta].attrs["DEPEND_0"] == energy, delta
+
+
+def test_hit_l1b_sectored_only_rates_attrs(dependencies):
+    """Check attributes of the sectored-only variables (cno, nemgsi)."""
+    dataset = hit_l1b(dependencies["sectored-rates"], "sectored-rates")
+
+    for particle in ("cno", "nemgsi"):
+        for var in (
+            particle,
+            f"{particle}_stat_uncert_plus",
+            f"{particle}_stat_uncert_minus",
+        ):
+            attrs = dataset[var].attrs
+            assert attrs["DEPEND_0"] == "epoch", var
+            assert attrs["DEPEND_1"] == f"{particle}_energy_mean", var
+            assert attrs["DEPEND_2"] == "azimuth", var
+            assert attrs["DEPEND_3"] == "zenith", var
+            assert attrs["FILLVAL"] == pytest.approx(FLOAT_FILLVAL), var
+
+
+@pytest.mark.parametrize("descriptor", SCIENCE_PRODUCTS)
+def test_hit_l1b_write_cdf(dependencies, descriptor):
+    """Write each L1B science product to CDF and check the written metadata."""
+    dataset = hit_l1b(dependencies[descriptor], descriptor)
+    dataset.attrs["Data_version"] = "001"
+    cdf_filepath = write_cdf(dataset)
+    assert cdf_filepath.exists()
+
+    rate = REPRESENTATIVE_RATE[descriptor]
+    with cdflib.CDF(cdf_filepath) as cdf_file:
+        written_variables = set(cdf_file.cdf_info().zVariables)
+
+        # Unsigned state variable keeps its type and fill value in the file
+        state_info = cdf_file.varinq("dynamic_threshold_state")
+        state_attrs = cdf_file.varattsget("dynamic_threshold_state")
+        assert state_info.Data_Type_Description == "CDF_UINT1"
+        assert state_attrs["FILLVAL"] == np.uint8(255)
+        assert "dtype" not in state_attrs
+
+        # Rates are written as floats with the shared float fill value
+        rate_info = cdf_file.varinq(rate)
+        rate_attrs = cdf_file.varattsget(rate)
+        assert rate_info.Data_Type_Description in ("CDF_REAL4", "CDF_FLOAT")
+        assert rate_attrs["FILLVAL"] == pytest.approx(FLOAT_FILLVAL, rel=1e-6)
+
+        # Every dependency and delta pointer written to the file resolves
+        pointer_keys = (
+            "DEPEND_0",
+            "DEPEND_1",
+            "DEPEND_2",
+            "DEPEND_3",
+            "DELTA_PLUS_VAR",
+            "DELTA_MINUS_VAR",
+        )
+        for variable_name in written_variables:
+            variable_attrs = cdf_file.varattsget(variable_name)
+            for key in pointer_keys:
+                if key in variable_attrs:
+                    assert variable_attrs[key] in written_variables, (
+                        f"{variable_name}: {key} points at missing variable "
+                        f"{variable_attrs[key]}"
+                    )
