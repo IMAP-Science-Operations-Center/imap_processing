@@ -459,8 +459,8 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
     gradiometer_factor = ialirt_mag_test_l1d_data["gradiometer_factor"]
 
     # MAGo and MAGi vectors.
-    mago_vector_eclipj2000 = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    magi_vector_eclipj2000 = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
+    mago_vector_eclipmod = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    magi_vector_eclipmod = np.array([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
 
     time_data = {
         "primary_epoch": np.array([1.0, 2.0]),
@@ -468,23 +468,21 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
     }
 
     mago_corrected, magnitude = apply_gradiometry_correction(
-        mago_vector_eclipj2000,
+        mago_vector_eclipmod,
         np.array(time_data["primary_epoch"]),
-        magi_vector_eclipj2000,
+        magi_vector_eclipmod,
         np.array(time_data["secondary_epoch"]),
         gradiometer_factor.squeeze(),
     )
 
-    spline = make_interp_spline(
-        time_data["secondary_epoch"], magi_vector_eclipj2000, k=1
-    )
+    spline = make_interp_spline(time_data["secondary_epoch"], magi_vector_eclipmod, k=1)
     interpolated_vectors = spline(time_data["primary_epoch"])
 
     # Spot check.
     np.testing.assert_array_equal(
         interpolated_vectors, np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
     )
-    offset = interpolated_vectors - mago_vector_eclipj2000
+    offset = interpolated_vectors - mago_vector_eclipmod
 
     offset_value = np.apply_along_axis(
         np.dot,
@@ -492,7 +490,7 @@ def test_apply_gradiometry_correction(ialirt_mag_test_l1d_data):
         offset,
         gradiometer_factor.squeeze(),
     )
-    expected_mago_corrected = mago_vector_eclipj2000 - offset_value
+    expected_mago_corrected = mago_vector_eclipmod - offset_value
     np.testing.assert_array_equal(mago_corrected, expected_mago_corrected)
 
     expected_magnitude = np.sqrt(np.sum(mago_corrected**2, axis=1))
@@ -505,7 +503,7 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
     """Test transform_to_frames over multiple spin phases."""
 
     kernels = [
-        "imap_science_120.tf",
+        "imap_science_130.tf",
         "imap_130.tf",
         "naif0012.tls",
         "de440s.bsp",
@@ -555,18 +553,18 @@ def test_transform_to_frames(furnish_kernels, spice_test_data_path):
             inertial_vector,
         )
 
-        rot_ecl_to_gse = spiceypy.pxform(
-            SpiceFrame.ECLIPJ2000.name, SpiceFrame.IMAP_GSE.name, target_time
+        rot_mod_to_gse = spiceypy.pxform(
+            SpiceFrame.IMAP_ECLIPMOD.name, SpiceFrame.IMAP_GSE.name, target_time
         )
-        expected_gse = spiceypy.mxv(rot_ecl_to_gse, inertial_vector)
-        rot_ecl_to_gsm = spiceypy.pxform(
-            SpiceFrame.ECLIPJ2000.name, SpiceFrame.IMAP_GSM.name, target_time
+        expected_gse = spiceypy.mxv(rot_mod_to_gse, inertial_vector)
+        rot_mod_to_gsm = spiceypy.pxform(
+            SpiceFrame.IMAP_ECLIPMOD.name, SpiceFrame.IMAP_GSM.name, target_time
         )
-        expected_gsm = spiceypy.mxv(rot_ecl_to_gsm, inertial_vector)
-        rot_ecl_to_rtn = spiceypy.pxform(
-            SpiceFrame.ECLIPJ2000.name, SpiceFrame.IMAP_RTN.name, target_time
+        expected_gsm = spiceypy.mxv(rot_mod_to_gsm, inertial_vector)
+        rot_mod_to_rtn = spiceypy.pxform(
+            SpiceFrame.IMAP_ECLIPMOD.name, SpiceFrame.IMAP_RTN.name, target_time
         )
-        expected_rtn = spiceypy.mxv(rot_ecl_to_rtn, inertial_vector)
+        expected_rtn = spiceypy.mxv(rot_mod_to_rtn, inertial_vector)
 
     np.testing.assert_allclose(inertial_vector, expected_vector, atol=1e-05)
     np.testing.assert_allclose(gse_vector, expected_gse, atol=1e-05)
@@ -639,7 +637,7 @@ def test_process_packet(
 ):
     """Test the process_packet function."""
     kernels = [
-        "imap_science_120.tf",
+        "imap_science_130.tf",
         "imap_130.tf",
         "naif0012.tls",
         "de440s.bsp",

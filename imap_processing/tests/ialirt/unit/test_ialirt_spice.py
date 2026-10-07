@@ -129,7 +129,7 @@ def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
     """Test real-world application of this function."""
 
     kernels = [
-        "imap_science_120.tf",
+        "imap_science_130.tf",
         "imap_130.tf",
         "naif0012.tls",
         "de440s.bsp",
@@ -141,10 +141,10 @@ def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
 
     with furnish_kernels(kernels):
         # Compare SPICE z-axis with calculated.
-        rot_sc_to_j2000 = spiceypy.pxform(
-            "IMAP_SPACECRAFT", "ECLIPJ2000", 813433291.0018076
+        rot_sc_to_mod = spiceypy.pxform(
+            "IMAP_SPACECRAFT", "IMAP_ECLIPMOD", 813433291.0018076
         )
-        sc_z_inertial = rot_sc_to_j2000[:, 2]  # SC +Z axis (angular momentum)
+        sc_z_inertial = rot_sc_to_mod[:, 2]  # SC +Z axis (angular momentum)
         _, ra, dec = spiceypy.recrad(sc_z_inertial.copy())
 
         z_axis = get_z_axis(np.array([np.degrees(ra)]), np.array([np.degrees(dec)]))[0]
@@ -169,7 +169,7 @@ def test_transform_instrument_vectors_to_inertial_single(furnish_kernels):
             813433291.0018076,
             instrument_vector,
             from_frame=SpiceFrame.IMAP_MAG_O,
-            to_frame=SpiceFrame.ECLIPJ2000,
+            to_frame=SpiceFrame.IMAP_ECLIPMOD,
         )
     np.testing.assert_allclose(
         v_manual_0[0],

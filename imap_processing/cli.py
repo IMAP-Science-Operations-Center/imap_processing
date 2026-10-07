@@ -39,7 +39,6 @@ from imap_data_access.processing_input import (
 )
 
 import imap_processing
-from imap_processing._version import __version__, __version_tuple__  # noqa: F401
 from imap_processing.ancillary.ancillary_dataset_combiner import (
     GlowsAncillaryCombiner,
     MagAncillaryCombiner,
@@ -67,6 +66,7 @@ from imap_processing.idex.idex_l1a import idex_l1a
 from imap_processing.idex.idex_l1b import idex_l1b
 from imap_processing.idex.idex_l2a import idex_l2a
 from imap_processing.idex.idex_l2b import idex_l2b
+from imap_processing.lo import lo_pivot_kernel
 from imap_processing.lo.constants import LoConstants
 from imap_processing.lo.l1a import lo_l1a
 from imap_processing.lo.l1b import lo_l1b
@@ -474,6 +474,33 @@ class ProcessInstrument(ABC):
             logger.warning(msg)
         return self.version_map.get(descriptor, self._fallback_version)
 
+    def _resolve_kernel_minor_version(self, descriptor: str) -> int:
+        """
+        Return the minor version to use in the filename of a generated kernel.
+
+        Parameters
+        ----------
+        descriptor : str
+            The descriptor of the kernel job, e.g. "pointing-attitude".
+
+        Returns
+        -------
+        int
+            The minor version for the kernel filename.
+        """
+        resolved_version = self._resolve_version(descriptor)
+        if resolved_version is None:
+            raise ValueError(
+                f"No version provided for {descriptor} processing. "
+                f"Provide a version for the '{descriptor}' descriptor in "
+                "the dependency JSON's version block, or a fallback --version."
+            )
+        return (
+            resolved_version.minor
+            if isinstance(resolved_version, Version)
+            else int(resolved_version.lstrip("v"))
+        )
+
     def upload_products(self, products: list[Path]) -> None:
         """
         Upload data products to the IMAP SDC.
@@ -540,7 +567,8 @@ class ProcessInstrument(ABC):
         3. Post-processing actions such as uploading files to the IMAP SDC.
         4. Final cleanup actions.
         """
-        logger.info(f"IMAP Processing Version: {imap_processing._version.__version__}")
+        imap_processing_version = imap_processing.__version__
+        logger.info(f"IMAP Processing Version: {imap_processing_version}")
         logger.info(f"Processing {self.__class__.__name__} level {self.data_level}")
         logger.info("Beginning preprocessing (download dependencies)")
         dependencies = self.pre_processing()
@@ -551,7 +579,7 @@ class ProcessInstrument(ABC):
         self.cleanup()
         logger.info("Processing complete")
         # Log version again for truncated or unusually large logs
-        logger.info(f"IMAP Processing Version: {imap_processing._version.__version__}")
+        logger.info(f"IMAP Processing Version: {imap_processing_version}")
 
     def pre_processing(self) -> ProcessingInputCollection:
         """
@@ -1322,14 +1350,59 @@ class Lo(ProcessInstrument):
 
         return at_pivot_angle
 
+    @staticmethod
+    def _pointings_in_esa_mode(
+        dependencies: ProcessingInputCollection,
+        map_esa_mode: int,
+        repointings: set[int] | None,
+    ) -> set[int]:
+        """
+        Find the pointings that were flown in the ESA mode of a map.
+
+        Parameters
+        ----------
+        dependencies : ProcessingInputCollection
+            Dependencies to process.
+        map_esa_mode : int
+            The ESA mode of the map being made, 0 for HiRes and 1 for HiThr.
+        repointings : set[int] | None
+            The repointings to consider, or None to consider every one.
+
+        Returns
+        -------
+        set[int]
+            The repointings flown in the map's ESA mode.
+        """
+        in_esa_mode = set()
+        for histrates_path in dependencies.get_file_paths(
+            source="lo", descriptor="histrates"
+        ):
+            repointing = imap_data_access.ScienceFilePath(
+                histrates_path.name
+            ).repointing
+            if repointings is not None and repointing not in repointings:
+                continue
+
+            esa_mode = lo_l2.get_esa_mode(load_cdf(histrates_path))
+            if esa_mode == map_esa_mode:
+                in_esa_mode.add(repointing)
+            else:
+                logger.info(
+                    f"Dropping repoint{repointing}, its ESA mode {esa_mode} is not "
+                    f"the ESA mode {map_esa_mode} of the map."
+                )
+
+        return in_esa_mode
+
     def pre_processing(self) -> ProcessingInputCollection:
         """
         Complete pre-processing.
 
         Extends the base pre-processing by dropping, for map products, the Lo
         science inputs of the pointings that were not taken at the pivot angle
-        of the map being made. A pointing is dropped whole: its goodtimes give
-        the pivot angle, and its other inputs go with them.
+        of the map being made, or not flown in its ESA mode. A pointing is
+        dropped whole: its goodtimes give the pivot angle and its histrates the
+        ESA mode, and its other inputs go with them.
 
         Filtering here, rather than during processing, keeps the `Parents`
         attribute of the produced map limited to the files it was made from.
@@ -1344,20 +1417,27 @@ class Lo(ProcessInstrument):
             return dependencies
 
         try:
-            map_pivot_angle = MapDescriptor.from_string(self.descriptor).sensor
+            map_descriptor = MapDescriptor.from_string(self.descriptor)
         except ValueError:
-            # Not a map product, so there is no pivot angle to select inputs with
+            # Not a map product, so there is nothing to select inputs with
             logger.info(
-                f"Not filtering inputs by pivot angle, {self.descriptor} is not a "
-                f"map descriptor."
+                f"Not filtering inputs by pivot angle or ESA mode, "
+                f"{self.descriptor} is not a map descriptor."
             )
             return dependencies
 
-        if not isinstance(map_pivot_angle, int):
-            # A map of no particular pivot angle, e.g. "ilo-ena-h-sf-nsp-ram-..."
-            return dependencies
+        # The repointings the map is made from, None while nothing has selected
+        # them.
+        kept: set[int] | None = None
+        # A map of no particular pivot angle, e.g. "ilo-ena-h-sf-nsp-...", is not
+        # filtered by one.
+        if isinstance(map_descriptor.sensor, int):
+            kept = self._pointings_at_pivot_angle(dependencies, map_descriptor.sensor)
 
-        at_pivot_angle = self._pointings_at_pivot_angle(dependencies, map_pivot_angle)
+        # Every Lo map is made in one ESA mode, combined maps included.
+        kept = self._pointings_in_esa_mode(
+            dependencies, LoConstants.ESA_MODES[map_descriptor.instrument], kept
+        )
 
         filtered_dependencies = ProcessingInputCollection()
         for processing_input in dependencies.get_processing_inputs():
@@ -1371,16 +1451,55 @@ class Lo(ProcessInstrument):
             kept_filenames = [
                 str(imap_file_path.filename)
                 for imap_file_path in processing_input.imap_file_paths
-                if imap_file_path.repointing in at_pivot_angle
+                if imap_file_path.repointing in kept
             ]
             if kept_filenames:
                 filtered_dependencies.add(type(processing_input)(*kept_filenames))
 
         return filtered_dependencies
 
+    def _generate_pivot_kernel(
+        self, dependencies: ProcessingInputCollection
+    ) -> list[Path]:
+        """
+        Generate the Lo pivot platform CK for the pointing given by repointing.
+
+        Parameters
+        ----------
+        dependencies : ProcessingInputCollection
+            Object containing dependencies to process.
+
+        Returns
+        -------
+        list[Path]
+            The generated Lo pivot kernel.
+        """
+        if self.repointing is None:
+            raise ValueError(
+                "repointing must be provided for pivot-ckernel processing."
+            )
+        nhk_files = dependencies.get_file_paths(
+            source="lo", data_type="l1b", descriptor="nhk"
+        )
+        if len(nhk_files) != 1:
+            raise ValueError(
+                f"Unexpected dependencies found for IMAP-Lo pivot-ckernel: "
+                f"{nhk_files}. Expected exactly one L1B NHK file."
+            )
+        # The repoint table provides the pointing start and end times.
+        if not dependencies.get_file_paths(data_type=RepointInput.data_type):
+            raise ValueError(
+                "A repoint table dependency is required for IMAP-Lo pivot-ckernel "
+                "processing."
+            )
+        minor_version = self._resolve_kernel_minor_version(self.descriptor)
+        return lo_pivot_kernel.generate_lo_pivot_kernel(
+            nhk_files[0], self.repointing, minor_version
+        )
+
     def do_processing(
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset]:
+    ) -> list[xr.Dataset | Path]:
         """
         Perform IMAP-Lo specific processing.
 
@@ -1391,12 +1510,15 @@ class Lo(ProcessInstrument):
 
         Returns
         -------
-        dataset : xr.Dataset
-            Xr.Dataset of output files.
+        datasets : list[xarray.Dataset | Path]
+            The list of processed products.
         """
         print(f"Processing IMAP-Lo {self.data_level}")
-        datasets: list[xr.Dataset] = []
-        if self.data_level == "l1a":
+        datasets: list[xr.Dataset | Path] = []
+        if self.data_level == "l1b" and self.descriptor == "pivot-ckernel":
+            datasets.extend(self._generate_pivot_kernel(dependencies))
+
+        elif self.data_level == "l1a":
             # L1A packet / products are 1 to 1. Should only have
             # one dependency file
             science_files = dependencies.get_file_paths(source="lo", data_type="l0")
@@ -1799,12 +1921,17 @@ class Spacecraft(ProcessInstrument):
             datasets = list(quaternions.process_quaternions(input_files[0]))
             processed_dataset.extend(datasets)
         elif self.descriptor == "pointing-attitude":
+            if self.start_date is None:
+                raise ValueError(
+                    "start_date must be provided for pointing-attitude processing."
+                )
             spice_inputs = dependencies.get_file_paths(
                 data_type=SPICESource.SPICE.value
             )
             ah_paths = [path for path in spice_inputs if ".ah" in path.suffixes]
+            minor_version = self._resolve_kernel_minor_version(self.descriptor)
             pointing_kernel_paths = pointing_frame.generate_pointing_attitude_kernel(
-                ah_paths
+                ah_paths, self.start_date, minor_version
             )
             processed_dataset.extend(pointing_kernel_paths)
         else:
@@ -2002,6 +2129,10 @@ class Ultra(ProcessInstrument):
                 )
             datasets = ultra_l1a.ultra_l1a(science_files[0], create_derived_l1b=True)
         elif self.data_level == "l1b":
+            if self.repointing is None:
+                raise ValueError(
+                    "Repointing must be provided for ULTRA L1b processing."
+                )
             science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
             l1a_dict = {
                 dataset.attrs["Logical_source"]: dataset
@@ -2017,7 +2148,7 @@ class Ultra(ProcessInstrument):
             ancillary_files = {}
             for path in anc_paths:
                 ancillary_files[path.stem.split("_")[2]] = path
-            datasets = ultra_l1b.ultra_l1b(combined, ancillary_files)
+            datasets = ultra_l1b.ultra_l1b(combined, ancillary_files, self.repointing)
         elif self.data_level == "l1c":
             science_files = dependencies.get_file_paths(source="ultra", data_type="l1a")
             l1a_dict = {

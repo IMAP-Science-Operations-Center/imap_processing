@@ -101,6 +101,11 @@ def lo_l2(
     pointing it is given. Each pointing is projected from the pivot angle its
     own goodtimes report.
 
+    A map is likewise made in the ESA mode its descriptor names, HiRes for an
+    "l" map such as "l090" and HiThr for a "t" map such as "t090", and its
+    inputs are filtered down to the pointings flown in that mode in the same
+    pre-processing step. A combined map is made in HiRes.
+
     Parameters
     ----------
     sci_dependencies : dict[int, dict[str, xr.Dataset]]
@@ -156,7 +161,11 @@ def lo_l2(
         raise NotImplementedError("HEALPix map output not supported for Lo")
 
     pointings = _complete_pointings(sci_dependencies)
-    logger.info(f"Building {descriptor} from {len(pointings)} pointings")
+
+    esa_mode = c.ESA_MODES[map_descriptor.instrument]
+    logger.info(
+        f"Building {descriptor} from {len(pointings)} pointings in ESA mode {esa_mode}"
+    )
 
     # The mask is tuned per pivot angle, which a combined map takes from the
     # pointings themselves. Resolved before anything is accumulated, so that a
@@ -167,9 +176,6 @@ def lo_l2(
         else None
     )
 
-    # Every pointing of a map is taken in the same ESA mode, so the last one
-    # sets the energy response the whole map is binned in.
-    esa_mode = _get_esa_mode(pointings[max(pointings)][2]) if pointings else 0
     calibration = _esa_calibration(map_descriptor.species, esa_mode)
 
     # The species sputtering into this map, if it is to be sputter corrected,
@@ -705,7 +711,7 @@ def _complete_pointings(
     return pointings
 
 
-def _get_esa_mode(histrates: xr.Dataset) -> int:
+def get_esa_mode(histrates: xr.Dataset) -> int:
     """
     Read the ESA mode of a pointing, defaulting to HiRes.
 

@@ -23,7 +23,7 @@ Version and Date
 
    \begindata
 
-      TEXT_KERNEL_ID = 'IMAP_DYNAMIC_FRAMES V0.0.1 2025-JUNE-26 FK'
+      TEXT_KERNEL_ID = 'IMAP_DYNAMIC_FRAMES V1.3.0 2026-SEPT-2 FK'
 
    \begintext
 
@@ -32,6 +32,7 @@ Version and Date
    Version 1.0.0 -- July   8, 2025 -- Nick and Doug (JHU/APL)
    Version 1.1.0 -- Nov   19, 2025 -- Nick and Doug (JHU/APL)
    Version 1.2.0 -- Feb.  24, 2026 -- Nick and Doug (JHU/APL)
+   Version 1.3.0 -- Sept.  2, 2026 -- Lillian Nguyen and Brent Duffy (JHU/APL)
 
 
 References
@@ -153,6 +154,8 @@ IMAP Science Frames
       IMAP_GSE                  J2000              DYNAMIC     -43916
       IMAP_GSM                  J2000              DYNAMIC     -43917
       IMAP_SMD                  J2000              DYNAMIC     -43918
+      IMAP_ECLIPMOD             ECLIPJ2000         DYNAMIC     -43950
+      IMAP_EQUAMOD              J2000              DYNAMIC     -43951
 
       Sun Based Frames:
       ----------------------
@@ -327,7 +330,77 @@ Earth Based Frames
       FRAME_-43911_ROTATION_STATE = 'ROTATING'
 
    \begintext
+   
+   
+   Mean Ecliptic and Equinox of Date (ECLIPMOD) Frame
+   ---------------------------------------------------------------------
 
+      The ECLIPMOD frame is a dynamic reference frame representing the
+      Earth's mean ecliptic and mean equinox of date.
+
+      The frame is constructed by applying the IAU 1976 precession model
+      together with the IAU 1980 mean obliquity model to the built-in
+      SPICE ECLIPJ2000 frame.
+
+      The X axis points toward the first point in Aries (the mean
+      equinox) of the specified date. The Z axis is normal to the
+      Earth's mean ecliptic of the specified date. The Y axis is the
+      cross product of the Z and X axes, completing the right-handed
+      reference frame.
+
+      The frame orientation varies with epoch to follow the long-term
+      precession of the Earth's equator and ecliptic.
+   
+   \begindata
+
+	  FRAME_IMAP_ECLIPMOD         = -43950
+	  FRAME_-43950_NAME           = 'IMAP_ECLIPMOD'
+	  FRAME_-43950_CLASS          = 5
+	  FRAME_-43950_CLASS_ID       = -43950   
+	  FRAME_-43950_CENTER         = 399
+	  FRAME_-43950_RELATIVE       = 'ECLIPJ2000'
+	  FRAME_-43950_DEF_STYLE      = 'PARAMETERIZED'
+	  FRAME_-43950_FAMILY         = 'MEAN_ECLIPTIC_AND_EQUINOX_OF_DATE'
+	  FRAME_-43950_PREC_MODEL     = 'EARTH_IAU_1976'
+	  FRAME_-43950_OBLIQ_MODEL    = 'EARTH_IAU_1980'
+	  FRAME_-43950_ROTATION_STATE = 'INERTIAL'
+
+   \begintext
+   
+   
+   Mean Equator and Equinox of Date (EQUAMOD) Frame
+   ---------------------------------------------------------------------
+
+      The EQUAMOD frame is a dynamic reference frame representing the
+      Earth's mean equator and mean equinox of date.
+
+      The frame is constructed by applying the IAU 1976 precession model
+      to the built-in SPICE J2000 frame.
+
+      The X axis points toward the first point in Aries (the mean
+      equinox) of the specified date. The Z axis points along the
+      Earth's mean north pole of the specified date. The Y axis is the
+      cross product of the Z and X axes, completing the right-handed
+      reference frame.
+
+      The frame orientation varies with epoch to follow the long-term
+      precession of the Earth's equator.
+
+   \begindata
+
+	  FRAME_IMAP_EQUAMOD          = -43951
+	  FRAME_-43951_NAME           = 'IMAP_EQUAMOD'
+	  FRAME_-43951_CLASS          = 5
+	  FRAME_-43951_CLASS_ID       = -43951   
+	  FRAME_-43951_CENTER         = 399
+	  FRAME_-43951_RELATIVE       = 'J2000'
+	  FRAME_-43951_DEF_STYLE      = 'PARAMETERIZED'
+	  FRAME_-43951_FAMILY         = 'MEAN_EQUATOR_AND_EQUINOX_OF_DATE'
+	  FRAME_-43951_PREC_MODEL     = 'EARTH_IAU_1976'
+	  FRAME_-43951_ROTATION_STATE = 'INERTIAL'
+
+   \begintext
+   
 
    Mission Design Inertial (MDI) Frame ([3])
    ---------------------------------------------------------------------

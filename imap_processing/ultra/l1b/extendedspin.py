@@ -5,6 +5,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from imap_processing.ultra.constants import UltraConstants
+from imap_processing.ultra.l1b.lookup_utils import ExtendedSpinConfig
 from imap_processing.ultra.l1b.ultra_l1b_culling import (
     count_rejected_events_per_spin,
     expand_bin_flags_to_spins,
@@ -22,17 +23,16 @@ from imap_processing.ultra.l1b.ultra_l1b_culling import (
     get_energy_histogram,
     get_energy_range_flags,
     get_pulses_per_spin,
+    get_valid_de_count_summary,
 )
 from imap_processing.ultra.l1c.l1c_lookup_utils import build_energy_bins
 from imap_processing.ultra.utils.ultra_l1_utils import create_dataset
 
-FILLVAL_UINT16 = 65535
-FILLVAL_FLOAT32 = -1.0e31
-
 
 def calculate_extendedspin(
     dict_datasets: dict[str, xr.Dataset],
-    de_dataset: xr.Dataset,
+    de_datasets: dict[str, xr.Dataset],
+    extendedspin_conf: ExtendedSpinConfig,
     name: str,
     instrument_id: int,
 ) -> xr.Dataset:
@@ -43,8 +43,11 @@ def calculate_extendedspin(
     ----------
     dict_datasets : dict
         Dictionary containing all the datasets.
-    de_dataset : xarray.Dataset
-        Dataset containing the direct event data.
+    de_datasets : dict[str, xarray.Dataset]
+        Dictionary of direct event datasets keyed by priority, e.g. "p0" for raw
+        de and "p1" for priority 1 de.
+    extendedspin_conf : ExtendedSpinConfig
+        Configurations for culling spins.
     name : str
         Name of the dataset.
     instrument_id : int
@@ -58,26 +61,44 @@ def calculate_extendedspin(
     aux_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-aux"]
     rates_dataset = dict_datasets[f"imap_ultra_l1a_{instrument_id}sensor-rates"]
     status_dataset = dict_datasets[f"imap_ultra_l1b_{instrument_id}sensor-status"]
+    # Use the priority 1 de for the spin level quantities since it contains all events.
+    # The energy dependent culling selects its de dataset per energy range.
+    priority_1_de_dataset = de_datasets["p1"]
+
+    # Events with no aux data coverage (AUXOUTLIER, flagged in de.py) have a
+    # fill-valued "spin" that isn't a real spin number and must be excluded
+    # from per-spin binning to avoid using an invalid spin.
+    has_spin_mask = (
+        priority_1_de_dataset["spin"].values != UltraConstants.FILLVAL_UINT32
+    )
+    spin_number = priority_1_de_dataset["spin"].values[has_spin_mask]
+    de_energy = priority_1_de_dataset["energy"].values[has_spin_mask]
+
+    # check if there are no valid spins.
+    if spin_number.size == 0:
+        raise ValueError(
+            "All Spins are invalid. Please ensure that the l1a aux dataset "
+            "has the correct spin information."
+        )
 
     extendedspin_dict = {}
     rates_qf, spin, energy_bin_geometric_mean, n_sigma_per_energy = flag_rates(
-        de_dataset["spin"].values,
-        de_dataset["energy"].values,
+        spin_number,
+        de_energy,
     )
-    count_rates, _, _counts, _ = get_energy_histogram(
-        de_dataset["spin"].values, de_dataset["energy"].values
-    )
+    count_rates, _, _counts, _ = get_energy_histogram(spin_number, de_energy)
     attitude_qf, spin_rates, spin_period, spin_starttime = flag_attitude(
-        de_dataset["spin"].values, aux_dataset
+        spin_number, aux_dataset
     )
     # TODO: We will add to this later
-    hk_qf = flag_hk(de_dataset["spin"].values)
-    inst_qf = flag_imap_instruments(de_dataset["spin"].values)
+    hk_qf = flag_hk(spin_number)
+    inst_qf = flag_imap_instruments(spin_number)
 
     spin_bin_size = UltraConstants.SPIN_BIN_SIZE
     spin_tbin_edges = get_binned_spins_edges(
         spin, spin_period, spin_starttime, spin_bin_size
     )
+
     # Calculate goodtime quality flags.
     # The culling algorithms should be called in the following order
     # 1. Low voltage
@@ -86,21 +107,31 @@ def calculate_extendedspin(
     # 4. Upstream ion (with second set of energy channels)
     # 5. Spectral cull
     # 6. Statistical outliers (energy dependent)
-    voltage_qf = flag_low_voltage(spin_tbin_edges, status_dataset)
+
+    voltage_qf = flag_low_voltage(
+        spin_tbin_edges, status_dataset, extendedspin_conf.voltage_threshold
+    )
     # Get energy bins used at l1c
     intervals, _, _ = build_energy_bins()
     # Get the energy ranges
     energy_ranges = get_binned_energy_ranges(intervals)
     energy_bin_flags = get_energy_range_flags(energy_ranges)
-    # Calculate the high energy quality flags
-    energy_thresholds = UltraConstants.HIGH_ENERGY_CULL_THRESHOLDS
+    # Get valid event counts per energy range and spin bin, shared across all of
+    # the culling steps below.
+    de_counts_summary = get_valid_de_count_summary(
+        de_datasets,
+        energy_ranges,
+        spin_tbin_edges,
+        extendedspin_conf,
+        instrument_id,
+    )
+
     high_energy_qf = flag_high_energy(
-        de_dataset,
+        de_counts_summary,
         spin_tbin_edges,
         energy_ranges,
+        extendedspin_conf.energy_thresholds,
         voltage_qf,
-        energy_thresholds,
-        instrument_id,
     )
     # For the following culls, mask the spins that have already been flagged for
     # low voltage
@@ -108,37 +139,27 @@ def calculate_extendedspin(
         voltage_qf[np.newaxis, :], len(energy_ranges) - 1, axis=0
     )  # Shape (n_energy_bins, n_spins_bins)
     upstream_ion_qf_1 = flag_upstream_ion(
-        de_dataset,
-        spin_tbin_edges,
+        de_counts_summary,
         energy_ranges,
         mask,
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_1,
-        instrument_id,
     )
     upstream_ion_qf_2 = flag_upstream_ion(
-        de_dataset,
-        spin_tbin_edges,
+        de_counts_summary,
         energy_ranges,
         mask,
         UltraConstants.UPSTREAM_ION_ENERGY_CHANNELS_2,
-        instrument_id,
     )
     spectral_qf = flag_spectral_events(
-        de_dataset,
-        spin_tbin_edges,
+        de_counts_summary,
         energy_ranges,
         UltraConstants.SPECTRAL_ENERGY_CHANNELS,
-        instrument_id,
     )
     # Update mask to include high energy,  upstream ion flags and spectral flags
     # before flagging statistical outliers
     mask = mask | upstream_ion_qf_1 | upstream_ion_qf_2 | spectral_qf | high_energy_qf
     stat_outliers_qf, _, _, _ = flag_statistical_outliers(
-        de_dataset,
-        spin_tbin_edges,
-        energy_ranges,
-        mask,
-        instrument_id,
+        de_counts_summary, spin_tbin_edges, energy_ranges, mask
     )
     # Get the number of pulses per spin.
     pulses = get_pulses_per_spin(aux_dataset, rates_dataset)
@@ -146,9 +167,9 @@ def calculate_extendedspin(
     # Track rejected events in each spin based on
     # quality flags in de l1b data.
     rejected_counts = count_rejected_events_per_spin(
-        de_dataset["spin"].values,
-        de_dataset["quality_scattering"].values,
-        de_dataset["quality_outliers"].values,
+        spin_number,
+        priority_1_de_dataset["quality_scattering"].values[has_spin_mask],
+        priority_1_de_dataset["quality_outliers"].values[has_spin_mask],
     )
 
     # These will be the coordinates.
@@ -167,9 +188,15 @@ def calculate_extendedspin(
     # Validate that the spin values match
     valid = (idx < pulses.unique_spins.size) & (pulses.unique_spins[idx] == spin)
 
-    start_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
-    stop_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
-    coin_per_spin: np.ndarray = np.full(len(spin), FILLVAL_FLOAT32, dtype=np.float32)
+    start_per_spin: np.ndarray = np.full(
+        len(spin), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    stop_per_spin: np.ndarray = np.full(
+        len(spin), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
+    coin_per_spin: np.ndarray = np.full(
+        len(spin), UltraConstants.FILLVAL_FLOAT, dtype=np.float32
+    )
 
     # Fill only the valid ones
     start_per_spin[valid] = pulses.start_per_spin[idx[valid]]
@@ -243,7 +270,9 @@ def calculate_extendedspin(
     # energy ranges. Set the length to be the max number of energy bins we expect to
     # use for culling. The number of edges is one more than the number of bins (17).
     ranges: np.ndarray = np.full(
-        (UltraConstants.MAX_ENERGY_RANGE_EDGES,), FILLVAL_FLOAT32, dtype=np.float32
+        (UltraConstants.MAX_ENERGY_RANGE_EDGES,),
+        UltraConstants.FILLVAL_FLOAT,
+        dtype=np.float32,
     )
     ranges[: len(energy_ranges)] = energy_ranges
     extendedspin_dict["energy_range_edges"] = ranges

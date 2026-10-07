@@ -1,3 +1,4 @@
+import datetime
 from unittest import mock
 
 import numpy as np
@@ -7,6 +8,7 @@ import pytest
 from imap_processing import imap_module_directory
 from imap_processing.quality_flags import ImapDEOutliersUltraFlags
 from imap_processing.ultra.l1b.lookup_utils import (
+    ExtendedSpinConfig,
     get_angular_profiles,
     get_back_position,
     get_de_product_name,
@@ -222,8 +224,8 @@ def test_get_scattering_thresholds(ancillary_files):
 def test_get_de_product_name_no_repoint():
     """Tests function get_de_product_name when the lookup is missing the repoint."""
     ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+        "l1c-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
     }
     with mock.patch(
         "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
@@ -239,14 +241,14 @@ def test_get_de_product_name_no_repoint():
             }
         )
         with pytest.raises(ValueError, match="No DE product found for repoint ID 0"):
-            get_de_product_name("repoint00000", 45, "l1b", ancillary_files)
+            get_de_product_name("repoint00000", 45, ancillary_files)
 
 
 def test_get_de_product_name_multiple_products():
     """Tests function get_de_product_name when the lookup is ambiguous."""
     ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+        "l1c-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
     }
     with mock.patch(
         "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
@@ -262,14 +264,14 @@ def test_get_de_product_name_multiple_products():
             }
         )
         with pytest.raises(ValueError, match="Multiple DE products found"):
-            get_de_product_name("repoint00002", 45, "l1b", ancillary_files)
+            get_de_product_name("repoint00002", 45, ancillary_files)
 
 
 def test_get_de_product_name():
     """Tests function get_de_product_name."""
     ancillary_files = {
-        "l1b-45sensor-de-product-lookup": TEST_PATH
-        / "imap_ultra_l1b-45sensor-de-product-lookup_20251001_v001.csv"
+        "l1c-45sensor-de-product-lookup": TEST_PATH
+        / "imap_ultra_l1c-45sensor-culling-config_20251001_v001.csv"
     }
     with mock.patch(
         "imap_processing.ultra.l1b.lookup_utils.pd.read_csv"
@@ -288,9 +290,41 @@ def test_get_de_product_name():
         # Test with a repoint in the future. Should return the priority 2 de product
         # since the last repoint range does not have an end and should be assumed to
         # cover all future repoints.
-        de_product = get_de_product_name("repoint00100", 45, "l1b", ancillary_files)
+        de_product = get_de_product_name("repoint00100", 45, ancillary_files)
         assert de_product == "imap_ultra_l1b_45sensor-priority-2-de"
 
         # Test with valid repoint that falls in the second range.
-        de_product = get_de_product_name("repoint00003", 45, "l1b", ancillary_files)
+        de_product = get_de_product_name("repoint00003", 45, ancillary_files)
         assert de_product == "imap_ultra_l1b_45sensor-priority-1-de"
+
+
+def test_extended_config_class():
+    """Tests the ExtendedSpinConfig class."""
+    config_path = (
+        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
+    )
+    config = ExtendedSpinConfig.from_csv(config_path, "repoint00128")
+
+    assert config.priority == "p0"
+    assert config.calibration == "c0"
+    np.testing.assert_array_equal(
+        config.energy_thresholds, np.array([200, 7.5, 4.5, 3.5, 3.5, 3.5])
+    )
+    assert config.date == datetime.datetime(2025, 11, 10)
+    assert config.voltage_threshold == 3400
+
+
+def test_extended_config_class_last_repoint_range():
+    """Tests the ExtendedSpinConfig class."""
+    config_path = (
+        TEST_PATH / "imap_ultra_l1b-45sensor-extendedspin-config_20251001_v001.csv"
+    )
+    config = ExtendedSpinConfig.from_csv(config_path, "repoint00383")
+
+    assert config.priority == "p1"
+    assert config.calibration == "c4"
+    np.testing.assert_array_equal(
+        config.energy_thresholds, np.array([117.5, 73.5, 2.5, 26.5, 8.5, 8.5])
+    )
+    assert config.date == datetime.datetime(2026, 8, 11)
+    assert config.voltage_threshold == 2900

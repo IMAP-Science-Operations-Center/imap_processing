@@ -88,7 +88,7 @@ class ConversionFactors(float, Enum):
 
 
 # Constants for the ion-grid V(R) relation, where R is the ion-grid to target
-# charge ratio and velocity is returned in km/s.
+# charge ratio expressed in percent and velocity is returned in km/s.
 ION_GRID_VELOCITY_SCALE = 55.0
 ION_GRID_VELOCITY_EXPONENT = -3.2
 ION_GRID_VELOCITY_OFFSET = 1.5

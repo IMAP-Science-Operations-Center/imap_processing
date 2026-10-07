@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import ClassVar, NamedTuple
 
+from imap_processing.ena_maps.utils.naming import MappableInstrumentShortName
+
 
 class PivotAngleSpec(NamedTuple):
     """
@@ -129,6 +131,18 @@ class LoConstants:
         135: PivotAngleSpec(6, 135.0, 130.0, 140.0, None, None),
         148: PivotAngleSpec(7, 148.0, 143.0, 153.0, None, None),
         160: PivotAngleSpec(8, 160.0, 155.0, 165.0, None, None),
+    }
+
+    # The ESA mode codes, keyed by the name the sweep table gives each mode.
+    ESA_MODE_CODES: ClassVar[dict[str, int]] = {"HiRes": 0, "HiThr": 1}
+
+    # The ESA mode a map is made in, as its instrument descriptor names it:
+    # HiRes for an "l" map such as "l090", and HiThr for a "t" map such as
+    # "t090". A combined "ilo" map names no ESA mode, and is made in HiRes.
+    ESA_MODES: ClassVar[dict[MappableInstrumentShortName, int]] = {
+        MappableInstrumentShortName.LO: ESA_MODE_CODES["HiRes"],
+        MappableInstrumentShortName.LO_HI_RES: ESA_MODE_CODES["HiRes"],
+        MappableInstrumentShortName.LO_HI_THROUGHPUT: ESA_MODE_CODES["HiThr"],
     }
 
     # Default background-rate thresholds [counts/s] when the pivot angle matches no

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import spiceypy
-from imap_data_access import SPICEFilePath
+from imap_data_access.file_validation import Version
 from numpy.typing import NDArray
 
 from imap_processing.spice import IMAP_SC_ID
@@ -19,6 +19,7 @@ from imap_processing.spice.time import (
     et_to_utc,
     met_to_sclkticks,
     sct_to_et,
+    str_to_et,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,9 @@ POINTING_SEGMENT_DTYPE: np.dtype = np.dtype(
 )
 
 
-def generate_pointing_attitude_kernel(imap_attitude_cks: list[Path]) -> list[Path]:
+def generate_pointing_attitude_kernel(
+    imap_attitude_cks: list[Path], start_date: str, minor_version: int
+) -> list[Path]:
     """
     Generate pointing attitude kernel from input IMAP CK kernel.
 
@@ -44,37 +47,72 @@ def generate_pointing_attitude_kernel(imap_attitude_cks: list[Path]) -> list[Pat
     imap_attitude_cks : list[Path]
         List of the IMAP attitude kernels from which to generate pointing
         attitude.
+    start_date : str
+        Earliest date, in YYYYMMDD format, to cover with the pointing
+        attitude kernel. Only pointings fully covered by the input CKs
+        that start on or after this date are included.
+    minor_version : int
+        Minor version, from the batch command, to use for the output
+        pointing attitude kernel filename.
 
     Returns
     -------
     pointing_kernel_path : list[Path]
         Location of the new pointing kernels.
     """
-    pointing_segments = calculate_pointing_attitude_segments(imap_attitude_cks)
+    pointing_segments = calculate_pointing_attitude_segments(
+        imap_attitude_cks, start_date
+    )
     if len(pointing_segments) == 0:
         raise ValueError("No Pointings covered by input dependencies.")
 
-    # get the start and end yyyy_doy strings
-    start_datetime = spiceypy.et2datetime(
-        sct_to_et(pointing_segments[0]["start_sclk_ticks"])
-    )
-    end_datetime = spiceypy.et2datetime(
-        sct_to_et(pointing_segments[-1]["end_sclk_ticks"])
-    )
-    # Use the last ck from sorted list to get the version number. I
-    # don't think this will be anything but 1.
     sorted_ck_paths = list(sorted(imap_attitude_cks, key=lambda x: x.name))
-    spice_file = SPICEFilePath(sorted_ck_paths[-1].name)
-    pointing_kernel_path = (
-        sorted_ck_paths[-1].parent / f"imap_dps_"
-        f"{start_datetime.strftime('%Y_%j')}_"
-        f"{end_datetime.strftime('%Y_%j')}_"
-        f"{spice_file.spice_metadata['version']}.ah.bc"
+    pointing_kernel_path = sorted_ck_paths[-1].parent / segment_ck_filename(
+        "imap_dps", pointing_segments, minor_version, "ah.bc"
     )
     write_pointing_frame_ck(
         pointing_kernel_path, pointing_segments, [p.name for p in imap_attitude_cks]
     )
     return [pointing_kernel_path]
+
+
+def segment_ck_filename(
+    prefix: str, segment_data: np.ndarray, minor_version: int, extension: str
+) -> str:
+    """
+    Build a CK filename from the time coverage of its segments.
+
+    The filename has the form ``<prefix>_<YYYY_DOY>_<YYYY_DOY>_<NNN>.<extension>``
+    where the dates are the start of the first segment and the end of the
+    last segment.
+
+    Parameters
+    ----------
+    prefix : str
+        Leading portion of the filename, e.g. "imap_dps".
+    segment_data : np.ndarray
+        Numpy structured array of POINTING_SEGMENT_DTYPE, sorted by time.
+    minor_version : int
+        Minor version to use in the filename.
+    extension : str
+        Filename extension without the leading ".", e.g. "ah.bc".
+
+    Returns
+    -------
+    filename : str
+        The CK filename.
+    """
+    start_datetime = spiceypy.et2datetime(
+        sct_to_et(segment_data[0]["start_sclk_ticks"])
+    )
+    end_datetime = spiceypy.et2datetime(sct_to_et(segment_data[-1]["end_sclk_ticks"]))
+    version_str = str(Version(None, minor_version)).lstrip("v")
+    return (
+        f"{prefix}_"
+        f"{start_datetime.strftime('%Y_%j')}_"
+        f"{end_datetime.strftime('%Y_%j')}_"
+        f"{version_str}.{extension}"
+    )
 
 
 @contextmanager
@@ -99,7 +137,10 @@ def open_spice_ck_file(pointing_frame_path: Path) -> Generator[int, None, None]:
     try:
         yield handle
     finally:
-        spiceypy.ckcls(handle)
+        # dafcls rather than ckcls: ckcls also raises SPICE(NOSEGMENTSFOUND)
+        # when no segment was written, which would leave the file open and
+        # replace the original error.
+        spiceypy.dafcls(handle)
 
 
 def write_pointing_frame_ck(
@@ -132,8 +173,54 @@ def write_pointing_frame_ck(
     ]
 
     logger.debug(f"Writing pointing attitude kernel: {pointing_kernel_path}")
+    write_constant_attitude_ck(
+        pointing_kernel_path,
+        segment_data,
+        SpiceFrame.IMAP_DPS,
+        SpiceFrame.ECLIPJ2000,
+        comments,
+    )
+    logger.debug(f"Finished writing pointing attitude kernel: {pointing_kernel_path}")
 
-    with open_spice_ck_file(pointing_kernel_path) as handle:
+
+def write_constant_attitude_ck(
+    kernel_path: Path,
+    segment_data: np.ndarray,
+    frame: SpiceFrame,
+    reference_frame: SpiceFrame,
+    comments: list[str],
+) -> None:
+    """
+    Write a CK with a single constant attitude record per segment.
+
+    Parameters
+    ----------
+    kernel_path : pathlib.Path
+        Location to write the CK kernel.
+    segment_data : np.ndarray
+        Numpy structured array with the following dtypes:
+            ("start_sclk_ticks", np.float64),
+            ("end_sclk_ticks", np.float64),
+            ("quaternion", np.float64, (4,)),
+            ("pointing_id", np.uint32),
+    frame : SpiceFrame
+        Frame whose orientation the CK defines. Also used as the segment
+        identifier.
+    reference_frame : SpiceFrame
+        Frame the orientation is relative to. The quaternion in each segment
+        rotates vectors from this frame into `frame`.
+    comments : list[str]
+        Lines to write to the comment area of the CK.
+
+    Raises
+    ------
+    ValueError
+        If `segment_data` is empty.
+    """
+    if len(segment_data) == 0:
+        raise ValueError(f"No segments to write to {kernel_path.name}.")
+
+    with open_spice_ck_file(kernel_path) as handle:
         # Write the comments to the file
         spiceypy.dafac(handle, comments)
 
@@ -147,12 +234,12 @@ def write_pointing_frame_ck(
                 segment["start_sclk_ticks"],
                 # End time of the segment.
                 segment["end_sclk_ticks"],
-                # Pointing frame ID.
-                SpiceFrame.IMAP_DPS.value,
+                # Frame ID.
+                frame.value,
                 # Reference frame.
-                SpiceFrame.ECLIPJ2000.name,  # Reference frame
+                reference_frame.name,
                 # Identifier.
-                SpiceFrame.IMAP_DPS.name,
+                frame.name,
                 # Number of pointing intervals.
                 1,
                 # Start times of individual pointing records within segment.
@@ -161,21 +248,20 @@ def write_pointing_frame_ck(
                 # End times of individual pointing records within segment.
                 # Since there is only a single record this is equal to sclk_endtim.
                 np.array([segment["end_sclk_ticks"]]),  # Single stop time
-                # Average quaternion.
+                # Constant quaternion for the segment.
                 segment["quaternion"],
-                # Angular velocity vectors. The IMAP_DPS frame is quasi-inertial
-                # for each pointing so each segment has zeros here.
+                # Angular velocity vectors. The attitude is constant over each
+                # segment so each segment has zeros here.
                 np.array([0.0, 0.0, 0.0]),
                 # The number of seconds per encoded spacecraft clock
                 # tick for each interval.
                 np.array([TICK_DURATION]),
             )
 
-    logger.debug(f"Finished writing pointing attitude kernel: {pointing_kernel_path}")
-
 
 def calculate_pointing_attitude_segments(
     ck_paths: list[Path],
+    start_date: str,
 ) -> NDArray:
     """
     Calculate the data for each segment of the DPS_FRAME attitude kernel.
@@ -191,6 +277,10 @@ def calculate_pointing_attitude_segments(
     ----------
     ck_paths : list[pathlib.Path]
         List of CK kernels to use to generate the pointing attitude kernel.
+    start_date : str
+        Earliest date, in YYYYMMDD format, to cover with the pointing
+        attitude kernel. Used as the lower bound when selecting pointings
+        that are fully covered by the input CKs.
 
     Returns
     -------
@@ -221,7 +311,7 @@ def calculate_pointing_attitude_segments(
     # to cover the time range of the new repoint table.
     # Get the coverage of the CK files storing the earliest start time and
     # latest end time.
-    et_start = np.inf
+    ck_start = np.inf
     et_end = -np.inf
     for ck_path in ck_paths:
         ck_cover = spiceypy.ckcov(
@@ -234,12 +324,23 @@ def calculate_pointing_attitude_segments(
             f"{ck_path.name} covers time range: ({et_to_utc(individual_ck_start)}, "
             f"{et_to_utc(individual_ck_end)}) in {num_intervals} intervals."
         )
-        et_start = min(et_start, individual_ck_start)
+        ck_start = min(ck_start, individual_ck_start)
         et_end = max(et_end, individual_ck_end)
 
     logger.info(
         f"CK kernels combined coverage range: "
-        f"{(et_to_utc(et_start), et_to_utc(et_end))}, "
+        f"{(et_to_utc(ck_start), et_to_utc(et_end))}, "
+    )
+
+    # The batch command's start_date limits (narrows) the coverage of the
+    # produced pointing attitude kernel. It is floored at the CK files'
+    # own coverage start so that a pointing is only ever selected if it is
+    # actually, fully covered by the input CKs.
+    requested_start_et = str_to_et(datetime.strptime(start_date, "%Y%m%d").isoformat())
+    et_start = max(requested_start_et, ck_start)
+    logger.info(
+        f"Using coverage start date: {et_to_utc(et_start)} "
+        f"(requested start_date: {et_to_utc(requested_start_et)})"
     )
 
     # Get data from the repoint table and convert to Pointings

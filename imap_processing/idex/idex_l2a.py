@@ -467,7 +467,9 @@ def calculate_ion_grid_velocity_and_mass(
     Target High is preferred when it is unsaturated. Target Low is used only
     when Target High is saturated or has no finite fitted charge. If both
     target channels are saturated, or Ion Grid is saturated, both estimates
-    are invalid.
+    are invalid. Fractional Ion Grid-to-target charge ratios outside the
+    inclusive range [0.01, 1.0] also invalidate both estimates. The velocity
+    calibration uses the charge ratio expressed as a percentage.
 
     Parameters
     ----------
@@ -502,9 +504,13 @@ def calculate_ion_grid_velocity_and_mass(
         return np.nan, np.nan
 
     charge_ratio = ion_grid_charge / target_charge
+    if not 0.01 <= charge_ratio <= 1.0:
+        return np.nan, np.nan
+
+    # The empirical velocity calibration expects percent, not a fractional ratio.
     velocity_estimate = (
         idex_constants.ION_GRID_VELOCITY_SCALE
-        * charge_ratio**idex_constants.ION_GRID_VELOCITY_EXPONENT
+        * (100.0 * charge_ratio) ** idex_constants.ION_GRID_VELOCITY_EXPONENT
         + idex_constants.ION_GRID_VELOCITY_OFFSET
     )
     mass_estimate = calculate_mass_from_velocity(
@@ -1166,9 +1172,13 @@ def fit_impact(
        Lunar Atmosphere and Dust Environment Explorer (LADEE) mission, Space Sci. Rev.,
        185(1–4), 93–113, doi:10.1007/s11214-014-0118-7.
     """
-    exponent_1 = 1.0 - np.exp(-(time - time_of_impact) / rise_time)
-    exponent_2 = np.exp(-(time - time_of_impact) / discharge_time)
-    return constant_offset + np.heaviside(time - time_of_impact, 0) * (
+    time_since_impact = time - time_of_impact
+    elapsed_time = np.maximum(time_since_impact, 0.0)
+
+    exponent_1 = 1.0 - np.exp(-elapsed_time / rise_time)
+    exponent_2 = np.exp(-elapsed_time / discharge_time)
+
+    return constant_offset + np.heaviside(time_since_impact, 0) * (
         amplitude * exponent_1 * exponent_2
     )
 

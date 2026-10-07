@@ -243,7 +243,7 @@ class MagL2L1dBase:
         )
 
         quality_flags = xr.DataArray(
-            self.quality_flags,
+            self.quality_flags.astype(np.uint8),
             name="quality_flags",
             dims=["epoch"],
             attrs=attribute_manager.get_variable_attributes("qf"),

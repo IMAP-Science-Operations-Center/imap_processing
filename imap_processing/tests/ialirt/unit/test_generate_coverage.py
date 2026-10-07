@@ -125,7 +125,8 @@ def test_dsn(furnish_kernels):
         )
 
         assert "I-ALiRT Coverage Summary" in output["summary"]
-        assert 40.6 == output["total_coverage_percent"]
+        # Mopra's fixed daily allocation now contributes to total coverage.
+        assert 56.6 == output["total_coverage_percent"]
 
 
 @patch("imap_processing.ialirt.generate_coverage.et_to_utc")
@@ -181,3 +182,40 @@ def test_create_schedule_mask(mock_et_to_utc):
     )
 
     np.testing.assert_array_equal(mask, expected)
+
+
+@pytest.mark.external_kernel
+def test_mopra_coverage(furnish_kernels):
+    """
+    Test that Mopra's fixed daily allocation (20:45-00:30 UTC) is applied.
+    """
+    kernels = ["naif0012.tls", "pck00011.tpc", "de440s.bsp", "imap_spk_demo.bsp"]
+
+    with furnish_kernels(kernels):
+        coverage_dict, _ = generate_coverage("2026-09-22T00:00:00Z")
+
+        mopra_times = coverage_dict["Mopra"]
+
+        assert "2026-09-22T20:45:00.000" in mopra_times
+        assert "2026-09-22T00:30:00.000" in mopra_times
+        assert "2026-09-22T12:00:00.000" not in mopra_times
+
+        # All times fall within 00:00-00:30 or 20:45-24:00 UTC.
+        # 7 morning samples + 39 evening samples at a 5 min step.
+        hhmm = [t[11:16] for t in mopra_times]
+        assert all(t <= "00:30" or t >= "20:45" for t in hhmm)
+        assert len(mopra_times) == 46
+
+        # DSN contacts and Mopra outages block Mopra coverage.
+        dsn = {"DSS-34": [("2026-09-22T20:58:00Z", "2026-09-22T21:32:00Z")]}
+        outages = {"Mopra": [("2026-09-21T23:58:00Z", "2026-09-22T00:12:00Z")]}
+        coverage_dict, outage_dict = generate_coverage(
+            "2026-09-22T00:00:00Z", outages=outages, dsn=dsn
+        )
+
+    mopra_times = coverage_dict["Mopra"]
+    assert "2026-09-22T21:15:00.000" not in mopra_times
+    assert "2026-09-22T00:05:00.000" not in mopra_times
+    assert "2026-09-22T00:05:00.000" in outage_dict["Mopra"]
+    # 7 DSN samples (21:00-21:30) + 3 outage samples (00:00-00:10) removed.
+    assert len(mopra_times) == 46 - 7 - 3

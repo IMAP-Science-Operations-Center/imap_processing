@@ -141,7 +141,7 @@ def transform_instrument_vectors_to_inertial(
     spacecraft_frame: SpiceFrame = SpiceFrame.IMAP_SPACECRAFT,
 ) -> NDArray:
     """
-    Rotate instrument vectors into the inertial frame (ECLIPJ2000).
+    Rotate instrument vectors into the inertial frame (IMAP_ECLIPMOD).
 
     Parameters
     ----------
@@ -150,9 +150,11 @@ def transform_instrument_vectors_to_inertial(
     spin_phase : NDArray
         Spin phase angles (degrees), shape (N,).
     sc_inertial_right : NDArray
-        Right ascension of spacecraft spin axis (degrees), shape (N,).
+        Right ascension of spacecraft spin axis in IMAP_ECLIPMOD (degrees),
+        shape (N,).
     sc_inertial_decline : NDArray
-        Declination of spacecraft spin axis (degrees), shape (N,).
+        Declination of spacecraft spin axis in IMAP_ECLIPMOD (degrees),
+        shape (N,).
     instrument_frame : SpiceFrame, optional
         SPICE frame of the instrument.
     spacecraft_frame : SpiceFrame, optional
@@ -161,11 +163,11 @@ def transform_instrument_vectors_to_inertial(
     Returns
     -------
     vectors : NDArray
-        Transformed vectors in the inertial frame (ECLIPJ2000), shape (N, 3).
+        Transformed vectors in the inertial frame (IMAP_ECLIPMOD), shape (N, 3).
 
     Notes
     -----
-    Applies: instrument → spacecraft → spun spacecraft → inertial frame.
+    Applies: instrument → spacecraft → spun spacecraft → IMAP_ECLIPMOD.
     """
     # Compute inertial spin axis
     inertial_z_axis = get_z_axis(sc_inertial_right, sc_inertial_decline)
@@ -185,7 +187,7 @@ def transform_instrument_vectors_to_inertial(
     # Get static mount matrix
     mount_matrix = spice.pxform(instrument_frame.name, spacecraft_frame.name, 0.0)
 
-    # Compute total rotations
+    # Compute total rotations (instrument to IMAP_ECLIPMOD)
     total_rotations = compute_total_rotation(
         inertial_frames, spin_rotations, mount_matrix
     )

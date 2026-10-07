@@ -12,9 +12,14 @@ the CDF file format, and to interact with the SPICE toolkit.
 # packet definitions directory path.
 #
 # This directory is used by the imap_processing package to find the packet definitions.
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from imap_processing._version import __version__, __version_tuple__  # noqa: F401
+try:
+    __version__ = version("imap-processing")
+except PackageNotFoundError:
+    # Running from a source tree that was never installed
+    __version__ = "0.0.0"
 
 # Eg. imap_module_directory = /usr/local/lib/python3.11/site-packages/imap_processing
 imap_module_directory = Path(__file__).parent

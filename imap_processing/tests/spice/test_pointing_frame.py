@@ -20,6 +20,8 @@ from imap_processing.spice.pointing_frame import (
     _mean_spin_axis,
     calculate_pointing_attitude_segments,
     generate_pointing_attitude_kernel,
+    open_spice_ck_file,
+    write_constant_attitude_ck,
     write_pointing_frame_ck,
 )
 from imap_processing.spice.time import TICK_DURATION, met_to_sclkticks, sct_to_et
@@ -32,7 +34,7 @@ def furnish_pointing_frame_kernels(furnish_kernels, spice_test_data_path):
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_120.tf",
+        "imap_science_130.tf",
         "imap_sim_ck_2hr_2secsampling_with_nutation.bc",
     ]
     with furnish_kernels(required_kernels):
@@ -46,7 +48,7 @@ def furnish_flight_ah_kernels(furnish_kernels, spice_test_data_path):
         "naif0012.tls",
         "imap_sclk_0000.tsc",
         "imap_130.tf",
-        "imap_science_120.tf",
+        "imap_science_130.tf",
         "imap_2025_338_2025_339_001.ah.bc",
         "imap_2025_339_2025_339_001.ah.bc",
         "imap_2025_339_2025_340_001.ah.bc",
@@ -90,13 +92,14 @@ def test_generate_pointing_attitude_kernel(
     """Test coverage for generate_pointing_attitude_kernel function."""
     start_date = "2024_111"
     end_date = "2024_222"
-    version = "02"
+    version = "002"
     mock_et2datetime.side_effect = [
         datetime.strptime(date_str, "%Y_%j") for date_str in [start_date, end_date]
     ]
-    ck_path = Path(f"/bogus/file/path/imap_{start_date}_{end_date}_{version}.ah.bc")
-    pointing_ck_path = generate_pointing_attitude_kernel([ck_path])[0]
+    ck_path = Path(f"/bogus/file/path/imap_{start_date}_{end_date}_001.ah.bc")
+    pointing_ck_path = generate_pointing_attitude_kernel([ck_path], "20240420", 2)[0]
     assert pointing_ck_path.name == f"imap_dps_{start_date}_{end_date}_{version}.ah.bc"
+    mock_gen_attitude_segments.assert_called_once_with([ck_path], "20240420")
     # Verify that file is valid pointing_attitude kernel with imap-data-access
     spice_input = SPICEInput(pointing_ck_path.name)
     assert spice_input.source[0] == "pointing_attitude"
@@ -111,7 +114,7 @@ def test_generate_pointing_attitude_kernel_no_pointings(mock_gen_attitude_segmen
     """Test when no pointings are covered by the input CK."""
     ck_path = Path("/bogus/file/path/imap_2025_100_2025_101_001.ah.bc")
     with pytest.raises(ValueError, match="No Pointings covered"):
-        _ = generate_pointing_attitude_kernel([ck_path])[0]
+        _ = generate_pointing_attitude_kernel([ck_path], "20250101", 1)[0]
 
 
 @pytest.mark.parametrize(
@@ -184,6 +187,34 @@ def test_write_pointing_frame_ck(
     assert parent_file in lines[5]
 
 
+def test_open_spice_ck_file_error_closes_file(tmp_path):
+    """An error before any segment is written closes the CK and is re-raised.
+
+    ckcls would raise SPICE(NOSEGMENTSFOUND) here, leaving the file open and
+    replacing the original error.
+    """
+    ck_path = tmp_path / "empty.bc"
+    with pytest.raises(RuntimeError, match="original error"):
+        with open_spice_ck_file(ck_path) as handle:
+            raise RuntimeError("original error")
+    with pytest.raises(spiceypy.utils.exceptions.SpiceyError):
+        spiceypy.dafhsf(handle)
+
+
+def test_write_constant_attitude_ck_no_segments(tmp_path):
+    """No segments is an error, and no file is created."""
+    ck_path = tmp_path / "empty.bc"
+    with pytest.raises(ValueError, match="No segments to write"):
+        write_constant_attitude_ck(
+            ck_path,
+            np.zeros(0, dtype=POINTING_SEGMENT_DTYPE),
+            SpiceFrame.IMAP_DPS,
+            SpiceFrame.ECLIPJ2000,
+            ["comment"],
+        )
+    assert not ck_path.exists()
+
+
 @pytest.mark.external_test_data
 def test_mean_spin_axis(furnish_flight_ah_kernels):
     """Tests _mean_spin_axis function."""
@@ -252,6 +283,7 @@ def test_calculate_pointing_attitude_segments(
 
     segment_data = calculate_pointing_attitude_segments(
         [spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc"],
+        "20000101",
     )
 
     # Nick Dutton's MATLAB code result
@@ -306,6 +338,7 @@ def test_multiple_pointings(
 
     segment_data = calculate_pointing_attitude_segments(
         [spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc"],
+        "20000101",
     )
 
     # The way we defined the repoints, we expect two pointing segments
@@ -317,3 +350,34 @@ def test_multiple_pointings(
     np.testing.assert_allclose(
         segment_data["end_sclk_ticks"], repoint_start_met[2:4] / TICK_DURATION
     )
+
+
+def test_calculate_pointing_attitude_segments_start_date_narrows_coverage(
+    spice_test_data_path,
+    furnish_pointing_frame_kernels,
+    use_fake_repoint_data_for_time,
+):
+    """Tests that a start_date after the CK coverage excludes an otherwise
+    fully-covered pointing, confirming start_date can narrow coverage beyond
+    what the CK files themselves provide."""
+    # Same single-pointing setup as test_calculate_pointing_attitude_segments,
+    # which is fully covered by the CK.
+    ck_met_start, ck_met_end = get_ck_met_coverage(furnish_pointing_frame_kernels[-1])
+    use_fake_repoint_data_for_time(
+        np.array([ck_met_start - 10, ck_met_end - 1]),
+        np.array([ck_met_start + 1, ck_met_end + 10]),
+    )
+
+    # start_date is the calendar day after the CK's own coverage ends, so it
+    # should exclude the pointing even though the CK fully covers it.
+    ck_end_et = sct_to_et(ck_met_end / TICK_DURATION)
+    day_after_ck_end = spiceypy.et2utc(ck_end_et + 86400, "ISOC", 0)[:10].replace(
+        "-", ""
+    )
+
+    segment_data = calculate_pointing_attitude_segments(
+        [spice_test_data_path / "imap_sim_ck_2hr_2secsampling_with_nutation.bc"],
+        day_after_ck_end,
+    )
+
+    assert len(segment_data) == 0
