@@ -17,8 +17,6 @@ imap_idex_l1a_sci:
   Logical_source_description: IMAP Mission IDEX Instrument Level-1A 10-Day Data
   MODS:
     - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
-    - >-
       Major version 2, Sept. 14, 2026 - Adds event-classification flags identifying
       science, noise-capture, pulser, and candidate dust-impact events,
       together with saturation flags for all six waveform channels. The
@@ -32,8 +30,6 @@ imap_idex_l1a_msg-10days:
   Logical_source_description: IMAP Mission IDEX Instrument Level-1A Event Message Data
   MODS:
     - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
-    - >-
       Major version 2, Sept. 14, 2026 - No substantive schema or processing-algorithm
       changes. Reissued under Major Version 2 for consistency with the
       updated IDEX product series.
@@ -43,9 +39,6 @@ imap_idex_l1a_catlst-10days:
   Data_type: L1A_CATLST-10DAYS>Level-1A Packet Catalog Summary Data
   Logical_source: imap_idex_l1a_catlst-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-1A Packet Catalog Summary Data
-  MODS:
-    - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
 
 imap_idex_l1b_sci:
   <<: *instrument_base
@@ -54,14 +47,12 @@ imap_idex_l1b_sci:
   Logical_source_description: IMAP Mission IDEX Instrument Level-1B 10-Day Data
   MODS:
     - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
-    - >-
       Major version 2, Sept. 14, 2026 - Propagates the new event-classification and
       saturation flags, corrects the TOF waveform and trigger-level
       conversion to milliamperes, and reports spin phase in the IDEX
       instrument frame rather than the spacecraft frame.
     - >-
-      Major version 3, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      Major version 3, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
 
 imap_idex_l1b_msg-10days:
@@ -70,8 +61,6 @@ imap_idex_l1b_msg-10days:
   Logical_source: imap_idex_l1b_msg-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-1B Event Message Data
   MODS:
-    - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
     - >-
       Major version 2, Sept. 14, 2026 - Improves pulser-state extraction by
       recognizing a pulser-off message occurring within five seconds of a
@@ -84,9 +73,6 @@ imap_idex_l1b_catlst-10days:
   Data_type: L1B_CATLST-10DAYS>Level-1B Packet Catalog Summary Data
   Logical_source: imap_idex_l1b_catlst-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-1B Packet Catalog Summary Data
-  MODS:
-    - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
 
 imap_idex_l2a_sci:
   <<: *instrument_base
@@ -95,8 +81,6 @@ imap_idex_l2a_sci:
   Logical_source_description: IMAP Mission IDEX Instrument Level-2A 10-Day Data
   MODS:
     - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
-    - >-
       Major version 2, Sept. 14, 2026 - Propagates the new event and saturation
       flags and uses them to suppress invalid impact charges, velocities,
       and masses for saturated or non-science events. Ion-grid velocity is
@@ -104,7 +88,7 @@ imap_idex_l2a_sci:
       derived from the selected target charge. Inherits the corrected
       IDEX-frame spin phase.
     - >-
-      Major version 3, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      Major version 3, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
 
 imap_idex_l2b_sci:
@@ -120,7 +104,7 @@ imap_idex_l2b_sci:
       version numbers aligned with the upstream IDEX Level 1/Level 2A
       products.
     - >-
-      Major version 3, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      Major version 3, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
 
 imap_idex_l2c_sci-rectangular:

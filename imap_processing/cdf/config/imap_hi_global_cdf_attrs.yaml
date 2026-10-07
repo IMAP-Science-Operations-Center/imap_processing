@@ -25,9 +25,7 @@ imap_hi_l1b_de_attrs:
     Logical_source_description: IMAP Mission IMAP-Hi Instrument Level-1B Direct Event Data
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_hi_l1a_diagfee_attrs:
@@ -61,9 +59,7 @@ imap_hi_l1b_goodtimes_attrs:
     Logical_source_description: IMAP Mission IMAP-Hi Instrument Level-1B Good Times Data
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_hi_l1c_pset_attrs:
@@ -72,9 +68,7 @@ imap_hi_l1c_pset_attrs:
     Logical_source_description: IMAP Mission IMAP-Hi Instrument Level-1C Pointing Set Data
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_hi_l2_enamap:
@@ -83,7 +77,5 @@ imap_hi_l2_enamap:
     Logical_source_description: IMAP Mission IMAP-Hi Instrument Level-2 ENA Intensity Map Data for Hi{sensor} on rectangular tiling
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.

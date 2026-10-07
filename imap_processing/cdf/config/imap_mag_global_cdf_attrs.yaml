@@ -92,9 +92,7 @@ imap_mag_l1d_norm-rtn:
         Radial-Tangential-Normal Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-rtn:
@@ -105,9 +103,7 @@ imap_mag_l1d_burst-rtn:
         Radial-Tangential-Normal Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l1d_norm-gse:
@@ -118,9 +114,7 @@ imap_mag_l1d_norm-gse:
         Geocentric Solar Ecliptic Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-gse:
@@ -131,9 +125,7 @@ imap_mag_l1d_burst-gse:
         Geocentric Solar Ecliptic Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l1d_norm-srf:
@@ -144,9 +136,7 @@ imap_mag_l1d_norm-srf:
         Spacecraft Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-srf:
@@ -157,9 +147,7 @@ imap_mag_l1d_burst-srf:
         Spacecraft Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l1d_norm-dsrf:
@@ -170,9 +158,7 @@ imap_mag_l1d_norm-dsrf:
         Despun Spacecraft Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-dsrf:
@@ -183,9 +169,7 @@ imap_mag_l1d_burst-dsrf:
         Despun Spacecraft Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-dsrf:
@@ -196,9 +180,7 @@ imap_mag_l2_norm-dsrf:
     Despun Spacecraft Reference Frame
   MODS:
     - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
-    - >-
-      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-dsrf:
@@ -209,9 +191,7 @@ imap_mag_l2_burst-dsrf:
     Despun Spacecraft Reference Frame
   MODS:
     - >-
-      Major version 1, Aug. 1, 2026 - Initial release.
-    - >-
-      Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-srf:
@@ -222,9 +202,7 @@ imap_mag_l2_norm-srf:
         Spacecraft Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-srf:
@@ -235,9 +213,7 @@ imap_mag_l2_burst-srf:
         Spacecraft Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-rtn:
@@ -248,9 +224,7 @@ imap_mag_l2_norm-rtn:
         Radial-Tangential-Normal Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-rtn:
@@ -261,9 +235,7 @@ imap_mag_l2_burst-rtn:
         Radial-Tangential-Normal Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-gse:
@@ -274,9 +246,7 @@ imap_mag_l2_norm-gse:
         Geocentric Solar Ecliptic Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-gse:
@@ -287,9 +257,7 @@ imap_mag_l2_burst-gse:
         Geocentric Solar Ecliptic Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-gsm:
@@ -300,9 +268,7 @@ imap_mag_l2_norm-gsm:
         Geocentric Solar Magnetospheric Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-gsm:
@@ -313,7 +279,5 @@ imap_mag_l2_burst-gsm:
         Geocentric Solar Magnetospheric Reference Frame
     MODS:
       - >-
-        Major version 1, Aug. 1, 2026 - Initial release.
-      - >-
-        Major version 2, Sept. 30, 2026 - Use corrected spin tables and SPICE
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
         kernels for spin axis and spin phase.
