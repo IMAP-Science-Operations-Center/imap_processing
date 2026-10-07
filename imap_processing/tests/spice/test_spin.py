@@ -54,7 +54,11 @@ def test_set_spin_table_paths(monkeypatch):
                     False,
                     15.0,
                     15.0,  # actual_spin_period
-                    0.0,
+                    15.0,  # spin_start_met_corr
+                    15.0,  # actual_spin_period_corr
+                    0.0,  # sc_spin_phase
+                    1,  # spin_number_corr
+                    0.0,  # sc_spin_phase_corr
                 ]
             ],
         ),  # Scalar test at spin start time
@@ -76,7 +80,11 @@ def test_set_spin_table_paths(monkeypatch):
                     False,
                     15.0,
                     15.0,  # actual_spin_period
-                    0.1 / 15,
+                    15.0,  # spin_start_met_corr
+                    15.0,  # actual_spin_period_corr
+                    0.1 / 15,  # sc_spin_phase
+                    1,  # spin_number_corr
+                    0.1 / 15,  # sc_spin_phase_corr
                 ],
                 [
                     2,
@@ -93,7 +101,11 @@ def test_set_spin_table_paths(monkeypatch):
                     False,
                     30.0,
                     15.0,  # actual_spin_period
-                    0.2 / 15,
+                    30.0,  # spin_start_met_corr
+                    15.0,  # actual_spin_period_corr
+                    0.2 / 15,  # sc_spin_phase
+                    2,  # spin_number_corr
+                    0.2 / 15,  # sc_spin_phase_corr
                 ],
             ],
         ),  # Array test
@@ -239,6 +251,8 @@ def test_get_spin_data(use_fake_spin_data_for_time):
         "spin_start_sec_sclk_corr",
         "spin_start_subsec_sclk_corr",
         "spin_start_utc_corr",
+        "spin_start_met_corr",
+        "actual_spin_period_corr",
     }, "Spin data must have the specified fields."
 
 
