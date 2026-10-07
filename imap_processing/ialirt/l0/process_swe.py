@@ -110,10 +110,12 @@ def prepare_raw_counts(grouped: xr.Dataset, cem_number: int = N_CEMS) -> NDArray
     # Example: energy steps 0-1 have the same phi;
     # energy steps 2-3 have the same phi, etc.
     # A depiction of this is shown in Figure 7 of the SWE Algorithm Document.
+    # Cast to int64 so the phi calculation does not overflow uint8.
+    swe_seq = grouped["swe_seq"].values.astype(np.int64)
     phi_values = np.array(
         [
-            (12 + 24 * grouped["swe_seq"].values) % 360,  # Energy steps 0 and 1
-            (24 + 24 * grouped["swe_seq"].values) % 360,  # Energy steps 2 and 3
+            (12 + 24 * swe_seq) % 360,  # Energy steps 0 and 1
+            (24 + 24 * swe_seq) % 360,  # Energy steps 2 and 3
         ]
     )
     phi_bins = phi_to_bin(phi_values).astype(int)  # Get phi bin indices
