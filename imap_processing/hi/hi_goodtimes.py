@@ -1528,11 +1528,39 @@ def _compute_normalized_counts_per_sweep(
     -------
     xarray.Dataset
         Reshaped dataset with esa_sweep as a dimension containing:
-        - normalized_count: normalized AB coincidence counts per sweep
+        - normalized_count: normalized AB coincidence counts per sweep (NaN
+          for sweeps with no valid 8-spin sets)
         - All other variables from the input dataset (first value per sweep)
+
+    Notes
+    -----
+    Each sweep's AB coincidence count is normalized by the number of valid
+    8-spin sets (ESA steps) in that sweep, so that full and incomplete sweeps
+    are comparable. An 8-spin set is valid if none of its packets has an
+    esa_energy_step of 0 (calibration) or FILLVAL (ESA or detector voltage
+    mismatch). Only AB coincidences from valid 8-spin sets are counted.
     """
     if "esa_sweep" not in l1b_de.coords:
         raise ValueError("Dataset must have esa_sweep coordinate")
+
+    # Identify 8-spin sets (packets sharing the same esa_step_met). A set is
+    # invalid if any of its packets has an invalid esa_energy_step, consistent
+    # with mark_bad_voltage() which culls the entire 8-spin set in that case.
+    esa_energy_step = l1b_de["esa_energy_step"]
+    fillval = esa_energy_step.attrs.get("FILLVAL", 255)
+    is_invalid_packet = (esa_energy_step.values == 0) | (
+        esa_energy_step.values == fillval
+    )
+    # set_mets holds one esa_step_met per 8-spin set; return_inverse gives,
+    # for each packet, the index of its set in set_mets.
+    set_mets, packet_set_idx = np.unique(
+        l1b_de["esa_step_met"].values, return_inverse=True
+    )
+    # OR each packet's invalid flag into its set's entry. The unbuffered .at
+    # form accumulates over repeated indices (multiple packets per set).
+    is_invalid_set: np.ndarray = np.zeros(len(set_mets), dtype=bool)
+    np.logical_or.at(is_invalid_set, packet_set_idx, is_invalid_packet)
+    is_valid_packet = ~is_invalid_set[packet_set_idx]
 
     # Filter to valid AB coincidences
     tof_ab = l1b_de["tof_ab"]
@@ -1544,18 +1572,31 @@ def _compute_normalized_counts_per_sweep(
         np.abs(tof_ab) <= tof_ab_limit_ns
     )
 
-    # Map events to sweeps via ccsds_index -> esa_sweep
+    # Map events to sweeps via ccsds_index -> esa_sweep, keeping only events
+    # from valid 8-spin sets
     event_epoch_idx = ccsds_index.values
     event_sweep_idx = l1b_de["esa_sweep"].values[event_epoch_idx]
+    is_counted = is_valid_ab.values & is_valid_packet[event_epoch_idx]
 
     # Count valid AB events per sweep
     n_sweeps = int(l1b_de["esa_sweep"].max().values) + 1
     counts_per_sweep: np.ndarray = np.zeros(n_sweeps, dtype=np.int64)
-    np.add.at(counts_per_sweep, event_sweep_idx[is_valid_ab.values], 1)
+    np.add.at(counts_per_sweep, event_sweep_idx[is_counted], 1)
 
-    # Normalize by number of unique ESA energy steps
-    n_unique_esa_energy_steps = len(np.unique(l1b_de["esa_energy_step"].values))
-    normalized_counts = counts_per_sweep / n_unique_esa_energy_steps
+    # Count valid 8-spin sets per sweep (each set lies within a single sweep)
+    set_sweep: np.ndarray = np.zeros(len(set_mets), dtype=np.int64)
+    set_sweep[packet_set_idx] = l1b_de["esa_sweep"].values
+    n_valid_sets_per_sweep: np.ndarray = np.bincount(
+        set_sweep[~is_invalid_set], minlength=n_sweeps
+    )
+
+    # Normalize by the number of valid 8-spin sets in each sweep. Sweeps with
+    # no valid 8-spin sets get NaN.
+    normalized_counts = np.full(n_sweeps, np.nan)
+    has_valid_sets = n_valid_sets_per_sweep > 0
+    normalized_counts[has_valid_sets] = (
+        counts_per_sweep[has_valid_sets] / n_valid_sets_per_sweep[has_valid_sets]
+    )
 
     # Remove all variables that depend on event_met dimension
     ds = l1b_de.drop_dims("event_met", errors="ignore")
@@ -1599,8 +1640,9 @@ def mark_statistical_filter_0(
     the penetrating background rate has changed drastically, compromising
     background subtraction accuracy. For each ESA sweep across all input
     Pointings, it computes the normalized AB coincidence count (total count
-    divided by number of ESA steps). It then marks ESA sweeps in the current
-    Pointing where the normalized count exceeds 150% of the median.
+    divided by number of valid ESA steps in that sweep). It then marks ESA
+    sweeps in the current Pointing where the normalized count exceeds 150% of
+    the median.
 
     Parameters
     ----------
@@ -1637,9 +1679,12 @@ def mark_statistical_filter_0(
     median` are marked as bad. Other sweeps remain unaffected.
 
     Algorithm:
-    1. For each complete ESA sweep across all Pointings, count AB coincidences
-       where |tof_ab| <= tof_ab_limit_ns and divide by number of ESA steps
-    2. Calculate median of all normalized sweep counts
+    1. For each ESA sweep across all Pointings, count AB coincidences where
+       |tof_ab| <= tof_ab_limit_ns from valid 8-spin sets (esa_energy_step not
+       0 or FILLVAL) and divide by the number of valid 8-spin sets in that
+       sweep
+    2. Calculate median of all normalized sweep counts, excluding sweeps with
+       no valid 8-spin sets (these are never marked)
     3. For each sweep in current Pointing, mark all METs in that sweep as bad
        if normalized count > threshold_factor * median
     """
@@ -1685,8 +1730,16 @@ def mark_statistical_filter_0(
 
     current_ds = reshaped_datasets[current_index]
 
-    # Calculate median from all sweep counts
+    # Calculate median from all sweep counts, excluding sweeps with no valid
+    # 8-spin sets (NaN normalized count)
     all_counts = np.concatenate(all_normalized_counts)
+    all_counts = all_counts[~np.isnan(all_counts)]
+    if len(all_counts) == 0:
+        logger.warning(
+            "Statistical Filter 0: No sweeps with valid 8-spin sets found; "
+            "skipping filter."
+        )
+        return
     median_count = float(np.median(all_counts))
     threshold = median_count * threshold_factor
 
@@ -1695,7 +1748,8 @@ def mark_statistical_filter_0(
         f"threshold={threshold:.2f} ({len(all_counts)} sweeps)"
     )
 
-    # Find and mark bad sweeps in current dataset
+    # Find and mark bad sweeps in current dataset. Sweeps with no valid
+    # 8-spin sets have NaN normalized count and are never marked.
     bad_sweep_mask = current_ds["normalized_count"] > threshold
     n_bad_sweeps = int(bad_sweep_mask.sum())
 

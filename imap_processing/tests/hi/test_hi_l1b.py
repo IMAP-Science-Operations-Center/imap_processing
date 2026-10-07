@@ -530,8 +530,16 @@ class TestDeGainTestFilter:
         }
         assert actual_hv_deltas == pytest.approx(expected_hv_deltas)
 
+    @pytest.mark.parametrize(
+        "field, offset",
+        [
+            ("cem_f", 300.0),
+            # Smallest MCP back gain test step, as measured on 2026-02-09.
+            ("mcp_b", 49.4),
+        ],
+    )
     @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
-    def test_mid_pointing_gain_test_excluded(self, mock_any_good_de):
+    def test_mid_pointing_gain_test_excluded(self, mock_any_good_de, field, offset):
         """A HVSCI segment drifting outside tolerance is excluded as a gain test."""
         hk_ds = self._make_hk_ds(
             [
@@ -549,11 +557,11 @@ class TestDeGainTestFilter:
             ],
             [1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010],
         )
-        # The middle HVSCI segment (indices 4-6) has cem_f drift far beyond
-        # HiConstants.GAIN_TEST_HV_DELTA_V["cem_f"], simulating a mid-pointing
-        # gain test.
-        assert HiConstants.GAIN_TEST_HV_DELTA_V["cem_f"] < 300.0
-        hk_ds["cem_f"].values[4:7] = NOMINAL_HV_VALUES["cem_f"] + 300.0
+        # The middle HVSCI segment (indices 4-6) has one field drift beyond
+        # its HiConstants.GAIN_TEST_HV_DELTA_V tolerance, simulating a
+        # mid-pointing gain test.
+        assert HiConstants.GAIN_TEST_HV_DELTA_V[field] < offset
+        hk_ds[field].values[4:7] = NOMINAL_HV_VALUES[field] + offset
 
         # One direct event per housekeeping packet's MET.
         de_ds = self._make_de_ds([1000, 1001, 1002, 1004, 1005, 1006, 1008, 1009, 1010])
