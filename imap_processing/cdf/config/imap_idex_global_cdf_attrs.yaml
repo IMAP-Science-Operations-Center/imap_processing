@@ -115,5 +115,6 @@ imap_idex_l2c_sci-rectangular:
   Logical_source_description: IMAP Mission IDEX Instrument Level-2C Rectangular Map 10-Day Data
   MODS:
     - >-
-      Major version 2, Sept. 14, 2026 - Not publicly released. This product is at major version 2
-      to keep major version numbers aligned.
+      Major version 2, Sept. 14, 2026 - Not publicly released. Numbered Major
+      Version 2 to keep major version numbers aligned with the upstream IDEX
+      Level 1/Level 2A products.
