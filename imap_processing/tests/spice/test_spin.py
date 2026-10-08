@@ -6,7 +6,9 @@ import pandas as pd
 import pytest
 
 from imap_processing.spice import config, spin
-from imap_processing.spice.geometry import SpiceFrame
+from imap_processing.spice.geometry import (
+    SpiceFrame,
+)
 
 
 @pytest.fixture
@@ -42,6 +44,9 @@ def test_set_spin_table_paths(monkeypatch):
                     15,
                     0,
                     "2024-04-11 00:00:15.000000",
+                    15,
+                    0,
+                    "2024-04-11 00:00:15.000000",
                     15.0,
                     True,
                     True,
@@ -49,7 +54,11 @@ def test_set_spin_table_paths(monkeypatch):
                     False,
                     15.0,
                     15.0,  # actual_spin_period
-                    0.0,
+                    15.0,  # spin_start_met_corr
+                    15.0,  # actual_spin_period_corr
+                    0.0,  # sc_spin_phase
+                    1,  # spin_number_corr
+                    0.0,  # sc_spin_phase_corr
                 ]
             ],
         ),  # Scalar test at spin start time
@@ -61,6 +70,9 @@ def test_set_spin_table_paths(monkeypatch):
                     15,
                     0,
                     "2024-04-11 00:00:15.000000",
+                    15,
+                    0,
+                    "2024-04-11 00:00:15.000000",
                     15.0,
                     True,
                     True,
@@ -68,10 +80,17 @@ def test_set_spin_table_paths(monkeypatch):
                     False,
                     15.0,
                     15.0,  # actual_spin_period
-                    0.1 / 15,
+                    15.0,  # spin_start_met_corr
+                    15.0,  # actual_spin_period_corr
+                    0.1 / 15,  # sc_spin_phase
+                    1,  # spin_number_corr
+                    0.1 / 15,  # sc_spin_phase_corr
                 ],
                 [
                     2,
+                    30,
+                    0,
+                    "2024-04-11 00:00:30.000000",
                     30,
                     0,
                     "2024-04-11 00:00:30.000000",
@@ -82,7 +101,11 @@ def test_set_spin_table_paths(monkeypatch):
                     False,
                     30.0,
                     15.0,  # actual_spin_period
-                    0.2 / 15,
+                    30.0,  # spin_start_met_corr
+                    15.0,  # actual_spin_period_corr
+                    0.2 / 15,  # sc_spin_phase
+                    2,  # spin_number_corr
+                    0.2 / 15,  # sc_spin_phase_corr
                 ],
             ],
         ),  # Array test
@@ -91,7 +114,9 @@ def test_set_spin_table_paths(monkeypatch):
 def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
     """Test interpolate_spin_data() with generated spin data."""
     # Call the function
-    spin_df = spin.interpolate_spin_data(query_met_times=query_met_times)
+    spin_df = spin.interpolate_spin_data(
+        query_met_times=query_met_times, use_corrected_spin_start=False
+    )
 
     # Test the value
     for i_row, row in enumerate(expected):
@@ -205,7 +230,7 @@ def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
 def test_get_spin_data(use_fake_spin_data_for_time):
     """Test get_spin_data() with generated spin data."""
     use_fake_spin_data_for_time(453051323.0 - 56120)
-    spin_data = spin.get_spin_data()
+    spin_data = spin.get_spin_data(use_corrected_spin_start=False)
 
     (
         np.testing.assert_array_equal(spin_data.index, np.arange(5761)),
@@ -225,6 +250,11 @@ def test_get_spin_data(use_fake_spin_data_for_time):
         "thruster_firing",
         "spin_start_met",
         "actual_spin_period",
+        "spin_start_sec_sclk_corr",
+        "spin_start_subsec_sclk_corr",
+        "spin_start_utc_corr",
+        "spin_start_met_corr",
+        "actual_spin_period_corr",
     }, "Spin data must have the specified fields."
 
 
@@ -235,6 +265,9 @@ def test_get_spin_table_merge(tmp_path, use_test_spin_data_csv):
         "spin_start_sec_sclk",
         "spin_start_subsec_sclk",
         "spin_start_utc",
+        "spin_start_sec_sclk_corr",
+        "spin_start_subsec_sclk_corr",
+        "spin_start_utc_corr",
         "spin_period_sec",
         "spin_period_valid",
         "spin_phase_valid",
@@ -243,10 +276,62 @@ def test_get_spin_table_merge(tmp_path, use_test_spin_data_csv):
     ]
     # Table 1 is missing spin # 2
     table1_data = [
-        [0, 0, 0, "2025-05-01 00:00:00.000", 15, 1, 1, 0, 0],
-        [1, 15, 0, "2025-05-01 00:00:15.000", 15, 1, 1, 0, 0],
-        [3, 45, 0, "2025-05-01 00:00:45.000", 15, 1, 1, 0, 0],
-        [4, 60, 0, "2025-05-01 00:01:00.000", 15, 1, 1, 0, 0],
+        [
+            0,
+            0,
+            0,
+            "2025-05-01 00:00:00.000",
+            0,
+            0,
+            "2025-05-01 00:00:00.000",
+            15,
+            1,
+            1,
+            0,
+            0,
+        ],
+        [
+            1,
+            15,
+            0,
+            "2025-05-01 00:00:15.000",
+            15,
+            0,
+            "2025-05-01 00:00:15.000",
+            15,
+            1,
+            1,
+            0,
+            0,
+        ],
+        [
+            3,
+            45,
+            0,
+            "2025-05-01 00:00:45.000",
+            45,
+            0,
+            "2025-05-01 00:00:45.000",
+            15,
+            1,
+            1,
+            0,
+            0,
+        ],
+        [
+            4,
+            60,
+            0,
+            "2025-05-01 00:01:00.000",
+            60,
+            0,
+            "2025-05-01 00:01:00.000",
+            15,
+            1,
+            1,
+            0,
+            0,
+        ],
     ]
     table1_path = tmp_path / "imap_2025_100_2025_101_01.spin.csv"
     pd.DataFrame.from_records(table1_data, columns=columns, index=columns[0]).to_csv(
@@ -254,10 +339,62 @@ def test_get_spin_table_merge(tmp_path, use_test_spin_data_csv):
     )
     # Table 2 fills in spin #2 and changes values for spin #3
     table2_data = [
-        [2, 30, 0, "2025-05-01 00:00:30.000", 15.1, 1, 1, 0, 0],
-        [3, 45, 1e5, "2025-05-01 00:00:45.100", 14.9, 1, 1, 0, 0],
-        [5, 75, 0, "2025-05-01 00:01:15.000", 15, 1, 1, 0, 0],
-        [6, 90, 0, "2025-05-01 00:01:30.000", 15, 1, 1, 0, 0],
+        [
+            2,
+            30,
+            0,
+            "2025-05-01 00:00:30.000",
+            30,
+            0,
+            "2025-05-01 00:00:30.000",
+            15.1,
+            1,
+            1,
+            0,
+            0,
+        ],
+        [
+            3,
+            45,
+            1e5,
+            "2025-05-01 00:00:45.100",
+            45,
+            1e5,
+            "2025-05-01 00:00:45.100",
+            14.9,
+            1,
+            1,
+            0,
+            0,
+        ],
+        [
+            5,
+            75,
+            0,
+            "2025-05-01 00:01:15.000",
+            75,
+            0,
+            "2025-05-01 00:01:15.000",
+            15,
+            1,
+            1,
+            0,
+            0,
+        ],
+        [
+            6,
+            90,
+            0,
+            "2025-05-01 00:01:30.000",
+            90,
+            0,
+            "2025-05-01 00:01:30.000",
+            15,
+            1,
+            1,
+            0,
+            0,
+        ],
     ]
     table2_path = tmp_path / "imap_2025_101_2025_102_01.spin.csv"
     pd.DataFrame.from_records(table2_data, columns=columns, index=columns[0]).to_csv(

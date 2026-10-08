@@ -995,7 +995,7 @@ class HistogramL1B:
 
         # Calculate spin period
         # ---------------------
-        spin_data = get_spin_data()
+        spin_data = get_spin_data(use_corrected_spin_start=False)
         # select spin data within the range from data start time to end time
         spin_data = spin_data[
             (spin_data["spin_start_met"] >= data_start_met)
@@ -1009,7 +1009,9 @@ class HistogramL1B:
         # --------------------------------
         angle_offset = 360 - get_spin_angle(
             get_instrument_spin_phase(
-                self.imap_start_time, instrument=geometry.SpiceFrame.IMAP_GLOWS
+                self.imap_start_time,
+                instrument=geometry.SpiceFrame.IMAP_GLOWS,
+                use_corrected_spin_start=False,
             ),
             degrees=True,
         )
