@@ -63,3 +63,4 @@ imap_hi_l2_enamap:
     Data_type: L2_{descriptor}>Level-2 ENA Intensity Map for Hi{sensor}
     Logical_source: imap_hi_l2_{descriptor}
     Logical_source_description: IMAP Mission IMAP-Hi Instrument Level-2 ENA Intensity Map Data for Hi{sensor} on rectangular tiling
+

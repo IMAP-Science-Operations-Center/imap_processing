@@ -90,6 +90,10 @@ imap_mag_l1d_norm-rtn:
     Logical_source: imap_mag_l1d_norm-rtn
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Radial-Tangential-Normal Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-rtn:
     <<: *default
@@ -97,6 +101,10 @@ imap_mag_l1d_burst-rtn:
     Logical_source: imap_mag_l1d_burst-rtn
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Radial-Tangential-Normal Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l1d_norm-gse:
     <<: *default
@@ -104,6 +112,10 @@ imap_mag_l1d_norm-gse:
     Logical_source: imap_mag_l1d_norm-gse
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Geocentric Solar Ecliptic Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-gse:
     <<: *default
@@ -111,6 +123,10 @@ imap_mag_l1d_burst-gse:
     Logical_source: imap_mag_l1d_burst-gse
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Geocentric Solar Ecliptic Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l1d_norm-srf:
     <<: *default
@@ -118,6 +134,10 @@ imap_mag_l1d_norm-srf:
     Logical_source: imap_mag_l1d_norm-srf
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Spacecraft Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-srf:
     <<: *default
@@ -125,6 +145,10 @@ imap_mag_l1d_burst-srf:
     Logical_source: imap_mag_l1d_burst-srf
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Spacecraft Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l1d_norm-dsrf:
     <<: *default
@@ -132,6 +156,10 @@ imap_mag_l1d_norm-dsrf:
     Logical_source: imap_mag_l1d_norm-dsrf
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-1D Data in
         Despun Spacecraft Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l1d_burst-dsrf:
     <<: *default
@@ -139,6 +167,10 @@ imap_mag_l1d_burst-dsrf:
     Logical_source: imap_mag_l1d_burst-dsrf
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-1D Data in
         Despun Spacecraft Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-dsrf:
   <<: *default
@@ -146,6 +178,10 @@ imap_mag_l2_norm-dsrf:
   Logical_source: imap_mag_l2_norm-dsrf
   Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
     Despun Spacecraft Reference Frame
+  MODS:
+    - >-
+      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-dsrf:
   <<: *default
@@ -153,6 +189,10 @@ imap_mag_l2_burst-dsrf:
   Logical_source: imap_mag_l2_burst-dsrf
   Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
     Despun Spacecraft Reference Frame
+  MODS:
+    - >-
+      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-srf:
     <<: *default
@@ -160,6 +200,10 @@ imap_mag_l2_norm-srf:
     Logical_source: imap_mag_l2_norm-srf
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Spacecraft Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-srf:
     <<: *default
@@ -167,6 +211,10 @@ imap_mag_l2_burst-srf:
     Logical_source: imap_mag_l2_burst-srf
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Spacecraft Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-rtn:
     <<: *default
@@ -174,6 +222,10 @@ imap_mag_l2_norm-rtn:
     Logical_source: imap_mag_l2_norm-rtn
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Radial-Tangential-Normal Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-rtn:
     <<: *default
@@ -181,6 +233,10 @@ imap_mag_l2_burst-rtn:
     Logical_source: imap_mag_l2_burst-rtn
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Radial-Tangential-Normal Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-gse:
     <<: *default
@@ -188,6 +244,10 @@ imap_mag_l2_norm-gse:
     Logical_source: imap_mag_l2_norm-gse
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Geocentric Solar Ecliptic Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-gse:
     <<: *default
@@ -195,6 +255,10 @@ imap_mag_l2_burst-gse:
     Logical_source: imap_mag_l2_burst-gse
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Geocentric Solar Ecliptic Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_norm-gsm:
     <<: *default
@@ -202,6 +266,10 @@ imap_mag_l2_norm-gsm:
     Logical_source: imap_mag_l2_norm-gsm
     Logical_source_description: IMAP Mission MAG Normal Rate Instrument Level-2 Data in
         Geocentric Solar Magnetospheric Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
 
 imap_mag_l2_burst-gsm:
     <<: *default
@@ -209,3 +277,7 @@ imap_mag_l2_burst-gsm:
     Logical_source: imap_mag_l2_burst-gsm
     Logical_source_description: IMAP Mission MAG Burst Rate Instrument Level-2 Data in
         Geocentric Solar Magnetospheric Reference Frame
+    MODS:
+      - >-
+        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+        kernels for spin axis and spin phase.
