@@ -113,3 +113,7 @@ imap_idex_l2c_sci-rectangular:
   Data_type: L2C_RECTANGULAR-MAP-10DAYS>Level-2C Rectangular Map 10-Day Data
   Logical_source: imap_idex_l2c_rectangular-map-10days
   Logical_source_description: IMAP Mission IDEX Instrument Level-2C Rectangular Map 10-Day Data
+  MODS:
+    - >-
+      Major version 2, Sept. 14, 2026 - Not publicly released. This product is at major version 2
+      to keep major version numbers aligned.
