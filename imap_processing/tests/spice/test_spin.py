@@ -114,7 +114,9 @@ def test_set_spin_table_paths(monkeypatch):
 def test_interpolate_spin_data(query_met_times, expected, fake_spin_data):
     """Test interpolate_spin_data() with generated spin data."""
     # Call the function
-    spin_df = spin.interpolate_spin_data(query_met_times=query_met_times)
+    spin_df = spin.interpolate_spin_data(
+        query_met_times=query_met_times, use_corrected_spin_start=False
+    )
 
     # Test the value
     for i_row, row in enumerate(expected):
@@ -228,7 +230,7 @@ def test_get_spacecraft_spin_phase_value_error(query_met_times, fake_spin_data):
 def test_get_spin_data(use_fake_spin_data_for_time):
     """Test get_spin_data() with generated spin data."""
     use_fake_spin_data_for_time(453051323.0 - 56120)
-    spin_data = spin.get_spin_data()
+    spin_data = spin.get_spin_data(use_corrected_spin_start=False)
 
     (
         np.testing.assert_array_equal(spin_data.index, np.arange(5761)),

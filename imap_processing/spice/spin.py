@@ -37,12 +37,21 @@ def set_global_spin_table_paths(paths: list[Path]) -> None:
     config._spin_table_paths = paths
 
 
-def get_spin_data() -> pd.DataFrame:
+def get_spin_data(use_corrected_spin_start: bool = True) -> pd.DataFrame:
     """
     Read spin-tables and return spin data.
 
     The spin-tables to read are stored in the mutable module level attribute
     named `spin_table_paths`.
+
+    Parameters
+    ----------
+    use_corrected_spin_start : bool
+        If True (default), the corrected spin start times replace the original ones: the
+        values of each `*_corr` column below are returned under the column name
+        without the `_corr` suffix, and no `_corr` columns are returned. If False, all
+        the columns below are returned, with the un-suffixed columns computed from the
+        original spin start times.
 
     Returns
     -------
@@ -83,11 +92,15 @@ def get_spin_data() -> pd.DataFrame:
             "module attribute spin_table_paths."
         )
 
-    return _load_spin_data_with_cache(tuple(config._spin_table_paths))
+    return _load_spin_data_with_cache(
+        tuple(config._spin_table_paths), use_corrected_spin_start
+    )
 
 
 @functools.cache
-def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
+def _load_spin_data_with_cache(
+    csv_paths: tuple[Path], use_corrected_spin_start: bool
+) -> pd.DataFrame:
     """
     Load spin-table data from csv files and combine them.
 
@@ -95,6 +108,9 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
     ----------
     csv_paths : tuple[Path]
         Locations of spin-table csv files.
+    use_corrected_spin_start : bool
+        If True, the values of each `*_corr` column replace those of the column
+        without the `_corr` suffix, and the `_corr` columns are dropped.
 
     Returns
     -------
@@ -182,10 +198,18 @@ def _load_spin_data_with_cache(csv_paths: tuple[Path]) -> pd.DataFrame:
         combined_df[f"actual_spin_period{suffix}"] = np.append(
             actual_spin_periods, spin_periods_sec[-1]
         )
+
+    if use_corrected_spin_start:
+        corr_columns = [c for c in combined_df.columns if c.endswith("_corr")]
+        for column in corr_columns:
+            combined_df[column.removesuffix("_corr")] = combined_df[column]
+        combined_df = combined_df.drop(columns=corr_columns)
     return combined_df
 
 
-def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
+def interpolate_spin_data(
+    query_met_times: float | npt.NDArray, use_corrected_spin_start: bool = True
+) -> pd.DataFrame:
     """
     Interpolate spin table data to the queried MET times.
 
@@ -194,26 +218,30 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
     spin phase at the queried MET times. Note that spin phase is by definition,
     in the interval [0, 1) where 1 is equivalent to 360 degrees.
 
-    Rows are selected, and `sc_spin_phase` computed, using the original spin
-    start times. The `spin_number_corr` and `sc_spin_phase_corr` columns give
-    the spin number and spin phase computed using the corrected spin start times
-    instead; these are what :py:func:`get_spin_number` and
-    :py:func:`get_spacecraft_spin_phase` return.
-
     Parameters
     ----------
     query_met_times : float or np.ndarray
         Query times in Mission Elapsed Time (MET).
+    use_corrected_spin_start : bool
+        If True (default), rows are selected, and `sc_spin_phase` computed, using the
+        corrected spin start times, and the columns are those of
+        :py:func:`get_spin_data` with corrected spin start times replacing the
+        original ones. If False, rows are selected, and
+        `sc_spin_phase` computed, using the original spin start times; the
+        `spin_number_corr` and `sc_spin_phase_corr` columns are also added,
+        giving the spin number and spin phase computed using the corrected spin
+        start times.
 
     Returns
     -------
     spin_df : pandas.DataFrame
         Spin table data interpolated for each queried MET time. In addition to
-        the columns output from :py:func:`get_spin_data`, the `sc_spin_phase`,
-        `spin_number_corr` and `sc_spin_phase_corr` columns are added and are
-        uniquely computed for each queried MET time.
+        the columns output from :py:func:`get_spin_data`, the `sc_spin_phase`
+        column (and the `spin_number_corr` and `sc_spin_phase_corr` columns if
+        `use_corrected_spin_start` is False) is added and is uniquely computed
+        for each queried MET time.
     """
-    spin_df = get_spin_data()
+    spin_df = get_spin_data(use_corrected_spin_start)
 
     # Ensure query_met_times is an array
     query_met_times = np.asarray(query_met_times)
@@ -223,9 +251,11 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
         # convert scalar to array
         query_met_times = np.atleast_1d(query_met_times)
 
-    # Compute the spin number and spin phase using the original spin start
-    # times, then using the corrected ones.
-    for suffix in ("", "_corr"):
+    # Compute the spin number and spin phase using the un-suffixed spin start
+    # times (corrected or original per use_corrected_spin_start), then, if the
+    # original ones were used, using the corrected ones.
+    suffixes = ("",) if use_corrected_spin_start else ("", "_corr")
+    for suffix in suffixes:
         # Cache frequently accessed arrays to avoid repeated .values calls
         spin_start_met = spin_df[f"spin_start_met{suffix}"].values
         actual_spin_periods = spin_df[f"actual_spin_period{suffix}"].values
@@ -277,7 +307,7 @@ def interpolate_spin_data(query_met_times: float | npt.NDArray) -> pd.DataFrame:
             # Generate a dataframe with one row per query time
             out_df = spin_df.iloc[last_spin_indices].copy()
         # Add spin_number and spin_phase columns to output dataframe
-        # (spin_number is unchanged for the original spin start times)
+        # (spin_number is unchanged for the un-suffixed spin start times)
         out_df[f"spin_number{suffix}"] = spin_df["spin_number"].values[
             last_spin_indices
         ]
@@ -310,9 +340,8 @@ def get_spin_number(
     spin_number : int or np.ndarray
         Spin number for the input query time.
     """
-    suffix = "_corr" if use_corrected_spin_start else ""
-    spin_df = interpolate_spin_data(met_time)
-    spin_numbers = spin_df[f"spin_number{suffix}"].values
+    spin_df = interpolate_spin_data(met_time, use_corrected_spin_start)
+    spin_numbers = spin_df["spin_number"].values
 
     return spin_numbers.item() if np.asarray(met_time).ndim == 0 else spin_numbers
 
@@ -376,11 +405,10 @@ def get_spacecraft_spin_phase(
     spin_phase : float or np.ndarray
         Spin phase for the input query times.
     """
-    suffix = "_corr" if use_corrected_spin_start else ""
-    spin_df = interpolate_spin_data(query_met_times)
+    spin_df = interpolate_spin_data(query_met_times, use_corrected_spin_start)
     if np.asarray(query_met_times).ndim == 0:
-        return spin_df[f"sc_spin_phase{suffix}"].values[0]
-    return spin_df[f"sc_spin_phase{suffix}"].values
+        return spin_df["sc_spin_phase"].values[0]
+    return spin_df["sc_spin_phase"].values
 
 
 def get_instrument_spin_phase(
