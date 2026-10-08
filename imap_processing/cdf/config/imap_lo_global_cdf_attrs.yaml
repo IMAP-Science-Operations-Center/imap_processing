@@ -52,50 +52,30 @@ imap_lo_l1b_badtimes:
   Data_type: L1B_badtimes>Level-1B Badtimes
   Logical_source: imap_lo_l1b_badtimes
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1b_de:
   <<: *instrument_base
   Data_type: L1B_de>Level-1B Annotated Direct Events
   Logical_source: imap_lo_l1b_de
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1b_monitorrates:
   <<: *instrument_base
   Data_type: L1B_monitorrates>Level-1B Monitor Rates
   Logical_source: imap_lo_l1b_monitorrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1b_histrates:
   <<: *instrument_base
   Data_type: L1B_histrates>Level-1B Histogram Rates
   Logical_source: imap_lo_l1b_histrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1b_derates:
   <<: *instrument_base
   Data_type: L1B_derates>Level-1B Direct Event Rates
   Logical_source: imap_lo_l1b_derates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1b_prostar:
   <<: *instrument_base
@@ -126,20 +106,12 @@ imap_lo_l1b_bgrates:
   Data_type: L1B_goodtimes>Level-1B Background Rates List
   Logical_source: imap_lo_l1b_bgrates
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1b_goodtimes:
   <<: *instrument_base
   Data_type: L1B_goodtimes>Level-1B Goodtimes List
   Logical_source: imap_lo_l1b_goodtimes
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1B Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 imap_lo_l1c_goodtimes:
   <<: *instrument_base
@@ -152,10 +124,6 @@ imap_lo_l1c_pset:
   Data_type: L1C_pset>Level-1C Pointing Set
   Logical_source: imap_lo_l1c_pset
   Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-1C Data
-  MODS:
-    - >-
-      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-      kernels for spin axis and spin phase.
 
 # Global attributes for different sensors and sky tiling types and durations
 imap_lo_l2_enamap:
@@ -163,7 +131,3 @@ imap_lo_l2_enamap:
     Data_type: L2_{descriptor}>Level-2 Intensity Map for Lo
     Logical_source: imap_lo_l2_{descriptor}
     Logical_source_description: IMAP Mission IMAP-Lo Instrument Level-2 Intensity Map Data for Lo
-    MODS:
-      - >-
-        Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
-        kernels for spin axis and spin phase.
