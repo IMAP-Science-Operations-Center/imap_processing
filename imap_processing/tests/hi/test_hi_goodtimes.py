@@ -32,8 +32,19 @@ from imap_processing.hi.hi_goodtimes import (
     mark_statistical_filter_0,
     mark_statistical_filter_1,
     mark_statistical_filter_2,
+    mark_unmatched_gain_config,
 )
+from imap_processing.hi.utils import CalibrationProductConfig
 from imap_processing.quality_flags import ImapHiL1bDeFlags
+
+# HV deltas within tolerance of the test cal-prod config's gain_config_id=0.
+# See imap_processing/tests/hi/data/l1/imap_hi_90sensor-cal-prod_20240101_v001.csv
+NOMINAL_HV_DELTAS = {
+    "mcp_delta_v": 875.0,
+    "cem_a_delta_v": 2150.0,
+    "cem_b_delta_v": 2150.0,
+    "tof_v": -8000.0,
+}
 
 
 @pytest.fixture
@@ -4407,6 +4418,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
             ) as mock_cal_load,
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
@@ -4429,7 +4441,7 @@ class TestApplyGoodtimesFilters:
             mock_cal_load.assert_called_once_with(cal_path)
 
     def test_calls_all_filters(self, tmp_path):
-        """Test that all 8 filters are called."""
+        """Test that all 9 filters are called."""
         mock_goodtimes = MagicMock()
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "good_bins": 100,
@@ -4445,6 +4457,9 @@ class TestApplyGoodtimesFilters:
                 return_value=mock_cal,
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage") as mock_f0,
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"
+            ) as mock_f0b,
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"
             ) as mock_f1,
@@ -4471,6 +4486,7 @@ class TestApplyGoodtimesFilters:
             )
 
             mock_f0.assert_called_once()
+            mock_f0b.assert_called_once()
             mock_f1.assert_called_once()
             mock_f2.assert_called_once()
             mock_f3.assert_called_once()
@@ -4496,6 +4512,7 @@ class TestApplyGoodtimesFilters:
                 return_value=mock_cal,
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
@@ -4532,6 +4549,7 @@ class TestApplyGoodtimesFilters:
                 return_value=mock_cal,
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
@@ -4854,3 +4872,95 @@ class TestMarkBadVoltage:
         custom_code = 200
         mark_bad_voltage(goodtimes_for_esa, l1b_de_with_zero, cull_code=custom_code)
         assert np.all(goodtimes_for_esa["cull_flags"].values[1, :] == custom_code)
+
+
+class TestMarkUnmatchedGainConfig:
+    """Tests for mark_unmatched_gain_config culling function."""
+
+    @pytest.fixture
+    def cal_config(self, hi_test_cal_prod_config_path):
+        """Cal-prod config containing only gain_config_id=0."""
+        return CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+
+    @pytest.fixture
+    def goodtimes(self):
+        """Create an all-good goodtimes dataset."""
+        met_values = np.array([1000.0, 1050.0, 1100.0])
+        return xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((3, 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                ),
+                "esa_step": xr.DataArray(np.array([1, 2, 3]), dims=["met"]),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+        )
+
+    @staticmethod
+    def _l1b_de(hv_deltas):
+        return xr.Dataset(attrs=dict(hv_deltas))
+
+    def test_matching_gain_config_unchanged(self, goodtimes, cal_config):
+        """Test that a pointing matching a gain_config_id is not culled."""
+        mark_unmatched_gain_config(
+            goodtimes, self._l1b_de(NOMINAL_HV_DELTAS), cal_config
+        )
+        assert np.all(goodtimes["cull_flags"].values == CullCode.GOOD)
+
+    def test_no_match_culls_all(self, goodtimes, cal_config):
+        """Test that a pointing matching no gain_config_id is fully culled."""
+        # New gain configuration: CEM A/B back voltages raised by ~200 V
+        hv_deltas = dict(NOMINAL_HV_DELTAS, cem_a_delta_v=2350.0, cem_b_delta_v=2350.0)
+        mark_unmatched_gain_config(goodtimes, self._l1b_de(hv_deltas), cal_config)
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+        assert goodtimes.goodtimes.get_cull_statistics()["good_bins"] == 0
+        assert len(goodtimes.goodtimes.get_good_intervals()) == 0
+
+    def test_multiple_matches_culls_all(self, goodtimes, cal_config):
+        """Test that a pointing matching multiple gain_config_ids is culled."""
+        duplicate = cal_config.rename(index={0: 1}, level="gain_config_id")
+        ambiguous_config = pd.concat([cal_config, duplicate])
+        mark_unmatched_gain_config(
+            goodtimes, self._l1b_de(NOMINAL_HV_DELTAS), ambiguous_config
+        )
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+
+    @pytest.mark.parametrize(
+        "field", ["mcp_delta_v", "cem_a_delta_v", "cem_b_delta_v", "tof_v"]
+    )
+    def test_nan_delta_culls_all(self, goodtimes, cal_config, field):
+        """Test that a NaN gain match value culls the full pointing."""
+        hv_deltas = dict(NOMINAL_HV_DELTAS, **{field: np.nan})
+        mark_unmatched_gain_config(goodtimes, self._l1b_de(hv_deltas), cal_config)
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+
+    def test_missing_attribute_culls_all(self, goodtimes, cal_config):
+        """Test that a missing gain match attribute culls the full pointing."""
+        hv_deltas = dict(NOMINAL_HV_DELTAS)
+        del hv_deltas["tof_v"]
+        mark_unmatched_gain_config(goodtimes, self._l1b_de(hv_deltas), cal_config)
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+
+    def test_combines_with_existing_culls(self, goodtimes, cal_config):
+        """Test that existing cull codes are preserved via bitwise OR."""
+        goodtimes["cull_flags"].values[0, :] = CullCode.DRF
+        mark_unmatched_gain_config(
+            goodtimes,
+            self._l1b_de({k: np.nan for k in NOMINAL_HV_DELTAS}),
+            cal_config,
+        )
+        assert np.all(
+            goodtimes["cull_flags"].values[0, :] == CullCode.DRF | CullCode.BAD_HV_VALUE
+        )
+        assert np.all(goodtimes["cull_flags"].values[1:, :] == CullCode.BAD_HV_VALUE)
+
+    def test_custom_cull_code(self, goodtimes, cal_config):
+        """Test using a custom cull code."""
+        mark_unmatched_gain_config(
+            goodtimes,
+            self._l1b_de({k: np.nan for k in NOMINAL_HV_DELTAS}),
+            cal_config,
+            cull_code=CullCode.DRF,
+        )
+        assert np.all(goodtimes["cull_flags"].values == CullCode.DRF)

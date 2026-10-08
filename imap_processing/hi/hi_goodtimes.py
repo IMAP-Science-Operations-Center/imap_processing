@@ -71,6 +71,8 @@ def hi_goodtimes(
 
     0. mark_bad_voltage - Remove times with invalid ESA or detector HV
        configuration (e.g. gain test intervals)
+       mark_unmatched_gain_config - Remove the full pointing if its detector
+       gain state matches no gain_config_id in the cal-prod config
     1. mark_incomplete_spin_sets - Remove incomplete 8-spin histogram periods
     2. mark_drf_times - Remove times during spacecraft drift restabilization
     3. mark_bad_tdc_cal - Remove times with failed TDC calibration
@@ -280,6 +282,11 @@ def _apply_goodtimes_filters(
     # 0. Mark bad ESA/detector HV voltage times
     logger.info("Applying filter: mark_bad_voltage")
     mark_bad_voltage(goodtimes_ds, current_l1b_de)
+
+    # 0b. Mark the full pointing bad if its gain state matches no cal-prod
+    # gain_config_id
+    logger.info("Applying filter: mark_unmatched_gain_config")
+    mark_unmatched_gain_config(goodtimes_ds, current_l1b_de, cal_product_config)
 
     # 1. Mark incomplete spin sets
     logger.info("Applying filter: mark_incomplete_spin_sets")
@@ -1026,6 +1033,69 @@ def mark_bad_voltage(
         f"{n_invalid_fillval} with esa_energy_step=FILLVAL (voltage mismatch). "
         f"Marked {len(invalid_mets)} 8-spin period(s) as bad."
     )
+
+
+def mark_unmatched_gain_config(
+    goodtimes_ds: xr.Dataset,
+    l1b_de: xr.Dataset,
+    cal_product_config: pd.DataFrame,
+    cull_code: int = CullCode.BAD_HV_VALUE,
+) -> None:
+    """
+    Mark the full pointing bad if its gain state matches no gain_config_id.
+
+    The pointing's detector gain state is recorded by
+    hi_l1b.de_gain_test_filter() as L1B DE global attributes (one per
+    CalibrationProductConfig.GAIN_MATCH_FIELDS). L1C matches these against
+    the cal-prod config to select the geometric factor and the calibration
+    products used for counts (see hi_l1c.generate_pset_dataset()). When no
+    single gain_config_id matches, L1C produces zero counts and fill
+    geometric factors, but exposure time would still be non-zero. Culling
+    every time and spin bin here makes the L1C exposure zero as well, so the
+    pointing is excluded from L2 maps rather than biasing intensities low.
+
+    Parameters
+    ----------
+    goodtimes_ds : xarray.Dataset
+        Goodtimes dataset to update with cull flags.
+    l1b_de : xarray.Dataset
+        L1B Direct Event data for the current pointing, with the gain match
+        global attributes set by hi_l1b.de_gain_test_filter().
+    cal_product_config : pandas.DataFrame
+        Calibration product configuration DataFrame. Use
+        CalibrationProductConfig.from_csv() to load. This should be the same
+        cal-prod file version that L1C uses so that both agree on which
+        pointings are excluded.
+    cull_code : int, optional
+        Cull code to use for marking bad times (default: CullCode.BAD_HV_VALUE).
+
+    Notes
+    -----
+    match_gain_config_id() returns None (and the pointing is culled) when
+    there is no match, more than one match, or any of the gain match values
+    is NaN. A missing global attribute is treated as NaN.
+    """
+    logger.info("Running mark_unmatched_gain_config culling")
+
+    hv_deltas = {
+        field: float(l1b_de.attrs.get(field, np.nan))
+        for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+    }
+    gain_config_id = cal_product_config.cal_prod_config.match_gain_config_id(hv_deltas)
+    if gain_config_id is not None:
+        logger.info(f"Pointing gain state matches gain_config_id={gain_config_id}")
+        return
+
+    if any(np.isnan(value) for value in hv_deltas.values()):
+        reason = "one or more gain match values are NaN or missing"
+    else:
+        reason = "zero or multiple gain_config_ids matched"
+    logger.warning(
+        f"Pointing gain state {hv_deltas} does not match exactly one "
+        f"gain_config_id in the cal-prod config ({reason}). "
+        f"Marking all times as bad."
+    )
+    goodtimes_ds["cull_flags"].values[:, :] |= np.uint8(cull_code)
 
 
 def mark_incomplete_spin_sets(
