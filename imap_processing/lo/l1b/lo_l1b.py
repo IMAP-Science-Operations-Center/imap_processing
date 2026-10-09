@@ -146,6 +146,7 @@ HIST_RATE_FIELDS = [
     "esa_mode",
     "exposure_time_6deg",
     "spin_cycle",
+    "spin_angle",
 ]
 MONITOR_RATE_FIELDS = [
     "tof0_tof1_rates",
@@ -353,7 +354,7 @@ def l1b_allrates(
     # set spin cycle and remove invalid spin ASCs
     l1b_all_rates = set_spin_cycle_from_spin_data(l1a_hist, l1b_all_rates, spin_data)
 
-    pointing_start_met, _ = get_pointing_times(
+    pointing_start_met, pointing_end_met = get_pointing_times(
         ttj2000ns_to_met(l1a_hist["epoch"].values[0].item())
     )
     l1b_all_rates = set_esa_mode(pointing_start_met, anc_dependencies, l1b_all_rates)
@@ -372,6 +373,10 @@ def l1b_allrates(
         avg_spin_durations_per_cycle,
         exposure_factor,
     )
+
+    pointing_mid_met = (pointing_start_met + pointing_end_met) / 2
+    et = ttj2000ns_to_et(met_to_ttj2000ns(pointing_mid_met))
+    l1b_all_rates = set_spin_angle(l1b_all_rates, spin_data, et)
 
     l1b_hist_rates, l1b_monitor_rates = split_rate_dataset(l1b_all_rates, attr_mgr_l1b)
     datasets_to_return.extend([l1b_hist_rates, l1b_monitor_rates])
@@ -1666,6 +1671,52 @@ def calculate_histogram_rates(
             dims=["epoch", "esa_step", "spin_bin_60"],
         )
 
+    return l1b_histrates
+
+
+def set_spin_angle(
+    l1b_histrates: xr.Dataset, spin_data: xr.Dataset, et: float
+) -> xr.Dataset:
+    """
+    Set the spin angle each 6-degree histogram bin looks in.
+
+    The histogram bins are counted on board from Lo's own spin pulse, not from
+    the instrument look direction. The center of bin i looks at the IMAP_DPS
+    azimuth
+
+        (i + 0.5) * 6 + Lo mounting azimuth + Lo spin-start offset
+
+    where the spin-start offset is the spacecraft spin angle at which Lo starts
+    each spin (see ``get_lo_spin_start_phase_offset``). It is taken from the spin
+    table, so it includes any star-tracker delay correction the spin table
+    carries.
+
+    Parameters
+    ----------
+    l1b_histrates : xr.Dataset
+        The L1B histogram rates dataset.
+    spin_data : xr.Dataset
+        The L1A Spin dataset.
+    et : float
+        Ephemeris time at which to evaluate the Lo mounting azimuth.
+
+    Returns
+    -------
+    l1b_histrates : xr.Dataset
+        The L1B histogram rates dataset with the spin angle [degrees] of each
+        6-degree bin center, in [0, 360).
+    """
+    n_bins = l1b_histrates.sizes["spin_bin_6"]
+    bin_centers = (np.arange(n_bins) + 0.5) * (360.0 / n_bins)
+    mounting_offset = float(
+        get_instrument_mounting_az_el(SpiceFrame.IMAP_LO_INSTR, et)[0]
+    )
+    spin_start_offset = get_lo_spin_start_phase_offset(spin_data)
+
+    l1b_histrates["spin_angle"] = xr.DataArray(
+        np.mod(bin_centers + mounting_offset + spin_start_offset, 360.0),
+        dims=["spin_bin_6"],
+    )
     return l1b_histrates
 
 
