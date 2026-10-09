@@ -23,7 +23,7 @@ from imap_processing.spice.geometry import (
     cartesian_to_latitudinal,
     frame_transform,
     get_spacecraft_to_instrument_spin_phase_offset,
-    lo_instrument_pointing,
+    instrument_pointing,
 )
 from imap_processing.spice.repoint import (
     get_pointing_mid_time,
@@ -1140,8 +1140,8 @@ def set_pointing_direction(l1b_de: xr.Dataset) -> xr.Dataset:
     # Get the pointing bin for each DE
     et = ttj2000ns_to_et(l1b_de["epoch"])
     # get the direction in HAE coordinates
-    direction = lo_instrument_pointing(
-        et, l1b_de["pivot_angle"].values[0], SpiceFrame.IMAP_HAE, cartesian=True
+    direction = instrument_pointing(
+        et, SpiceFrame.IMAP_LO_INSTR, SpiceFrame.IMAP_HAE, cartesian=True
     )
 
     # TODO: Need to ask Lo what to do if a latitude is outside of the

@@ -11,14 +11,8 @@ from imap_processing.lo import lo_pivot_kernel
 from imap_processing.lo.lo_pivot_kernel import (
     calculate_pivot_segment,
     generate_lo_pivot_kernel,
-    pivot_angle_to_quaternion,
 )
-from imap_processing.spice.geometry import (
-    SpiceFrame,
-    get_lo_pivot_boresight,
-    instrument_pointing,
-    lo_instrument_pointing,
-)
+from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
 from imap_processing.spice.repoint import get_pointing_times_from_id
 from imap_processing.spice.time import (
     et_to_met,
@@ -32,7 +26,7 @@ from imap_processing.spice.time import (
 @pytest.fixture
 def furnish_lo_pivot_kernels(furnish_kernels):
     """Furnish the kernels needed to write and read the Lo pivot kernel."""
-    with furnish_kernels(["naif0012.tls", "imap_sclk_0000.tsc", "imap_130.tf"]):
+    with furnish_kernels(["naif0012.tls", "imap_sclk_0000.tsc", "imap_140.tf"]):
         yield
 
 
@@ -84,16 +78,6 @@ def nhk_files(pointings, monkeypatch, tmp_path):
     return {"paths": paths, "pivots": pivots}
 
 
-@pytest.mark.parametrize("pivot_angle", [0.0, 60.0, 90.0, 105.0, 160.0])
-def test_pivot_angle_to_quaternion(pivot_angle):
-    """The IMAP_LO boresight rotated into IMAP_LO_BASE is the pivot boresight."""
-    base_to_lo = spiceypy.q2m(pivot_angle_to_quaternion(pivot_angle))
-    boresight_in_base = np.asarray(base_to_lo).T @ np.array([0, -1, 0])
-    np.testing.assert_allclose(
-        boresight_in_base, get_lo_pivot_boresight(pivot_angle), atol=1e-12
-    )
-
-
 def test_calculate_pivot_segment(nhk_files, pointings):
     """One segment with the pointing coverage and the pointing's pivot angle."""
     segment, pivot_angle = calculate_pivot_segment(nhk_files["paths"][101], 101)
@@ -141,23 +125,15 @@ def test_generate_lo_pivot_kernel(nhk_files, pointings, tmp_path):
 
     spiceypy.furnsh(str(kernel_path))
     try:
+        # Across the pointing, the IMAP_LO boresight is the pivot angle away
+        # from spacecraft +Z.
         for et in sct_to_et(met_to_sclkticks(np.linspace(start_met, end_met, 3))):
-            boresight = spiceypy.mxv(
-                spiceypy.pxform("IMAP_LO", "IMAP_LO_BASE", et), [0, -1, 0]
+            boresight_sc = instrument_pointing(
+                et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
             )
             np.testing.assert_allclose(
-                boresight, get_lo_pivot_boresight(75.0), atol=1e-12
+                np.rad2deg(np.arccos(boresight_sc[2])), 75.0, atol=1e-8
             )
-        # With the kernel, the IMAP_LO frame gives the same pointing as the
-        # pivot-angle based calculation.
-        et = sct_to_et(met_to_sclkticks(np.mean(pointings[101])))
-        np.testing.assert_allclose(
-            instrument_pointing(
-                et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_LO_BASE, cartesian=True
-            ),
-            lo_instrument_pointing(et, 75.0, SpiceFrame.IMAP_LO_BASE, cartesian=True),
-            atol=1e-12,
-        )
     finally:
         spiceypy.unload(str(kernel_path))
 

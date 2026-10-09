@@ -19,7 +19,6 @@ from imap_processing.spice.geometry import (
     get_spacecraft_to_instrument_spin_phase_offset,
     imap_state,
     instrument_pointing,
-    lo_instrument_pointing,
     solar_longitude,
     spherical_to_cartesian,
 )
@@ -27,7 +26,7 @@ from imap_processing.spice.geometry import (
 
 def test_spice_frame_enum(furnish_kernels):
     """Test that the SpiceFrame enum values match imap frames kernel."""
-    with furnish_kernels(["imap_130.tf", "imap_science_130.tf"]):
+    with furnish_kernels(["imap_140.tf", "imap_science_130.tf"]):
         for frame in SpiceFrame:
             assert frame.value == spiceypy.namfrm(frame.name)
 
@@ -80,11 +79,37 @@ def test_get_instrument_mounting_az_el(
     furnish_kernels, spice_test_data_path, instrument, expected_az_el
 ):
     """Test coverage for get_instrument_mounting_az_el()"""
-    with furnish_kernels([spice_test_data_path / "imap_130.tf"]):
+    with furnish_kernels([spice_test_data_path / "imap_140.tf"]):
         result = get_instrument_mounting_az_el(instrument)
         # Testing as built angles against nominal. Allow for 0.75 degrees of
         # mounting error.
         np.testing.assert_allclose(result, expected_az_el, atol=0.75)
+
+
+@pytest.mark.parametrize(
+    "instrument",
+    [
+        SpiceFrame.IMAP_LO_INSTR,  # measured offset of ~0.16 deg from IMAP_LO
+        SpiceFrame.IMAP_LO_STAR_SENSOR,  # measured offset of ~0.33 deg from IMAP_LO
+    ],
+)
+@pytest.mark.parametrize("pivot_angle", [60.0, 90.0, 120.0])
+def test_get_instrument_mounting_az_el_lo_pivot(
+    instrument, pivot_angle, lo_pivot_ck, furnish_kernels
+):
+    """Test the Lo sensors' az/el, which depend on the pivot angle."""
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+        "imap_140.tf",
+        lo_pivot_ck(pivot_angle),
+    ]
+    with furnish_kernels(kernels):
+        et = spiceypy.str2et("2026-09-09T12:00:00")
+        result = get_instrument_mounting_az_el(instrument, et)
+        # The pivot tilts the boresight in elevation; azimuth stays near 60 deg.
+        # Allow for 0.75 degrees of mounting error, as for the fixed instruments.
+        np.testing.assert_allclose(result, (60, 90 - pivot_angle), atol=0.75)
 
 
 @pytest.mark.parametrize(
@@ -111,7 +136,7 @@ def test_get_spacecraft_to_instrument_spin_phase_offset(
 ):
     """Test coverage for get_spacecraft_to_instrument_spin_phase_offset()"""
     # Test that the offset is close to SPICE derived mounting azimuth
-    with furnish_kernels([spice_test_data_path / "imap_130.tf"]):
+    with furnish_kernels([spice_test_data_path / "imap_140.tf"]):
         # Lo requires an additional kernel to use the below function. So here,
         # we use the IMAP_LO_BASE frame to verify
         verify_inst = (
@@ -168,7 +193,7 @@ def test_frame_transform(et_strings, position, from_frame, to_frame, furnish_ker
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
@@ -339,7 +364,7 @@ def test_get_rotation_matrix(furnish_kernels):
     """Test coverage for get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_sclk_0000.tsc",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
@@ -374,7 +399,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_allowed(furnish_ke
     transformation when allow_spice_noframeconnect is True in get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_sclk_0000.tsc",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
@@ -413,7 +438,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_not_allowed(
     allow_spice_noframeconnect is False (default) in get_rotation_matrix()."""
     kernels = [
         "naif0012.tls",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_sclk_0000.tsc",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
@@ -433,7 +458,7 @@ def test_get_rotation_matrix_no_transformation_defined_for_et_not_allowed(
 def test_instrument_pointing(furnish_kernels):
     kernels = [
         "naif0012.tls",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_sclk_0000.tsc",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
@@ -481,7 +506,7 @@ def test_instrument_pointing_all_instruments(frame, furnish_kernels):
     """Test the ability to compute instrument pointing for all but Lo."""
     kernels = [
         "naif0012.tls",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_sclk_0000.tsc",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
@@ -505,7 +530,7 @@ def test_instrument_pointing_lo_ck(frame, furnish_kernels):
     """Test calculating Lo pointing."""
     kernels = [
         "naif0012.tls",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_sclk_0000.tsc",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
@@ -525,14 +550,21 @@ def test_instrument_pointing_lo_ck(frame, furnish_kernels):
         (105, [0.483, 0.837, -0.259]),  # Rotated 105°
     ],
 )
-def test_lo_instrument_pointing_pivot_angle(pivot_angle, expected, furnish_kernels):
-    kernels = ["imap_130.tf"]
+def test_lo_pivot_angle_pointing(pivot_angle, expected, lo_pivot_ck, furnish_kernels):
+    """Test the IMAP_LO boresight is the pivot angle away from spacecraft +Z."""
+    # The CK holds a constant pivot for IMAP_LO over 2026-09-09
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+        "imap_140.tf",
+        lo_pivot_ck(pivot_angle),
+    ]
     with furnish_kernels(kernels):
-        et = 0  # Use fixed frames, no time-dependent kernels needed
+        et = spiceypy.str2et("2026-09-09T12:00:00")
 
         # Get Lo boresight in spacecraft frame
-        boresight_sc = lo_instrument_pointing(
-            et, pivot_angle, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        boresight_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
 
         # Verify angle from spacecraft +Z axis equals pivot angle
@@ -547,6 +579,47 @@ def test_lo_instrument_pointing_pivot_angle(pivot_angle, expected, furnish_kerne
 
         # Verify boresight is a unit vector
         np.testing.assert_allclose(np.linalg.norm(boresight_sc), 1.0, atol=1e-10)
+
+
+@pytest.mark.parametrize(
+    "sensor, atol",
+    [
+        # Unit-vector tolerances covering each sensor's measured offset from IMAP_LO
+        (SpiceFrame.IMAP_LO_INSTR, 0.005),  # ~0.16 deg offset
+        (SpiceFrame.IMAP_LO_STAR_SENSOR, 0.01),  # ~0.33 deg offset
+    ],
+)
+@pytest.mark.parametrize("pivot_angle", [60.0, 90.0, 120.0])
+def test_lo_sensor_frame_vs_lo_pivot_frame(
+    sensor, atol, pivot_angle, lo_pivot_ck, furnish_kernels
+):
+    """Test the Lo sensor frames against the pivot platform frame."""
+    # The CK holds a constant pivot for IMAP_LO over 2026-09-09
+    kernels = [
+        "naif0012.tls",
+        "imap_sclk_0036.tsc",
+        "imap_140.tf",
+        lo_pivot_ck(pivot_angle),
+    ]
+    with furnish_kernels(kernels):
+        et = spiceypy.str2et("2026-09-09T12:00:00")
+        # The pivot platform frame, from the CK
+        lo_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        )
+
+        # Each sensor adds a small measured offset to the platform
+        sensor_sc = instrument_pointing(
+            et, sensor, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+        )
+        np.testing.assert_allclose(sensor_sc, lo_sc, atol=atol)
+
+        # Outside the CK coverage there is no pivot, so no path to the spacecraft
+        et_outside = spiceypy.str2et("2026-09-11T00:00:00")
+        with pytest.raises(spiceypy.utils.exceptions.SpiceNOFRAMECONNECT):
+            instrument_pointing(
+                et_outside, sensor, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
+            )
 
 
 @pytest.mark.external_kernel
