@@ -1,0 +1,388 @@
+.. _swe-l2:
+
+L1B to L2 - Phase Space Density, Flux and Spin Angle
+====================================================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+This page covers algorithm document section 3.4.4.
+
+**[DOC]** "SWE Level 1b to Level 2 processing consists of converting the counts
+values to physical phase space distribution or intensity units, and organizing
+the data by energy step, polar angle, and spin phase."
+
+Four things happen. Two are trivial lookups, two are real.
+
+.. code-block:: text
+
+   count rate (n, 24, 30, 7)
+     |
+     | 1. energy from ESA voltage       (done at L1B, using the LUT + k)
+     | 2. polar angle from CEM index    (a constant array)
+     | 3. phase space density, then flux
+     | 4. spin phase from SPICE -> 12-degree spin angle bins
+     v
+   imap_swe_l2_sci
+
+Step 1 - particle energy
+------------------------
+
+**[DOC]** "The particle energy measured at each step is determined from the
+voltage applied to the electrostatic analyzer (ESA) plates. The ratio of
+measured energy to applied voltage is referred to as the **analyzer constant**
+``k = E/V``, and is determined from ground calibration. This value will be
+stored in a calibration data file, where it can be read by the processing
+code."
+
+**[CODE]** ``swe_constants.ENERGY_CONVERSION_FACTOR = 4.75``, hard-coded, with
+a ``TODO: add these to instrument status summary`` above it. The multiplication
+happens at **L1B** (``esa_energy``), not L2, so L2 receives energies already in
+eV. L2 also builds its own ``energy`` coordinate independently from
+``ESA_VOLTAGE_ROW_INDEX_DICT`` times the same constant.
+
+With k = 4.75 the 24 ESA voltages 0.56 V - 1108.66 V map to
+**2.66 eV - 5266 eV**, consistent with the document's stated 1 eV - 5 keV
+range.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 12 22 22 12 22 22
+
+   * - row
+     - ESA V
+     - E (eV)
+     - row
+     - ESA V
+     - E (eV)
+   * - 0
+     - 0.56
+     - 2.66
+     - 12
+     - 29.39
+     - 139.6
+   * - 1
+     - 0.78
+     - 3.71
+     - 13
+     - 40.88
+     - 194.2
+   * - 2
+     - 1.08
+     - 5.13
+     - 14
+     - 56.87
+     - 270.1
+   * - 3
+     - 1.51
+     - 7.17
+     - 15
+     - 79.10
+     - 375.7
+   * - 4
+     - 2.10
+     - 9.98
+     - 16
+     - 110.03
+     - 522.6
+   * - 5
+     - 2.92
+     - 13.87
+     - 17
+     - 153.05
+     - 726.9
+   * - 6
+     - 4.06
+     - 19.29
+     - 18
+     - 212.89
+     - 1011.2
+   * - 7
+     - 5.64
+     - 26.79
+     - 19
+     - 296.14
+     - 1406.7
+   * - 8
+     - 7.85
+     - 37.29
+     - 20
+     - 411.93
+     - 1956.7
+   * - 9
+     - 10.92
+     - 51.87
+     - 21
+     - 572.99
+     - 2721.7
+   * - 10
+     - 15.19
+     - 72.15
+     - 22
+     - 797.03
+     - 3785.9
+   * - 11
+     - 21.13
+     - 100.4
+     - 23
+     - 1108.66
+     - 5266.1
+
+Rows 11-18 (100.4 - 1011.2 eV) are the eight energies downlinked in real time;
+see :ref:`swe-ialirt`.
+
+Step 2 - polar angle
+--------------------
+
+**[DOC]** "As each CEM detector is oriented at a given angle relative to the
+spacecraft spin axis, the polar angle is the same for all measurements by a
+given detector. The central detector points outward perpendicular to the
+spacecraft spin axis. The other detectors point at nominally +/-21, +/-42, and
++/-63 degrees relative to this detector."
+
+**[CODE]** ``swe_constants.CEM_DETECTORS_ANGLE = [-63, -42, -21, 0, 21, 42, 63]``,
+exposed as the L2 ``inst_el`` coordinate. There is no computation.
+
+.. _swe-l2-psd:
+
+Step 3 - phase space density
+----------------------------
+
+**[DOC]** Heritage ``fspace()``:
+
+.. code-block:: text
+
+   fv(v, theta, phi) = 2 * C(E, theta, phi) / (G * v^4 * tau)
+
+     C   = corrected counts
+     E   = electron energy, eV
+     v   = electron speed from energy, cm/s
+     tau = sampling time, s
+     G   = geometric factor, cm^2 sr
+     fv  = phase space density, s^3 / cm^6
+
+with ``v^4`` evaluated as ``1.237e31 * E^2`` for E in eV. The heritage C guards
+``ccounts < 0`` by writing ``fv = 0``.
+
+The **geometric factors** are constant in time (time variation is handled by the
+L1B gain calibration). **[DOC]** "The geometric factors below are the nominal
+SWE geometric factors for the 7 CEM detectors (1-7) as of October 2025, and may
+be refined by further analysis":
+
+.. code-block:: text
+
+   g = {424.4e-6, 564.5e-6, 763.8e-6, 916.9e-6, 792.0e-6, 667.7e-6, 425.2e-6}
+
+The document notes the factors "are hard-coded into the routine; geometric
+factors can also be stored in a calibration data file to be read by the
+processing routine."
+
+.. note::
+
+   The C fragment in the document is **stale**: the array it actually assigns
+   (``gg[0] = 255.6e-6`` ...) is the **ACE/SWEPAM** set, clearly labelled
+   ``/* Ace geometric factors */``, while the SWE values sit above it in a
+   comment. Use the SWE set.
+
+**[CODE]** ``swe_constants.GEOMETRIC_FACTORS`` holds the SWE October 2025
+values, hard-coded, under the same ``TODO: add these to instrument status
+summary``. ``swe_l2.calculate_phase_space_density()``:
+
+.. code-block:: python
+
+   phase_space_density = (2 * data) / (
+       GEOMETRIC_FACTORS[np.newaxis, np.newaxis, np.newaxis, :]
+       * VELOCITY_CONVERSION_FACTOR          # 1.237e31
+       * particle_energy_data[:, :, :, np.newaxis] ** 2
+   )
+
+``data`` is the L1B ``science_data``, which is **already** ``C/tau``, so the
+``tau`` in the document's formula is absorbed and does not appear.
+
+The ``1.237e31`` factor, derived in the function's docstring:
+
+.. code-block:: text
+
+   v   = sqrt(2E/m) with E = eV * 1.60219e-19 J/eV, m = 9.10938356e-31 kg
+       = sqrt(3.5176e16 * eV) cm/s
+   v^4 = 1.237e31 * eV^2
+
+**[CODE]** The heritage ``ccounts < 0`` guard is **not** implemented; negative
+inputs would propagate. In practice counts are unsigned and the deadtime floor
+keeps the correction positive, so this has not bitten anyone.
+
+.. warning::
+
+   **The heritage ``fspace()`` ends with a second loop that is not implemented
+   here**, halving the phase space density of the two **end** detectors (CEM 1
+   and CEM 7, indices 0 and 6) at every azimuth - and, for even azimuth
+   indices, taking the value from the neighbouring odd index first. This is a
+   real factor-of-2 correction on the outermost detectors. See
+   :ref:`swe-implementation-status`.
+
+Step 4 - number flux
+--------------------
+
+**[DOC]** "In the heritage code, electron distributions are always saved in
+units of phase space distribution rather than intensity", but the conversion is
+given:
+
+.. code-block:: text
+
+   j = C / (G * E * tau)                          # differential number flux
+   j(v, theta, phi) = fv * v^4 / (2 * E)
+                    = 6.187e30 * fv * E           # E in eV
+
+Units of ``j``: 1 / (cm^2 s eV ster).
+
+**[CODE]** ``swe_l2.calculate_flux()``:
+
+.. code-block:: python
+
+   flux = FLUX_CONVERSION_FACTOR * esa_energy[:, :, :, np.newaxis] * phase_space_density
+
+with ``FLUX_CONVERSION_FACTOR = 6.187e30``. The docstring records that Ruth
+Skoug confirmed both this factor and the 1.237e31 above.
+
+.. _swe-l2-spin:
+
+Step 5 - spin phase and angle binning
+-------------------------------------
+
+**[DOC]** "In Level 1 SWE data products, the data are organized by the spin
+sector of each measurement... As part of Level 2 processing, the spin sectors
+are converted to spin angles of the spacecraft by combining SWE timing
+information with knowledge of the spacecraft spin from spacecraft ephemeris
+data."
+
+Because SWE is not synced to the spin, **the same spin sector index views a
+different physical angle in each quarter cycle.** Combining four quarter cycles
+therefore requires binning by actual angle:
+
+**[DOC]** "For Level 2, these bins will be defined to be **12 degrees wide, in
+despun spacecraft coordinates**. Binning will be determined by the **central
+spin phase angle** of each spin bin."
+
+**[CODE]** ``swe_l2()``:
+
+.. code-block:: python
+
+   inst_spin_phase = get_instrument_spin_phase(
+       query_met_times=l1b_dataset["acquisition_time"].data.ravel(),
+       instrument=SpiceFrame.IMAP_SWE,
+   )
+   inst_spin_angle = get_spin_angle(inst_spin_phase, degrees=True).reshape(
+       -1, N_ESA_STEPS, N_ANGLE_SECTORS
+   )
+
+Note that the query times are the **center** acquisition times computed at L1B,
+which is what makes "the central spin phase angle of each spin bin" work out.
+
+The angles are saved as ``inst_az_spin_sector`` before binning, because L3
+needs the per-measurement angle, not the bin.
+
+**[CODE]** ``find_angle_bin_indices()`` does the binning. Bin centers are
+``6, 18, 30, ... 354``; edges are ``np.arange(0, 360, 12)``. The lookup is
+
+.. code-block:: python
+
+   spin_angle_bins_indices = np.searchsorted(edges, inst_spin_angle, side="right") - 1
+
+so an angle in ``[0, 12)`` lands in bin 0 (center 6), ``[12, 24)`` in bin 1, and
+so on. Angles outside ``[0, 360)`` raise ``ValueError``.
+
+**[CODE]** ``put_data_into_angle_bins()`` accumulates with ``np.add.at`` and
+divides by a parallel count array, i.e. it takes the **mean** of whatever
+measurements fall in a bin. Empty bins are set to ``NaN`` (via dividing by
+``NaN``) rather than 0, deliberately, "because zero physical counts could be
+valid data".
+
+.. note::
+
+   In the nominal case each ``(energy, bin)`` cell receives exactly one
+   measurement, so the mean is a no-op. It stops being a no-op when the spin
+   period drifts relative to the quarter cycle - which is exactly why the test
+   suite runs L2 at both a 15 s and a 14.6 s spin period.
+
+**[CODE]** ``put_uncertainty_into_angle_bins()`` is the same accumulation in
+quadrature: it sums ``data**2`` into the bins and returns ``sqrt``. The
+docstring records the SWE instruction verbatim, and notes that SWE intends to
+replace this with a formula based on spin data in future.
+
+Reference frame
+^^^^^^^^^^^^^^^
+
+**[DOC]** asks for **despun spacecraft (DSC)** coordinates, twice - once in
+3.4.4 for the spin phase and once in 3.4.6, where L3 needs SWE and MAG in a
+common frame.
+
+**[CODE]** produces the **instrument** spin angle
+(``SpiceFrame.IMAP_SWE``, variables named ``inst_az`` / ``inst_el``). The two
+differ by a fixed instrument-to-spacecraft mounting offset, which
+``get_instrument_spin_phase`` applies as
+``(spacecraft_spin_phase + instrument_spin_offset) % 1``. Flagged in
+:ref:`swe-implementation-status`; confirm with the SWE team which frame the L2
+deliverable is expected to be in before changing anything.
+
+What L2 emits
+-------------
+
+**[DOC]** "The primary Level 2 data product is a matrix every full SWE cycle
+(nominally 1 minute) of electron phase space distribution with size
+**(7 CEMs x 24 energy steps x 30 spin phase bins)**, and the same matrix with
+units of electron intensity."
+
+"In addition, to facilitate Level 2 to Level 3 processing, the SWE Level 2 data
+set will also include phase space distribution and intensity matrices for the
+**original measurements** (7 CEM detectors x 180 energy/spin phase bins per
+quarter-cycle), together with the **time stamps and spin phase angles** for each
+individual measurement. These data will allow calculation of the electron pitch
+angle for each individual measurement, leading to the most accurate pitch angle
+distributions."
+
+**[CODE]** Both are present:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 28 36
+
+   * - Variable
+     - Shape
+     - Document counterpart
+   * - ``phase_space_density``
+     - (n, 24, 30, 7)
+     - The primary binned product.
+   * - ``flux``
+     - (n, 24, 30, 7)
+     - The intensity version of the same.
+   * - ``phase_space_density_spin_sector``
+     - (n, 24, 30, 7)
+     - The "original measurements" matrix.
+   * - ``flux_spin_sector``
+     - (n, 24, 30, 7)
+     - Ditto.
+   * - ``inst_az_spin_sector``
+     - (n, 24, 30)
+     - The per-measurement spin phase angles.
+   * - ``acquisition_time``
+     - (n, 24, 30)
+     - The per-measurement time stamps.
+
+The document's "180 energy/spin phase bins per quarter-cycle" and the code's
+``(24, 30)`` per full cycle are the **same 720 numbers** - the checkerboard is a
+permutation, so preserving it full-cycle preserves every original measurement.
+The code's layout is strictly more convenient for L3 because energy and spin
+sector are already separate axes.
+
+Deviations from the document at L2
+----------------------------------
+
+Summarized here, detailed in :ref:`swe-implementation-status`:
+
+#. The **end-detector halving** in heritage ``fspace()`` is not implemented.
+#. Spin angles are in the **instrument** frame, not despun spacecraft.
+#. The **analyzer constant** and **geometric factors** are hard-coded rather
+   than read from a calibration file, as the document says they may be.
+#. ``flux_stat_uncert`` is **binned twice**, and both uncertainty variables
+   carry ``esa_step``/``spin_sector`` dimension names while holding binned
+   data.
+#. The heritage ``ccounts < 0`` guard is absent.

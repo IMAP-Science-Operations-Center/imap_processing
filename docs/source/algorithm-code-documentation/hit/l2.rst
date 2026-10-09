@@ -1,0 +1,340 @@
+.. _hit-l2:
+
+L1B to L2: Conversion to Intensity
+==================================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+**[DOC]** Section 7 of the algorithm document.
+
+* **Input**: L1B CDF files
+* **Processing requirements**: geometry factors, energy bin widths,
+  efficiencies, dynamic threshold state, instrument status table, instrument
+  status summary, spin pulse
+* **Output**: L2 CDF files
+
+L2 turns livetime-corrected counts into **physical intensities** in
+:math:`\mathrm{cm^{-2}\,s^{-1}\,sr^{-1}\,(MeV/nuc)^{-1}}`, independent of the
+instrument.
+
+.. note::
+
+   The document's input list above includes "instrument status table,
+   instrument status summary, spin pulse". **None of those are used by the
+   code.** The only ancillary inputs are the four factor CSVs, and the only
+   state read from the data is ``dynamic_threshold_state``.
+
+The intensity equation
+----------------------
+
+**[DOC]** Equation 12, for standard rates:
+
+.. math::
+
+   j_i(N, X) = \frac{1}{60\,\Delta t\,\Delta E_i}
+               \frac{\sum_{j=2}^{4} q_{ij}(N,X) - b_{ij}(N,X)}
+                    {\sum_{j=2}^{4} \sigma_{ij}(N,X)\,\lambda_{ij}(N,X)}
+
+with:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 86
+
+   * - Symbol
+     - Meaning
+   * - :math:`N`
+     - ion species
+   * - :math:`i`
+     - energy bin
+   * - :math:`X`
+     - look direction
+   * - :math:`j`
+     - penetration range, 2 to 4
+   * - :math:`q`
+     - particle counts (L1B livetime-corrected)
+   * - :math:`\Delta t`
+     - livetime, seconds
+   * - :math:`\Delta E`
+     - energy bin width, MeV
+   * - :math:`\sigma`
+     - geometry factor, cm\ :sup:`2` sr
+   * - :math:`\lambda`
+     - detection efficiency (**assumed 1 until determined otherwise**)
+   * - :math:`b`
+     - background counts (primarily GCR and ACR; **0 until measured in
+       flight**)
+
+The factor of **60** converts the L1B rate from "counts per integration time"
+to counts per second. The sectored version (equation 14) uses **600** instead,
+because its integration time is 10 minutes. The summed version (equation 16)
+is the same as equation 12 with an extra sum over the bins that merge into
+each summed bin.
+
+Uncertainties run through the same equation with :math:`q` replaced by the
+L1B :math:`\delta_{u}` / :math:`\delta_{l}`. Systematic uncertainties are
+**zero at launch**, and the total is
+
+.. math::
+
+   \delta_{full} = \sqrt{\delta_{stat}^2 + \delta_{sys}^2}
+
+**[CODE]** ``hit_l2.calculate_intensities``:
+
+.. code-block:: python
+
+   intensity = (
+       rates / (factors.delta_time * factors.delta_e
+                * factors.geometry_factor * factors.efficiency)
+   ) - factors.b
+
+   intensity = xr.where(rates == FILLVAL_FLOAT32, FILLVAL_FLOAT32, intensity)
+
+where ``delta_time`` is ``SECONDS_PER_MIN = 60`` for standard and summed
+products and ``SECONDS_PER_10_MIN = 600`` for the macropixel product.
+
+Two differences from the document worth understanding before you touch this:
+
+.. important::
+
+   **1. The document's** :math:`\Delta t` **is dropped.** Equation 12 contains
+   both a literal 60 *and* :math:`\Delta t` (defined as "livetime from
+   telemetry, units of s"). Applying both would double-count livetime, which
+   L1B has already divided out. The code treats the ``60`` *as* :math:`\Delta t`
+   - the integration time in seconds - which is the only reading that is
+   dimensionally consistent. The code's docstrings state this explicitly.
+
+   **2.** :math:`b` **is subtracted after the division, not before.** The
+   document subtracts background *counts* from the numerator; the code
+   subtracts ``b`` from the finished *intensity*. These are only equivalent if
+   ``b`` is expressed in intensity units. **Today every ``b`` in the ancillary
+   CSVs is 0, so nothing differs numerically.** If the HIT team ever delivers a
+   non-zero background, establish which units it is in before trusting either
+   form. See :ref:`hit-gap-background`.
+
+Selecting factors by dynamic threshold state
+--------------------------------------------
+
+**[DOC]** *"To process these data ... the dynamic threshold state for the time
+period in question must be determined using the dynamic threshold bit. The base
+state is dynamic threshold level 0. The geometry factors and efficiencies can be
+different for the different dynamic threshold states."*
+
+Algorithm document Tables 32-35 give the standard-rate factors for DT0, DT1,
+DT2 and DT3 respectively; Table 36 gives the sectored factors and Table 37 the
+summed factors.
+
+**[CODE]** The state is a **per-frame** value, so the factor arrays are built
+per-frame too:
+
+#. ``load_ancillary_data`` reads one CSV per state **actually present** in the
+   dataset, selected by the filename substring ``dt<N>-factors``, and
+   lowercases the column names and species values.
+#. ``get_species_ancillary_data`` filters to one species and groups by
+   ``lower energy (mev)``, returning ``delta_e``, ``geometry_factor``,
+   ``efficiency`` and ``b`` as arrays.
+#. ``calculate_intensities_for_a_species`` stacks those per-frame according to
+   ``dynamic_threshold_state``, giving a 3-D ``(epoch, energy, 1)`` array for
+   standard/summed products or ``(epoch, energy, zenith)`` for sectored.
+#. For sectored products ``reshape_for_sectored`` repeats along the azimuth
+   axis to 4-D ``(epoch, energy, azimuth, zenith)`` - **the factors depend on
+   declination (zenith) but not on inclination (azimuth)**. For the others,
+   ``np.squeeze(..., axis=-1)`` drops the trailing size-1 axis.
+#. ``build_ancillary_dataset`` wraps them in an ``xr.Dataset`` sharing the
+   species array's coordinates, so the division aligns on epoch.
+
+.. warning::
+
+   **[CODE]** Nothing validates that all four states are present, or that the
+   CSV family matches the product. ``load_ancillary_data`` uses
+   ``next(path for path in ancillary_files if f"dt{state}-factors" in str(path))``
+   - a missing file raises a bare ``StopIteration``, and passing (say) the
+   ``summed`` CSVs to the macropixel path fails later with a shape mismatch.
+
+.. _hit-l2-where-summing-happens:
+
+Where the cross-range summing happens
+-------------------------------------
+
+This asymmetry causes more confusion than anything else in HIT, so it is worth
+stating plainly:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 26 26 48
+
+   * - Product
+     - Summed at
+     - Mapping used
+   * - Summed intensity
+     - **L1B**
+     - ``SUMMED_PARTICLE_ENERGY_RANGE_MAPPING`` (``hit/l1b/constants.py``),
+       67 bins
+   * - Standard intensity
+     - **L2**
+     - ``STANDARD_PARTICLE_ENERGY_RANGE_MAPPING`` (``hit/l2/constants.py``),
+       204 bins
+   * - Macropixel intensity
+     - not summed
+     - the sectored counts are already per-species
+
+So ``imap_hit_l1b_summed-rates`` already has ``h``, ``he3``, ... variables
+ready to be divided by factors, while ``imap_hit_l1b_standard-rates`` still has
+raw ``l2fgrates``/``l3fgrates``/``penfgrates`` arrays that L2 must combine
+first - using the **same** ``hit_utils.add_summed_particle_data_to_dataset``
+helper that L1B used for the summed product.
+
+The three L2 products
+---------------------
+
+Standard intensity
+^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``process_standard_intensity``.
+
+#. Start with an empty dataset carrying only ``epoch`` and
+   ``dynamic_threshold_state``.
+#. For each of the 17 species in
+   ``STANDARD_PARTICLE_ENERGY_RANGE_MAPPING``, sum the L1B rates across R2/R3/R4
+   into that species' energy bins (and sum the uncertainties linearly - see
+   :ref:`hit-l1b-summed`).
+#. Convert everything to intensity.
+#. Add zero systematic uncertainties and the quadrature total.
+#. Rename ``<species>`` to ``<species>_standard_intensity``.
+
+**204 energy bins total.** This exactly matches the 204 "Intensity" entries in
+algorithm document Table 31 and the 204 data rows in each
+``imap_hit_standard-dt<N>-factors`` CSV.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 12 68
+
+   * - Species
+     - Bins
+     - Notes
+   * - ``h``
+     - 12
+     -
+   * - ``he3``
+     - 11
+     -
+   * - ``he4``
+     - 12
+     -
+   * - ``he``
+     - 11
+     - He-3 + He-4 combined
+   * - ``c``, ``n``, ``o``
+     - 12 each
+     -
+   * - ``ne``
+     - 13
+     -
+   * - ``na``
+     - 8
+     - R3 only - Na is not classified by the R2 or R4 matrices
+   * - ``mg``, ``si``
+     - 14 each
+     -
+   * - ``al``
+     - 9
+     -
+   * - ``s``, ``ar``, ``ca``
+     - 13 each
+     -
+   * - ``fe``
+     - 16
+     - the widest coverage, up to 52-70 MeV/nuc
+   * - ``ni``
+     - 9
+     - R3 only
+   * - **Total**
+     - **204**
+     -
+
+Summed intensity
+^^^^^^^^^^^^^^^^
+
+**[CODE]** ``process_summed_intensity``. Simplest of the three: deep-copy the
+L1B summed rates, convert each of the 17 species to intensity, add
+systematic/total uncertainties, rename to ``<species>_summed_intensity``.
+67 bins.
+
+Macropixel intensity
+^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``process_macropixel_intensity``, then
+``transform_to_10_minute_chunks``.
+
+The intensity calculation itself is the same, with ``delta_time = 600`` and 4-D
+factor arrays. The interesting part is the reshaping afterwards.
+
+Recall from :ref:`hit-l1a` that the L1A/L1B sectored arrays are **9/10 fill**:
+each 1-minute record holds one species/energy combination and fill everywhere
+else. ``transform_to_10_minute_chunks`` collapses each run of 10 records into a
+single dense record:
+
+#. Take every 10th record as the output template
+   (``isel(epoch=slice(None, None, 10))``).
+#. Walk the species/energy order
+   ``[("h", 3), ("he4", 2), ("cno", 2), ("nemgsi", 2), ("fe", 1)]``, which is
+   exactly ``MOD_10_MAPPING``'s order, keeping a running offset ``species_i``
+   from 0 to 9.
+#. For each species/energy, pull the slice ``[species_i::10, energy_i]`` - the
+   records where *that* combination was actually transmitted - and write it
+   into the output at energy plane ``energy_i``.
+#. Recompute the epoch:
+
+   .. code-block:: python
+
+      new_epochs = start + (end - start) // 2 - nanoseconds_per_10_min
+
+   i.e. the centre of the 10-record transmission window, **shifted back 10
+   minutes to the collection window**. This is the counterpart of the livetime
+   shift at L1A: the timestamp now refers to when the particles arrived, not
+   when the bytes came down.
+#. Set ``epoch_delta`` to 5 minutes, so the record spans its full 10-minute
+   collection window.
+
+.. warning::
+
+   **[CODE]** This function assumes the record count is an exact multiple of
+   10 (``reshape(-1, 10)`` will raise otherwise) and that the species order
+   within each group is exactly the ``MOD_10_MAPPING`` order. L1A's
+   ``find_complete_mod10_sets`` does guarantee both for data that passes
+   through the normal chain, but the function itself has no guard.
+
+Uncertainties at L2
+-------------------
+
+**[CODE]** Three layers, all present:
+
+* **Statistical** - ``calculate_intensities_for_all_species`` runs the
+  ``_stat_uncert_minus`` and ``_stat_uncert_plus`` arrays through the same
+  intensity equation as the data.
+* **Systematic** - ``add_systematic_uncertainties`` writes ``<species>_sys_err_minus``
+  and ``_sys_err_plus`` as **zeros**, matching the document's "at launch, the
+  values for all systematic uncertainties will be 0".
+* **Total** - ``add_total_uncertainties`` computes
+  :math:`\sqrt{\delta_{stat}^2 + \delta_{sys}^2}` into
+  ``<species>_total_uncert_minus`` / ``_plus``.
+
+.. note::
+
+   The ``b`` subtraction is applied to the uncertainty arrays too, since they
+   go through the identical ``calculate_intensities`` call. With ``b = 0`` this
+   is a no-op. If ``b`` ever becomes non-zero, subtracting a background from an
+   *uncertainty* is wrong and will need a separate code path.
+
+CDF attribute handling
+----------------------
+
+**[CODE]** ``add_cdf_attributes`` has one wrinkle worth knowing: macropixel
+uncertainty and systematic-error variables are 4-D while the standard and
+summed ones are 2-D, so they need different ``DEPEND_*`` attributes. The YAML
+holds both, with the macropixel versions carrying a ``_macropixel`` suffix
+(``h_total_uncert_minus_macropixel`` vs ``h_total_uncert_minus``), and the
+function picks based on whether ``"macropixel"`` is in the logical source.
+The macropixel product also uses an ``epoch_macropixel`` attribute set, because
+its cadence and ``epoch_delta`` differ.
