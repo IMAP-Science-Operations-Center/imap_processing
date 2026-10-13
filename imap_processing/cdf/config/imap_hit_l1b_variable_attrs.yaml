@@ -819,11 +819,12 @@ l4bgrates_stat_uncert_minus:
   LABLAXIS: "l4bgrates Count Rate"
   LABL_PTR_1: l4bgrates_index_label
 
-# <=== Summed & Sectored Rates - Particle Variable Attributes
-# Rate/uncertainty variables are shared by both products under the same
-# bare name; see the comment above emit_particle_sheet() in the
-# generator for why (and note DEPEND_2/DEPEND_3 are intentionally
-# omitted for those shared variables). ===>
+# <=== Summed Rates - Particle Variable Attributes
+# h, he4 and fe (and their uncertainties) exist in both the summed-rates
+# and sectored-rates products under the same variable name. Their
+# attributes are stored under product-specific keys (e.g. h_summed,
+# h_sectored) and hit_l1b.py appends the suffix when looking them up.
+# All other variables use their plain name. ===>
 
 h_energy_mean:
   <<: *default_energy_attrs
@@ -944,7 +945,7 @@ ni_energy_mean:
   DELTA_PLUS_VAR: ni_energy_delta_plus
   FIELDNAM: ni_energy
 
-h:
+h_summed:
   <<: *default_particle_rate_attrs
   CATDESC: H Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
   DELTA_MINUS_VAR: h_stat_uncert_minus
@@ -962,7 +963,7 @@ he3:
   FIELDNAM: he3_count_rate_summed
   LABLAXIS: "He3 count rate"
 
-he4:
+he4_summed:
   <<: *default_particle_rate_attrs
   CATDESC: He4 Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
   DELTA_MINUS_VAR: he4_stat_uncert_minus
@@ -1079,7 +1080,7 @@ ca:
   FIELDNAM: ca_count_rate_summed
   LABLAXIS: "Ca count rate"
 
-fe:
+fe_summed:
   <<: *default_particle_rate_attrs
   CATDESC: Fe Summed Omnidirectional Count Rates in 5 energy bins (useful for quiet times)
   DELTA_MINUS_VAR: fe_stat_uncert_minus
@@ -1289,14 +1290,14 @@ ni_energy_delta_minus:
   DEPEND_0: ni_energy_mean
   FIELDNAM: ni_energy_min
 
-h_stat_uncert_plus:
+h_stat_uncert_plus_summed:
   <<: *default_particle_uncert_attrs
   CATDESC: Plus uncertainty for H Summed
   DEPEND_1: h_energy_mean
   FIELDNAM: h_plus_uncertainty
   LABLAXIS: "H count rate"
 
-h_stat_uncert_minus:
+h_stat_uncert_minus_summed:
   <<: *default_particle_uncert_attrs
   CATDESC: Minus uncertainty for H Summed
   DEPEND_1: h_energy_mean
@@ -1317,14 +1318,14 @@ he3_stat_uncert_minus:
   FIELDNAM: he3_minus_uncertainty
   LABLAXIS: "He3 count rate"
 
-he4_stat_uncert_plus:
+he4_stat_uncert_plus_summed:
   <<: *default_particle_uncert_attrs
   CATDESC: Plus uncertainty for He4 Summed
   DEPEND_1: he4_energy_mean
   FIELDNAM: he4_plus_uncertainty
   LABLAXIS: "He4 count rate"
 
-he4_stat_uncert_minus:
+he4_stat_uncert_minus_summed:
   <<: *default_particle_uncert_attrs
   CATDESC: Minus uncertainty for He4 Summed
   DEPEND_1: he4_energy_mean
@@ -1499,14 +1500,14 @@ ca_stat_uncert_minus:
   FIELDNAM: ca_minus_uncertainty
   LABLAXIS: "Ca count rate"
 
-fe_stat_uncert_plus:
+fe_stat_uncert_plus_summed:
   <<: *default_particle_uncert_attrs
   CATDESC: Plus uncertainty for Fe Summed
   DEPEND_1: fe_energy_mean
   FIELDNAM: fe_plus_uncertainty
   LABLAXIS: "Fe count rate"
 
-fe_stat_uncert_minus:
+fe_stat_uncert_minus_summed:
   <<: *default_particle_uncert_attrs
   CATDESC: Minus uncertainty for Fe Summed
   DEPEND_1: fe_energy_mean
@@ -1541,11 +1542,41 @@ he_energy_delta_minus:
   DEPEND_0: he_energy_mean
   FIELDNAM: he_energy_min
 
-# <=== Sectored-only Particle Variable Attributes (cno, nemgsi)
-# h/he4/fe are already covered above (shared with summed-rates); their
-# energy coordinates are inherited from L1A and not redefined here. ===>
+# <=== Sectored Rates - Particle Variable Attributes
+# Keys end in _sectored; hit_l1b.py appends the suffix when building the
+# sectored-rates product. The energy coordinates are inherited from L1A.
+# The h/he4/fe energy deltas share the plain entries above; cno and nemgsi
+# only exist in this product, so their energy deltas are defined here. ===>
 
-cno:
+h_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: H Sectored Count Rates in 3 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: h_stat_uncert_minus
+  DELTA_PLUS_VAR: h_stat_uncert_plus
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: h_count_rate_sectored
+  LABLAXIS: "H count rate"
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: He4 Sectored Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: he4_stat_uncert_minus
+  DELTA_PLUS_VAR: he4_stat_uncert_plus
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: he4_count_rate_sectored
+  LABLAXIS: "He4 count rate"
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_sectored:
   <<: *default_particle_rate_attrs
   CATDESC: C, N, O Macropixel Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
   DELTA_MINUS_VAR: cno_stat_uncert_minus
@@ -1555,8 +1586,11 @@ cno:
   DEPEND_3: zenith
   FIELDNAM: cno_count_rate_sectored
   LABLAXIS: "CNO count rate"
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
 
-nemgsi:
+nemgsi_sectored:
   <<: *default_particle_rate_attrs
   CATDESC: Ne, Mg, Si Sectored Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
   DELTA_MINUS_VAR: nemgsi_stat_uncert_minus
@@ -1566,8 +1600,73 @@ nemgsi:
   DEPEND_3: zenith
   FIELDNAM: nemgsi_count_rate_sectored
   LABLAXIS: "NeMgSi count rate"
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
 
-cno_stat_uncert_plus:
+fe_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: Fe Sectored Count Rates in 1 energy bin, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: fe_stat_uncert_minus
+  DELTA_PLUS_VAR: fe_stat_uncert_plus
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: fe_count_rate_sectored
+  LABLAXIS: "Fe count rate"
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+h_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for H Sectored
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: h_plus_uncertainty
+  LABLAXIS: "H count rate"
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+h_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for H Sectored
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: h_minus_uncertainty
+  LABLAXIS: "H count rate"
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for He4 Sectored
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: he4_plus_uncertainty
+  LABLAXIS: "He4 count rate"
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for He4 Sectored
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: he4_minus_uncertainty
+  LABLAXIS: "He4 count rate"
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_stat_uncert_plus_sectored:
   <<: *default_particle_uncert_attrs
   CATDESC: Plus uncertainty for C, N, O Sectored
   DEPEND_1: cno_energy_mean
@@ -1575,8 +1674,11 @@ cno_stat_uncert_plus:
   DEPEND_3: zenith
   FIELDNAM: cno_plus_uncertainty
   LABLAXIS: "CNO count rate"
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
 
-cno_stat_uncert_minus:
+cno_stat_uncert_minus_sectored:
   <<: *default_particle_uncert_attrs
   CATDESC: Minus uncertainty for C, N, O Sectored
   DEPEND_1: cno_energy_mean
@@ -1584,8 +1686,11 @@ cno_stat_uncert_minus:
   DEPEND_3: zenith
   FIELDNAM: cno_minus_uncertainty
   LABLAXIS: "CNO count rate"
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
 
-nemgsi_stat_uncert_plus:
+nemgsi_stat_uncert_plus_sectored:
   <<: *default_particle_uncert_attrs
   CATDESC: Plus uncertainty for Ne, Mg, Si Sectored
   DEPEND_1: nemgsi_energy_mean
@@ -1593,8 +1698,11 @@ nemgsi_stat_uncert_plus:
   DEPEND_3: zenith
   FIELDNAM: nemgsi_plus_uncertainty
   LABLAXIS: "NeMgSi count rate"
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
 
-nemgsi_stat_uncert_minus:
+nemgsi_stat_uncert_minus_sectored:
   <<: *default_particle_uncert_attrs
   CATDESC: Minus uncertainty for Ne, Mg, Si Sectored
   DEPEND_1: nemgsi_energy_mean
@@ -1602,3 +1710,54 @@ nemgsi_stat_uncert_minus:
   DEPEND_3: zenith
   FIELDNAM: nemgsi_minus_uncertainty
   LABLAXIS: "NeMgSi count rate"
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+fe_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Fe Sectored
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: fe_plus_uncertainty
+  LABLAXIS: "Fe count rate"
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+fe_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Fe Sectored
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: fe_minus_uncertainty
+  LABLAXIS: "Fe count rate"
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: C, N, O energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: cno_energy_mean
+  FIELDNAM: cno_energy_delta_plus
+
+cno_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: C, N, O energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: cno_energy_mean
+  FIELDNAM: cno_energy_min
+
+nemgsi_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ne, Mg, Si energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: nemgsi_energy_mean
+  FIELDNAM: nemgsi_energy_delta_plus
+
+nemgsi_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ne, Mg, Si energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: nemgsi_energy_mean
+  FIELDNAM: nemgsi_energy_min

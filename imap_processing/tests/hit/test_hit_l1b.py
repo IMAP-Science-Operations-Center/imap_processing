@@ -679,21 +679,7 @@ def test_hit_l1b_delta_var_pointers_exist(dependencies, descriptor):
                 )
 
 
-@pytest.mark.parametrize(
-    "descriptor",
-    [
-        "standard-rates",
-        "summed-rates",
-        pytest.param(
-            "sectored-rates",
-            marks=pytest.mark.xfail(
-                reason="Sectored h/he4/fe share the summed attribute entries and "
-                "do not declare DEPEND_2/DEPEND_3 yet",
-                strict=False,
-            ),
-        ),
-    ],
-)
+@pytest.mark.parametrize("descriptor", SCIENCE_PRODUCTS)
 def test_hit_l1b_depend_attrs_match_dims(dependencies, descriptor):
     """Each data variable declares one DEPEND_i per dimension, naming that dim."""
     dataset = hit_l1b(dependencies[descriptor], descriptor)

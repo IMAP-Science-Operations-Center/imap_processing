@@ -86,6 +86,14 @@ def process_science_data(
     data variable dimensions according to specifications in
     a CDF yaml file.
 
+    Most variables share attributes across datasets, but the h, he4 and fe
+    rates and their uncertainties have the same names in the summed and
+    sectored datasets while their dimensions differ (2D vs. 4D). To handle
+    this, these variables have a "_summed" or "_sectored" suffix in the YAML
+    file (i.e. h_stat_uncert_minus_summed vs. h_stat_uncert_minus_sectored).
+    cno and nemgsi only exist in the sectored dataset but use the "_sectored"
+    suffix as well for consistency.
+
     Parameters
     ----------
     l1a_counts_dataset : xr.Dataset
@@ -125,17 +133,26 @@ def process_science_data(
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
 
         for field in dataset.data_vars.keys():
+            var = str(field)
             try:
+                if (
+                    descriptor in ("summed-rates", "sectored-rates")
+                    and var.split("_", maxsplit=1)[0]
+                    in ("h", "he4", "cno", "nemgsi", "fe")
+                    and ("_" not in var or "uncert" in var)
+                ):
+                    # Retrieve attributes specific to the summed or sectored data
+                    attrs = attr_mgr.get_variable_attributes(
+                        f"{var}_{descriptor.split('-', maxsplit=1)[0]}"
+                    )
+                else:
+                    attrs = attr_mgr.get_variable_attributes(var)
                 # Create a dict of dimensions using the DEPEND_I keys in the attributes
-                dims = {
-                    key: value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()
-                    if "DEPEND" in key
-                }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+                dims = {key: value for key, value in attrs.items() if "DEPEND" in key}
+                dataset[field].attrs = attrs
                 dataset[field].assign_coords(dims)
             except KeyError:
-                logger.warning(f"Field {field} not found in attribute manager.")
+                logger.warning(f"Field {var} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
         # DEPEND_0 attribute which isn't required for epoch
