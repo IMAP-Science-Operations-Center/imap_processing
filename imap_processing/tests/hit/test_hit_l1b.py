@@ -699,6 +699,20 @@ def test_hit_l1b_depend_attrs_match_dims(dependencies, descriptor):
             )
 
 
+@pytest.mark.parametrize("descriptor", ["hk", *SCIENCE_PRODUCTS])
+def test_hit_l1b_lablaxis_unique(dependencies, descriptor):
+    """Every data variable has an axis label, and no two share the same one."""
+    dataset = hit_l1b(dependencies[descriptor], descriptor)
+
+    labels = {}
+    for name, data_array in dataset.data_vars.items():
+        assert "LABLAXIS" in data_array.attrs, f"{name} has no LABLAXIS"
+        labels.setdefault(data_array.attrs["LABLAXIS"], []).append(name)
+
+    duplicates = {label: names for label, names in labels.items() if len(names) > 1}
+    assert not duplicates, f"Shared LABLAXIS values: {duplicates}"
+
+
 def test_hit_l1b_standard_rates_attrs(dependencies):
     """Check representative attributes in the standard rates dataset."""
     dataset = hit_l1b(dependencies["standard-rates"], "standard-rates")
