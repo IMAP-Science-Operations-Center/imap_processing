@@ -114,6 +114,10 @@ GEO_FACTORS = {
     1: np.array([1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7]) * 1e-5,
 }
 
+# The symmetric geometric factor uncertainty of the same file, as a fraction of
+# each factor. Only the HiRes levels have one, as in the flight ancillary.
+GEO_FACTOR_UNCERT_FRACTION = 0.05
+
 # The ESA passband half-widths of the same file, a tenth of each center energy.
 ESA_ENERGY_DELTAS = {mode: energies / 10 for mode, energies in ESA_ENERGIES.items()}
 
@@ -605,6 +609,9 @@ class TestEsaMode:
             )
 
         np.testing.assert_allclose(dataset["energy"].values, ESA_ENERGIES[esa_mode])
+        # Only HiRes has a geometric factor uncertainty to derive it from.
+        sys_err = dataset["bg_intensity_sys_err"].values
+        assert np.all(is_fill(sys_err)) == (esa_mode == 1)
 
 
 class TestMapStructure:
@@ -624,6 +631,7 @@ class TestMapStructure:
         "bg_rate_stat_uncert",
         "bg_intensity",
         "bg_intensity_stat_uncert",
+        "bg_intensity_sys_err",
     )
 
     def test_map_dims_and_source(self, full_map):
@@ -796,6 +804,16 @@ class TestRatesAndIntensities:
                 bg_rate[exposed], pointing["background"][energy_index], rtol=1e-5
             )
             assert np.all(is_fill(bg_rate[~exposed]))
+
+            # The systematic error is the fractional uncertainty of the factor.
+            bg_intensity = dataset["bg_intensity"].values[0, energy_index]
+            sys_err = dataset["bg_intensity_sys_err"].values[0, energy_index]
+            np.testing.assert_allclose(
+                sys_err[exposed],
+                bg_intensity[exposed] * GEO_FACTOR_UNCERT_FRACTION,
+                rtol=1e-5,
+            )
+            assert np.all(is_fill(sys_err[~exposed]))
 
     def test_systematic_error_bounds(self, full_map):
         """The systematic error is bracketed by the G-factor excursions."""
@@ -1171,6 +1189,14 @@ class TestComptonGettingCorrection:
                 ~np.isclose(corrected[variable].values[lit], raw[variable].values[lit])
             ), f"{variable} was not corrected"
 
+        # The background systematic error moves with the background.
+        exposed = corrected["exposure_factor"].values > 0
+        np.testing.assert_allclose(
+            corrected["bg_intensity_sys_err"].values[exposed],
+            corrected["bg_intensity"].values[exposed] * GEO_FACTOR_UNCERT_FRACTION,
+            rtol=1e-5,
+        )
+
     def test_the_correction_leaks_no_nan(self, cg_maps):
         """A pixel the correction says nothing about comes out at zero, not NaN."""
         corrected, _ = cg_maps
@@ -1182,6 +1208,7 @@ class TestComptonGettingCorrection:
             "ena_intensity_sys_err_minus",
             "bg_intensity",
             "bg_intensity_stat_uncert",
+            "bg_intensity_sys_err",
         ):
             values = corrected[variable].values
             assert np.isfinite(values).all(), f"{variable} holds NaN or inf"
@@ -1570,6 +1597,7 @@ class TestIsnMask:
             "bg_rate_stat_uncert",
             "bg_intensity",
             "bg_intensity_stat_uncert",
+            "bg_intensity_sys_err",
         ):
             np.testing.assert_allclose(
                 masked[name].values, raw[name].values, rtol=1e-6, err_msg=name
