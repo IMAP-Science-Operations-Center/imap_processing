@@ -69,6 +69,7 @@ FILLED_VARIABLES = (
     "bg_rate_stat_uncert",
     "bg_intensity",
     "bg_intensity_stat_uncert",
+    "bg_intensity_sys_err",
 )
 
 # The calibration ancillaries shipped with the package.
@@ -1115,6 +1116,10 @@ def _esa_calibration(species: str, esa_mode: int) -> xr.Dataset:
     therefore the downward excursion of the factor, and its ``_unc_minus`` the
     upward one.
 
+    Those bounds fold the recalibration of the factor in with its measurement
+    uncertainty. The measurement uncertainty alone, the symmetric ``_unc``
+    column, is what the background systematic error is derived from.
+
     Parameters
     ----------
     species : str
@@ -1142,6 +1147,9 @@ def _esa_calibration(species: str, esa_mode: int) -> xr.Dataset:
         - gf_data[f"{factor}_unc_plus"].to_numpy(),
         geometric_factor_high=geometric_factor
         + gf_data[f"{factor}_unc_minus"].to_numpy(),
+        geometric_factor_uncert=gf_data.get(
+            f"{factor}_unc", pd.Series(np.nan, index=gf_data.index)
+        ).to_numpy(),
     )
     data_vars = {
         name: xr.DataArray(arr, dims=[CoordNames.ENERGY_L2.value])
@@ -1776,6 +1784,9 @@ def _calculate_rates_and_intensities(
     bg_rate_stat_uncert = np.sqrt(_divide(bg_rate, exposure))
     bg_intensity = _divide(bg_rate, geometric_factor * energy)
     bg_intensity_stat_uncert = _divide(bg_rate_stat_uncert, geometric_factor * energy)
+    gf_uncert = calibration["geometric_factor_uncert"]
+    gf_uncert_known = np.isfinite(gf_uncert)
+    bg_intensity_sys_err = bg_intensity * (gf_uncert / geometric_factor).fillna(0.0)
 
     # The Compton-Getting correction comes last, moving the intensities out of
     # the frame the instrument observed them in. The background is a spectrum
@@ -1811,9 +1822,12 @@ def _calculate_rates_and_intensities(
             data=corrected_sys_err_minus
         )
 
-        bg_corrected, (bg_corrected_stat_uncert,) = _compton_getting_correct_intensity(
+        (
+            bg_corrected,
+            (bg_corrected_stat_uncert, bg_corrected_sys_err),
+        ) = _compton_getting_correct_intensity(
             bg_intensity.values,
-            (bg_intensity_stat_uncert.values,),
+            (bg_intensity_stat_uncert.values, bg_intensity_sys_err.values),
             cos_alpha.values,
             calibration,
             flux_corrector,
@@ -1822,6 +1836,7 @@ def _calculate_rates_and_intensities(
         bg_intensity_stat_uncert = bg_intensity_stat_uncert.copy(
             data=bg_corrected_stat_uncert
         )
+        bg_intensity_sys_err = bg_intensity_sys_err.copy(data=bg_corrected_sys_err)
 
     variables = {
         "ena_count": counts,
@@ -1839,6 +1854,9 @@ def _calculate_rates_and_intensities(
         "bg_rate_stat_uncert": bg_rate_stat_uncert,
         "bg_intensity": bg_intensity,
         "bg_intensity_stat_uncert": bg_intensity_stat_uncert,
+        "bg_intensity_sys_err": bg_intensity_sys_err.where(
+            gf_uncert_known, FILLVAL_FLOAT
+        ),
     }
 
     # A masked pixel has no ENA measurement to report.

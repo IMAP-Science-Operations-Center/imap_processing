@@ -369,6 +369,7 @@ unc_c:
   FIELDNAM: Uncertainty - C
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'C uncertainty'
   LABL_PTR_1: energy_c_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -386,6 +387,7 @@ unc_fe:
   FIELDNAM: Uncertainty - Fe
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Fe uncertainty'
   LABL_PTR_1: energy_fe_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -403,6 +405,7 @@ unc_h:
   FIELDNAM: Uncertainty - H
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'H uncertainty'
   LABL_PTR_1: energy_h_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -420,6 +423,7 @@ unc_he3:
   FIELDNAM: Uncertainty - He3
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'He3 uncertainty'
   LABL_PTR_1: energy_he3_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -437,6 +441,7 @@ unc_he4:
   FIELDNAM: Uncertainty - He4
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'He4 uncertainty'
   LABL_PTR_1: energy_he4_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -454,6 +459,7 @@ unc_junk:
   FIELDNAM: Uncertainty - Junk
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Junk uncertainty'
   LABL_PTR_1: energy_junk_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -474,6 +480,7 @@ unc_ne_mg_si:
   FIELDNAM: Uncertainty - Ne+Mg+Si
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Ne-Si uncertainty'
   LABL_PTR_1: energy_ne_mg_si_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -491,6 +498,7 @@ unc_o:
   FIELDNAM: Uncertainty - O
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'O uncertainty'
   LABL_PTR_1: energy_o_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -508,6 +516,7 @@ unc_uh:
   FIELDNAM: Uncertainty - Ultra-Heavy
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Ultra-heavy uncertainty'
   LABL_PTR_1: energy_uh_label
   SCALETYP: log
   SI_CONVERSION: ' > '
@@ -526,6 +535,7 @@ c:
   FIELDNAM: Differential Intensity - C
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'C Diff. Int.'
   LABL_PTR_1: energy_c_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -544,6 +554,7 @@ fe:
   FIELDNAM: Differential Intensity - Fe
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Fe Diff. Int.'
   LABL_PTR_1: energy_fe_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -562,6 +573,7 @@ h:
   FIELDNAM: Differential Intensity - H
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'H Diff. Int.'
   LABL_PTR_1: energy_h_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -580,6 +592,7 @@ he3:
   FIELDNAM: Differential Intensity - He3
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'He3 Diff. Int.'
   LABL_PTR_1: energy_he3_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -598,6 +611,7 @@ he4:
   FIELDNAM: Differential Intensity - He4
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'He4 Diff. Int.'
   LABL_PTR_1: energy_he4_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -616,6 +630,7 @@ junk:
   FIELDNAM: Differential Intensity - Junk
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Junk Diff. Int.'
   LABL_PTR_1: energy_junk_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -637,6 +652,7 @@ ne_mg_si:
   FIELDNAM: Differential Intensity - Ne+Mg+Si
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Ne-Si Diff. Int.'
   LABL_PTR_1: energy_ne_mg_si_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -655,6 +671,7 @@ o:
   FIELDNAM: Differential Intensity - O
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'O Diff. Int.'
   LABL_PTR_1: energy_o_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'
@@ -673,6 +690,7 @@ uh:
   FIELDNAM: Differential Intensity - Ultra-Heavy
   FILLVAL: *real_fillval
   FORMAT: F32.1
+  LABLAXIS: 'Ultra-heavy Diff. Int.'
   LABL_PTR_1: energy_uh_label
   SCALETYP: log
   UNITS: '# / cm2 s sr MeV/nuc'

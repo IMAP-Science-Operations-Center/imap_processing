@@ -44,3 +44,7 @@ imap_swe_l2_sci:
   Data_type: L2_SCI>Level-2 Science data
   Logical_source: imap_swe_l2_sci
   Logical_source_description: IMAP Mission SWE Instrument Level-2 Science Data
+  MODS:
+    - >-
+      Major version 2, Oct. 8, 2026 - Use corrected spin tables and SPICE
+      kernels for spin axis and spin phase.

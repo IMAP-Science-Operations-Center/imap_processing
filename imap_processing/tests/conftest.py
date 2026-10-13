@@ -329,6 +329,14 @@ def generate_spin_data():
                     nspins, spin_start_subsec, dtype=np.uint32
                 ),
                 "spin_start_utc": np.datetime_as_string(spin_start_dt64, unit="us"),
+                # No correction to the spin start times
+                "spin_start_sec_sclk_corr": spin_start_sec,
+                "spin_start_subsec_sclk_corr": np.full(
+                    nspins, spin_start_subsec, dtype=np.uint32
+                ),
+                "spin_start_utc_corr": np.datetime_as_string(
+                    spin_start_dt64, unit="us"
+                ),
                 "spin_period_sec": np.full(nspins, spin_period, dtype=np.float32),
                 "spin_period_valid": np.ones(nspins, dtype=np.uint8),
                 "spin_phase_valid": np.ones(nspins, dtype=np.uint8),

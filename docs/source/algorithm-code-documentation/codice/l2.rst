@@ -1,0 +1,510 @@
+.. _codice-l2:
+
+Level 2 - Intensities and Physical Units
+========================================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+**[DOC]** Section 12. **[CODE]** ``codice_l2.py`` - ~1570 lines.
+
+L2 is the lowest level usable for science analysis. It does two different kinds
+of work:
+
+1. **Counts-rate products** -> differential intensity, by dividing by geometric
+   factor, efficiency and an energy width.
+2. **Direct events** -> physical units, by looking up calibration tables.
+
+Dispatch
+--------
+
+**[CODE]** ``process_codice_l2(descriptor, dependencies)``:
+
+.. code-block:: python
+
+   file_path = dependencies.get_file_paths(descriptor=descriptor)[0]
+   descriptor = ScienceFilePath(file_path).descriptor
+   dataset_name = f"imap_codice_l2_{descriptor}"
+
+   if dataset_name in ["imap_codice_l2_lo-sw-species"]:
+       ...                                     # geometric factors + efficiencies
+
+   if dataset_name in [ ... six counters/priority descriptors ... ]:
+       pass                                    # "no changes needed"
+   elif dataset_name == "imap_codice_l2_hi-direct-events":
+       l2_dataset = process_hi_direct_events(dependencies)
+   elif dataset_name == "imap_codice_l2_hi-sectored":
+       l2_dataset = process_hi_sectored(dependencies)
+   elif dataset_name == "imap_codice_l2_hi-omni":
+       l2_dataset = process_hi_omni(dependencies)
+   elif dataset_name == "imap_codice_l2_lo-direct-events":
+       l2_dataset = process_lo_direct_events(dependencies)
+
+   for var in ["acquisition_time_per_esa_step", "rgfo_half_spin",
+               "half_spin_per_esa_step", "rgfo_esa_step",
+               "rgfo_spin_sector", "packet_version"]:
+       if var in l2_dataset.data_vars:
+           l2_dataset = l2_dataset.drop_vars(var)
+
+Note the structure: the first ``if`` is separate; the second ``if/elif`` chain
+does not have an ``else``. Any descriptor that matches neither leaves
+``l2_dataset`` unbound before the drop loop. See
+:ref:`codice-implementation-status`.
+
+The RGFO geometric-factor selection
+-----------------------------------
+
+This is the trickiest logic at L2 and the one that changes with the mission
+timeline. **[CODE]** ``compute_geometric_factors(dataset,
+geometric_factor_lookup, angular_product=False)``.
+
+**[DOC]** Rules by period (sections 12.2.2 and 12.2.3):
+
+**Launch - 2025-11-24 (P0)**
+  If the half spin for ESA step :math:`l` is **<=** ``RGFO_Half_Spin``, use
+  **Full** :math:`G_m`; if **>**, use **Reduced**.
+
+**2025-11-24 - 2026-01-29 (P1, P2)**
+  The threshold was lowered so RGFO triggers immediately on half spin 0, but the
+  ESA voltage ratio stayed 1. **Ignore ``RGFO_half_spin`` and always use Full**
+  :math:`G_m`.
+
+**2026-01-29 - current (P3+), angular products**
+  RGFO is now pinned to an exact (ESA step, spin sector). Here ``spin_angle`` is
+  the de-spun L1B bin (0-23) and ``rgfo_spin_sector`` counts over the full spin
+  (0-23), so Rev 3 Chg 1 compares everything **mod 12**:
+
+  1. ``half_spin > rgfo_half_spin`` -> **Reduced**
+  2. ``half_spin < rgfo_half_spin`` -> **Full**
+  3. ``half_spin == rgfo_half_spin``:
+
+     a. spin-angle bins **less than** ``rgfo_spin_sector mod 12``, and those
+        plus 12 -> **Full**. E.g. ``rgfo_spin_sector mod 12 = 3`` gives
+        ``[0, 1, 2, 12, 13, 14]``.
+     b. spin-angle bins **greater than** it, and those plus 12 -> **Reduced**.
+        E.g. ``[4..11, 16..23]``.
+     c. spin-angle bins with ``spin_angle mod 12 == rgfo_spin_sector mod 12``:
+        ``esa_step <= rgfo_esa_step`` -> **Full**, else **Reduced**
+
+  Worked example from the document: ``rgfo_half_spin = 10``,
+  ``rgfo_spin_sector = 3``, ``rgfo_esa_step = 19``, with steps [18, 19, 20]
+  sampled during half-spin 10. Then spin angles **[3, 15]** use Full for steps
+  [18, 19] and Reduced for step [20].
+
+  .. note::
+
+     A draft of the algorithm document printed spin angles **[10, 22]** in this example,
+     which contradicted its own rule (10 and 22 = 10 + 12 look like the
+     half-spin number used in place of the spin sector). Rev 3 Chg 1 corrects it to [3, 15] and adds the explicit
+     ``mod 12``. Two small slips remain in Rev 3 Chg 1: rule (b) omits the
+     ``mod 12``, and the text says ``spin_sector`` "ranges from 0-24" where
+     0-23 is meant. The code (below) applies ``% 12`` throughout, which is the
+     consistent reading.
+
+**2026-01-29 - current (P3+), species products**
+  Because species data is summed over all spin sectors on board, the half-spin
+  where RGFO triggered **cannot be de-convolved**. Rev 3 Chg 1 spells out the
+  full rule:
+
+  1. ``half_spin == rgfo_half_spin`` -> **fill**
+  2. ``half_spin > rgfo_half_spin`` -> **Reduced**
+  3. ``half_spin < rgfo_half_spin`` -> **Full**
+
+**[CODE]** The implementation:
+
+.. code-block:: python
+
+   processing_date = datetime.datetime.strptime(
+       dataset.attrs["Logical_file_id"].split("_")[4], "%Y%m%d")
+   date_switch     = datetime.datetime(2025, 11, 24)
+   fsw_switch_date = datetime.datetime(2026, 1, 29)
+   valid_half_spin = half_spin_per_esa_step != HALF_SPIN_FILLVAL
+
+   if angular_product and dataset.packet_version.data[0] > 1:
+       # exact-bin rule, as in the document
+   elif (processing_date < date_switch) | (processing_date >= fsw_switch_date):
+       modes = valid_half_spin & (half_spin_per_esa_step > rgfo_half_spin)
+   else:
+       modes = np.zeros_like(half_spin_per_esa_step, dtype=bool)   # always Full
+
+``modes`` is a boolean array where ``True`` means Reduced. The exact-bin branch
+tests ``(spin_sector % 12) > rgfo_spin_sector`` and ``(spin_sector % 12) ==
+rgfo_spin_sector & esa_step > rgfo_esa_step``, with ``rgfo_spin_sector``
+already reduced ``% 12``. Note:
+
+* The **date is parsed out of ``Logical_file_id``**, not from the CLI start
+  date. A missing attribute raises ``ValueError``.
+* ``rgfo_spin_sector`` is taken **modulo 12** to bring the packet's 0-23 value
+  into the half-spin sector range.
+* The exact-bin branch is only reachable with ``angular_product=True``, and
+  **nothing currently passes that**, because the angular products are not
+  implemented. In practice all Lo L2 processing today uses the half-spin-only
+  branch.
+* The species-product fill of the boundary half-spin **is** implemented, in
+  ``process_lo_species_intensity``, but unconditionally for all dates rather
+  than only for P3.
+
+The lookup tables have shape ``(esa_step, position)`` for each of ``"full"`` and
+``"reduced"``. Output shape is ``(epoch, esa_step, inst_az)``, or
+``(epoch, esa_step, spin_sector, inst_az)`` when spin-sector information is
+present.
+
+Lo species intensities
+----------------------
+
+**[DOC]** Section 12.2.3. Three different assumptions apply to three groups.
+
+**Sunward solar-wind species** - a narrow beam that always lands on azimuthal
+position 1, so use the geometric factor for **one** sector:
+
+.. math::
+
+   J_j(l) = \frac{R_j(l)}{G_m \cdot \varepsilon_{jl1} \cdot (E/q)_l}
+
+Species: H+, He++, O5+, O6+, O7+, O8+, C4+, C5+, C6+, Ne, Mg, Si, Fe(low Q),
+Fe(high Q).
+
+**Sunward pickup ions** - isotropic over the sunward range, which is **5**
+azimuthal bins:
+
+.. math::
+
+   J_j(l) = \frac{R_j(l)}{5 \, G_m \cdot \varepsilon_{jl} \cdot (E/q)_l}
+
+with :math:`\varepsilon` averaged over the 5 positions. Species: He+ and CNO+.
+
+**Non-sunward species** - isotropic over the non-sunward range, **19** positions:
+
+.. math::
+
+   J_j(l) = \frac{R_j(l)}{19 \, G_m \cdot \varepsilon_{jl} \cdot (E/q)_l}
+
+with both :math:`G_m` and :math:`\varepsilon` averaged over the 19 positions.
+Species: H+, He++, O5-8, C4-6, Ne+Mg+Si, Fe, He+, CNO+.
+
+Units throughout: particles / (cm2 s sr keV/q). Uncertainties convert
+identically.
+
+**[CODE]** ``calculate_intensity(dataset, species_list, geometric_factors,
+efficiency, positions, average_across_positions)`` implements all three via one
+expression:
+
+.. code-block:: python
+
+   if species_list == LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES:
+       geometric_factors = geometric_factors.isel(inst_az=[0])   # position 1 only
+   else:
+       geometric_factors = geometric_factors.isel(inst_az=positions)
+
+   if average_across_positions:
+       geometric_factors = geometric_factors.mean(dim="inst_az")
+       scalar = len(positions)
+   else:
+       scalar = 1
+
+   denominator = scalar * geometric_factors * species_eff * dataset["energy_per_charge"]
+
+with position constants
+
+.. code-block:: python
+
+   SW_POSITIONS          = [0, 1, 2, 22, 23]      # 0-based -> positions 1,2,3,23,24
+   NSW_POSITIONS         = list(range(3, 22))     # positions 4-22
+   SOLAR_WIND_POSITIONS  = [0]                    # position 1
+   PUI_POSITIONS         = SW_POSITIONS
+
+so:
+
+* solar wind: ``positions=[0]``, ``scalar=1`` -> :math:`G_m` at position 1.
+* pickup ions: ``positions=SW_POSITIONS``, ``scalar=5``, :math:`G_m` forced to
+  position 1 -> :math:`5 G_{m,1}`, efficiency averaged over the 5. Matches the
+  document, with a ``TODO`` noting the CoDICE team eventually want this
+  standardised.
+* non-sunward: would be ``positions=NSW_POSITIONS``, ``scalar=19`` - **never
+  called**, because there is no NSW L2 branch.
+
+``process_lo_species_intensity`` then applies the L2 variable attributes
+(``lo-sw-species-attrs`` / ``lo-pui-species-attrs``, with ``{species}`` and
+``{species_display}`` substituted by ``apply_replacements_to_attrs``), NaNs the
+``half_spin == rgfo_half_spin`` boundary, and restores ``nso_esa_step`` /
+``nso_spin_sector`` to ``uint8`` with their fill values.
+
+Lo angular intensities
+----------------------
+
+**[DOC]** Section 12.2.2. **[CODE] Not implemented.**
+
+For reference, the algorithm is:
+
+.. math::
+
+   J_j(l, n, k) = \frac{R_j(l, n, k)}{G_m \cdot \varepsilon_{jlk} \cdot (E/q)_l}
+
+where :math:`k` is position 1-24, :math:`n` is spin-angle index 0-23 and
+:math:`l` is ESA step 0-127. :math:`G_m` is delivered as a
+(128 ESA steps x 24 APD IDs) array per mode.
+
+Then the array is transformed from position to elevation angle using the
+:ref:`codice-frames` mapping, with an extra step: **positions 1 and 13 see only
+half the spin angles**, so their intensities are replicated into the other half
+depending on the pixel orientation:
+
+.. math::
+
+   \text{SW position 1:} \quad
+   & J_j(l_A, 12{:}23, 0) = J_j(l_A, 0{:}11, 0), \quad
+     J_j(l_B, 0{:}11, 0) = J_j(l_B, 12{:}23, 0) \\
+   \text{NSW position 13:} \quad
+   & J_j(l_A, 0{:}11, 9) = J_j(l_A, 12{:}23, 9), \quad
+     J_j(l_B, 12{:}23, 9) = J_j(l_B, 0{:}11, 9)
+
+Final shapes: SW (128 E/q x 24 spin angles x **3** elevation angles), NSW
+(128 E/q x 24 spin angles x **10** elevation angles).
+
+**[DOC]** Spin Angle: the product is de-spun at L1A with spin
+angle index 0 corresponding to the direction of APDs 2-12, so
+
+.. math::
+
+   \theta_{Lo,n} = n \cdot 15^\circ + 7.5^\circ + 270^\circ
+
+where the 270 deg is the spin angle of APDs 2-12 at spin sector 0. The draft
+gave :math:`n \cdot 15^\circ + 7.5^\circ`.
+
+Hi omni-directional intensities
+-------------------------------
+
+**[DOC]** Section 12.1.3. Assumes isotropy over the full sky:
+
+.. math::
+
+   I_j(i) = \frac{R_j(i)}{\left(\sum_k G_k\right) \cdot \epsilon_{ji}
+   \cdot \Delta E_{ji}}
+   \quad [\#/(\mathrm{cm}^2\,\mathrm{sr}\,\mathrm{s}\,\mathrm{MeV/nuc})]
+
+with :math:`G_k = 0.013` cm2 sr per SSD (from a SIMION instrument model), 12
+SSDs, and the energy passband
+
+.. math::
+
+   \Delta E_{ji} = E_{i,\mathrm{minus}} + E_{i,\mathrm{plus}}
+
+**[DOC]** This is explicitly a **pseudo**-omni-directional intensity: each SSD
+sees a different solid angle over a spin, and because the species rates are
+summed over all angles on board that cannot be corrected from this product.
+Appendix B derives the true solid-angle-corrected version from the *sectored*
+intensities - **[CODE]** not implemented. (Section 12.1.3 still refers to it
+as "Appendix ##", an unresolved cross-reference.)
+
+**[CODE]** ``process_hi_omni(dependencies)``:
+
+.. code-block:: python
+
+   geometric_factor = efficiencies_df[efficiencies_df["species"] == "GF"].values[0][-1]
+   for species in HI_OMNI_VARIABLE_NAMES:
+       species_efficiencies = species_data["average_efficiency"].values[np.newaxis, :]
+       energy_passbands = (l1b_dataset[f"energy_{species}_plus"]
+                           + l1b_dataset[f"energy_{species}_minus"]).values[np.newaxis, :]
+       omni = l1b_dataset[species] / (geometric_factor
+                                      * species_efficiencies * energy_passbands)
+
+Each species has a **different number of energy bins**, which is why this is a
+Python loop rather than a vectorised operation. The function also builds the
+``energy_<species>`` and ``energy_<species>_label`` coordinates (labels formatted
+as ``"H int @0.123 MeV/nuc"`` by ``_format_hi_energy_labels``).
+
+.. warning::
+
+   The docstring says the denominator is ``geometric_factor * number_of_ssd *
+   efficiency * energy_passband``, but the code has **no ``number_of_ssd``
+   term**. Either the ``GF`` row of ``imap_codice_l2-hi-omni-efficiency_*.csv``
+   already contains the summed :math:`\sum_k G_k = 12 \times 0.013 = 0.156`, or
+   there is a factor-of-12 error. Verify against the delivered CSV before
+   trusting absolute omni intensities.
+
+Hi sectored intensities
+-----------------------
+
+**[DOC]** Section 12.1.2:
+
+.. math::
+
+   I_j(i, n, k) = \frac{R_j(i, n, k)}{G_k \cdot \epsilon_{jik} \cdot \Delta E_{ji}}
+
+with :math:`G_k = 0.013` cm2 sr for a single SSD and :math:`\epsilon_{jik}`
+depending on species, energy bin, position **and the particle priority scheme**.
+
+**[CODE]** ``process_hi_sectored(dependencies)`` builds a brand-new
+``xr.Dataset`` (rather than mutating the L1B one) with coordinates
+``spin_sector``, ``energy_<species>``, ``elevation_angle`` (=
+``HI_L2_ELEVATION_ANGLE``) and epoch deltas, then per species:
+
+.. code-block:: python
+
+   sectored_intensities = l1b_dataset[species] / (
+       geometric_factor_da * species_efficiencies * energy_passbands
+   )
+
+Here the geometric factor comes from the ``GF`` **row** of the sectored
+efficiency CSV and is per-``inst_az`` (a 12-element vector), which is the correct
+per-SSD form. Output dims: ``(epoch, energy_<species>, spin_sector,
+elevation_angle)``.
+
+Spin angle:
+
+**[DOC]** :math:`\theta_{k,n} = (\theta_{k,0} + 30^\circ n) \bmod 360^\circ`
+for :math:`n = 0 \dots 11`.
+
+**[CODE]**
+
+.. code-block:: python
+
+   elevation_offsets = np.arange(n_elev)[np.newaxis, :] * 30.0
+   base_angles = L2_HI_SECTORED_ANGLE.reshape(n_spin, 1)
+   spin_angle = ((base_angles + elevation_offsets) % 360.0).T
+
+which is transposed so that ``spin_angle`` increments by 30 deg **across the
+elevation-angle axis** for a fixed spin sector - the CoDICE team confirmed that
+as the intended layout.
+
+.. note::
+
+   The CMAD labels the columns of this table by **SSD index** (0-11,
+   the array position), with the SSD ID in a second row, as the direct-event
+   table already did. The draft used to create this table labelled the sectored table by SSD ID only. The code arrays are indexed the
+   same way: ``L2_HI_SECTORED_ANGLE`` by index, ``SSD_ID_TO_SPIN_ANGLE`` by ID
+   with NaN gaps.
+
+Hi direct events
+----------------
+
+**[DOC]** Section 12.1.1. Conversions applied *in addition* to the L1A
+variables:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 26 74
+
+   * - Field
+     - Conversion
+   * - SSD Energy
+     - To **MeV** using calibration data per SSD and the recorded gain setting.
+   * - TOF
+     - To **ns**.
+   * - Elevation Angle
+     - From SSD ID, degrees relative to the spin axis.
+   * - Spin Angle
+     - From spin sector, :math:`\theta_{n,k} = (\theta_{0,k} + 15^\circ n)
+       \bmod 360^\circ` for :math:`n = 0 \dots 23`. :math:`\theta_{0,k}` =
+       187.50, 146.61, 131.19, 127.50, ... (Rev 3 Chg 1), identical to
+       ``SSD_ID_TO_SPIN_ANGLE``.
+   * - Energy per Nuc
+     - From the TOF channel via a calibration lookup, in **MeV/nuc**.
+   * - Gain, Multi-Flag, PHA Type, Spin Number
+     - No change.
+
+**[CODE]** ``process_hi_direct_events(dependencies)``:
+
+.. code-block:: python
+
+   elevation[valid_ssd] = SSD_ID_TO_ELEVATION[ssd_id[valid_ssd]]
+
+   cols = ssd_id * 3 + (gain - 1)       # energy table columns: ssd0-LG, ssd0-MG, ssd0-HG, ...
+   ssd_energy_converted[valid_mask] = energy_table[ssd_energy[valid_mask], cols[valid_mask]]
+
+   theta_angles[valid_ssd] = SSD_ID_TO_SPIN_ANGLE[ssd_id[valid_ssd]]
+   spin_angle = (theta_angles + 15.0 * spin_sector) % 360.0
+
+   tof_ns[valid_tof_mask]      = tof_table[tof[valid_tof_mask], 0]   # column 0: ns
+   energy_nuc[valid_tof_mask]  = tof_table[tof[valid_tof_mask], 1]   # column 1: MeV/n
+
+Invalid SSD IDs (2, 6, 10, 14), out-of-range gains and out-of-range TOF indices
+all produce NaN. ``rgfo_*``/``nso_*`` and bias-gain-mode variables are dropped.
+
+Lo direct events
+----------------
+
+**[DOC]** Section 12.2.1:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 26 74
+
+   * - Field
+     - Conversion
+   * - APD Energy
+     - To **keV** using calibration per APD, based on APD ID, APD Gain and the
+       ST/SW Bias Gain Mode flag.
+   * - TOF
+     - To **ns** using calibration data.
+   * - Elevation Angle
+     - From **position**, degrees relative to the spin axis.
+   * - Spin Angle
+     - The L1A spin sector (0-23, 15 deg bins, relative to a full spin) is
+       **"de-spun" at L2 to account for APDs 2-12 and 14-24 viewing opposite
+       directions**, then :math:`\theta_{Lo,n} = n \cdot 15^\circ +
+       277.5^\circ` for :math:`k` = 1-24.
+   * - ESA Step
+     - To **keV/e** using the voltage table and analyzer constant.
+   * - APD Gain, APD ID, Position, Multi-Flag, PHA Type
+     - No change.
+
+**[CODE]** ``process_lo_direct_events(dependencies)``:
+
+.. code-block:: python
+
+   # elevation
+   pos_to_els = (LO_POSITION_TO_ELEVATION_ANGLE["sw"]
+                 | LO_POSITION_TO_ELEVATION_ANGLE["nsw"])
+   elevation_angle = [pos_to_els.get(pos, np.nan)
+                      for pos in l2_dataset["apd_id"].values.flat]
+
+   # spin angle: shift positions 13-24 by half a spin, then convert
+   l2_dataset["spin_sector"] = xr.where(
+       (l2_dataset["position"] >= 13) & (l2_dataset["position"] <= 24),
+       (l2_dataset["spin_sector"] + 12) % 24,
+       l2_dataset["spin_sector"])
+   l2_dataset["spin_angle"] = (l2_dataset["spin_sector"] * 15.0 + 277.5) % 360.0
+
+   # APD energy: two-stage lookup
+   col_inds = apd_ids * 2 + gains          # columns APD-1-LG, APD-1-HG, ...
+   energy_bins_inds = energy_table[apd_energy, col_inds]
+   energy_kev       = energy_bins[energy_bins_inds]
+
+   # TOF and E/q from the mpq-cal LUT
+   tof_ns  = tof_bits**2 * ns_channel_sq + tof_bits * ns_channel + tof_offset
+   esa_kev = esa_v * k_factor / 1000
+
+Points to note:
+
+* **Which field selects the half-spin shift?** The latest version of the CMAD describes the
+  opposite-facing groups as **APDs** 2-12 and 14-24. The code shifts on
+  ``position`` 13-24. Apart from the choice of field, the only difference is
+  whether 13 is shifted, and 13's spin angle is meaningless anyway (section
+  4.2). The choice of field matters, though: ``position`` and ``apd_id`` can
+  disagree for the same event.
+  Given the section 9.2 caveat that position "is not an accurate identifier of
+  particle direction", ``apd_id`` looks like the intended field. Confirm with
+  the team.
+* **Elevation is derived from ``apd_id``, but the spin shift uses
+  ``position``.** The document text still says elevation is "converted from
+  position". The caveat above favours ``apd_id``, so the elevation lookup may
+  be the right one and the spin shift the odd one out. Both fields exist
+  independently in the L1A direct-event record - see
+  :ref:`codice-implementation-status`.
+* **Negative TOF values are set to NaN**, mirroring the L3a handling at Menlo,
+  because negative TOF is unphysical.
+* TOF conversion is a **quadratic** read from ``l2-lo-onboard-mpq-cal``, not the
+  linear :math:`\tau_{ns} = 0.6217\,\tau_{ch} - 7.4437` printed in the document's
+  section 13.2.5. The quadratic is the newer form.
+
+Uncertainties
+-------------
+
+**[DOC]** "The uncertainty in intensity is computed from the rates uncertainties
+using the same conversions above" - i.e. the same denominator is applied to
+``unc_<species>``. Ultimately these all trace back to
+:math:`\sigma = \sqrt{\mathrm{counts}}` at L1A.
+
+**[CODE]** Implemented for Lo species (with a warning + NaN fill when the
+uncertainty variable is missing), Hi omni and Hi sectored. Not applicable to
+direct events.

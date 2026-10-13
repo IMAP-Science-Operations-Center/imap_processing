@@ -1,0 +1,564 @@
+.. _glows-l2:
+
+Level 2 - The Daily Lightcurve
+==============================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+**Goal:** the lowest level of research-grade GLOWS science data. One
+observational day's good-time L1B histograms, co-added into a single
+high-resolution lightcurve of **photon flux in Rayleighs** along the GLOWS
+scanning circle.
+
+**[DOC §12.7]** L2 is conceptually the GLOWS equivalent of a SOHO/SWAN
+measurement, with the caveat that it is a modulation along one scanning circle
+rather than an all-sky map. It contains **all** natural signal components -
+helioglow **plus** stars **plus** background. Separating them is L3's job.
+
+.. important::
+
+   L2 keeps the full 3600-bin resolution and **masks rather than removes**
+   problematic bins. Values in flagged bins are left as they are: not zeroed,
+   not NaN-ed. The mask travels alongside. Rebinning to 90 bins and actually
+   discarding contaminated bins happens at L3A, elsewhere.
+
+Entry point: ``glows_l2(input_dataset, pipeline_settings_dataset,
+calibration_dataset) -> list[xr.Dataset]`` in ``glows/l2/glows_l2.py``. The work
+is done by ``HistogramL2`` and ``DailyLightcurve`` in ``glows_l2_data.py``.
+
+Direct events do not have an L2 product.
+
+Processing steps
+----------------
+
+**[DOC §3.9.1]** lists nine steps. Mapping to code:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 6 46 48
+
+   * - #
+     - Document step
+     - Code
+   * - 1
+     - Identify good times via the ``active_bad_time_flags`` mask; keep counters
+       of why blocks were rejected
+     - ``return_good_times``. **Rejection counters are a stub.**
+   * - 2
+     - Restrict to ``(t₀ⁿ + Δ₀, t₀ⁿ⁺¹ - Δ₁)`` using ``is_night`` transitions
+       shifted by ``sunrise_offset`` / ``sunset_offset``
+     - ``apply_is_night_offsets``.
+   * - 3
+     - Add good-time histograms into a daily raw histogram
+     - ``DailyLightcurve.calculate_histogram_sums``.
+   * - 4
+     - Add exposure times
+     - ``exposure_per_epoch`` summation.
+   * - 5
+     - Set daily bad-angle flags using the active-flag mask
+     - Bitwise OR across blocks. **The active-flag mask is not applied.**
+   * - 6
+     - Daily count rates from counts and exposure
+     - Inside the flux calculation.
+   * - 7
+     - Apply the calibration factor to get Rayleighs
+     - ``get_calibration_factor`` then divide.
+   * - 8
+     - Daily averages and std devs of all ancillary parameters
+     - ``mean``/``std`` over epoch in ``HistogramL2.__init__``.
+   * - 9
+     - Angular grids: spin angle from north, ecliptic lon/lat
+     - ``compute_position_angle`` + ``compute_ecliptic_coords_of_bin_centers``.
+
+Good-time selection
+-------------------
+
+**[CODE]** In ``HistogramL2.__init__``, in this order:
+
+.. code-block:: python
+
+   active_flags = np.array(pipeline_settings.active_bad_time_flags, dtype=float)
+
+   flags = self.apply_is_night_offsets(
+       l1b_dataset["flags"].data,
+       is_night_idx=GlowsConstants.IS_NIGHT_FLAG_IDX,   # 6
+       sunrise_offset=int(pipeline_settings.sunrise_offset),
+       sunset_offset=int(pipeline_settings.sunset_offset))
+
+   good_data = l1b_dataset.isel(epoch=self.return_good_times(flags_da, active_flags))
+
+   # then drop any histogram where *every* bin carries IS_EXCLUDED_BY_INSTR_TEAM
+   excl_row = good_data["histogram_flag_array"].data[:, 2, :]
+   not_all_excl = ~np.all(excl_row == GLOWSL1bFlags.IS_EXCLUDED_BY_INSTR_TEAM.value, axis=1)
+   good_data = good_data.isel(epoch=np.where(not_all_excl)[0])
+
+``return_good_times`` is simply:
+
+.. code-block:: python
+
+   good_times = np.where(np.all(flags[:, active_flags == 1] == 1, axis=1))[0]
+
+i.e. **a block is good when every activated flag equals 1**, which given the
+inverted polarity described in :ref:`glows-l1b` means "no activated problem was
+detected". If the mask length does not match the flag array width, the code
+*prints* a message and carries on - it does not raise.
+
+The "all bins excluded by the instrument team" rule is not in the document; it
+comes from the GLOWS team's own reference implementation, where marking every
+bin of a block is how they say "throw this whole block away".
+
+Day/night windowing
+-------------------
+
+**[DOC §3.9.1 item 2]** L2 must exclude histograms taken close to the repointing
+maneuver. The onboard ``is_night`` flag already marks the interval, but the
+science team wants to be able to shift the two transitions independently:
+
+* ``is_night`` 0→1 (sunset) is shifted by ``sunset_offset`` histograms;
+* ``is_night`` 1→0 (sunrise) is shifted by ``sunrise_offset`` histograms;
+* positive ``sunrise_offset`` **extends** night, positive ``sunset_offset``
+  **shortens** it; zero means "trust the onboard transition".
+
+**[CODE]** ``HistogramL2.apply_is_night_offsets`` is a static method operating
+directly on the ``(n_epoch, 17)`` flag array, in the code's own inverted
+polarity where the ``is_night`` column is ``0 = night (bad)`` and
+``1 = day (good)``. It returns the input array unchanged when both offsets are
+zero, and otherwise walks the transitions found with ``np.diff``:
+
+.. code-block:: python
+
+   diff          = np.diff(is_night_col.astype(int))
+   sunset_index  = np.where(diff == -1)[0]     # good -> bad, i.e. entering night
+   sunrise_index = np.where(diff ==  1)[0]     # bad -> good, i.e. leaving night
+
+   if sunrise_offset > 0: zero out sunrise_offset epochs after each sunrise
+   if sunrise_offset < 0: set to 1  |sunrise_offset| epochs before each sunrise
+   if sunset_offset  > 0: set to 1  sunset_offset epochs after each sunset
+   if sunset_offset  < 0: zero out |sunset_offset| epochs before each sunset
+
+Both offsets are counted in **histograms (blocks)**, not hours - despite
+``PipelineSettings``' docstring saying "hours". The value is cast with ``int()``.
+
+.. warning::
+
+   **[DOC §3.9.1]** requires that blocks with ``is_hv_test_in_progress`` raised
+   be excluded **before** looking for ``is_night`` transitions, because the
+   time-tagged command loads used for the monthly gain tests can produce
+   spurious ``is_night`` transitions. **[CODE]** No such pre-filter exists.
+
+.. note::
+
+   The bundled ``imap_glows_pipeline-settings_20250923_v002.json`` contains
+   **neither** ``sunrise_offset`` **nor** ``sunset_offset``, so both default to
+   ``0.0`` and ``apply_is_night_offsets`` returns immediately. That file also
+   sets ``"is_night": false`` in ``active_bad_time_flags``, i.e. night blocks are
+   *not* excluded at all. The test settings file
+   (``imap_glows_pipeline-settings_20251112_v001.json``) sets both offsets to 0
+   and ``"is_night": true``. **Which behaviour you get is entirely a function of
+   which ancillary file the SDC serves.**
+
+Co-adding
+---------
+
+**[DOC Eq. 47]**
+
+.. math::
+
+   H_m = \sum_{k \in K} H^{block}_{k,m}
+
+where ``K`` is the set of good-time blocks and ``m`` indexes bins.
+
+**[CODE]** ``DailyLightcurve.calculate_histogram_sums`` first replaces
+``HISTOGRAM_FILLVAL`` (65535) with 0, then sums along the epoch axis in
+``int64``. The result is truncated to ``number_of_bins_per_histogram`` taken
+from the **first** good epoch.
+
+.. note::
+
+   All bin-dimensioned arrays inside ``DailyLightcurve`` are **chopped** to
+   ``number_of_bins``. ``glows_l2.create_l2_dataset`` re-expands them back to
+   3600 with each variable's own CDF ``FILLVAL`` via
+   ``_pad_daily_lightcurve_bins`` before writing. If you add a lightcurve
+   variable, it must have a ``FILLVAL`` in the L2 YAML or that padding raises.
+
+Exposure time
+-------------
+
+**[DOC Eqs. 48-49]** Assuming a constant angular rate over a block,
+
+.. math::
+
+   \Delta^{block}_{k,m} = \frac{n_{block}\,\langle P_{GLOWS,k}\rangle}{n_{bin}},
+   \qquad
+   \Delta_m = \sum_{k \in K} \Delta^{block}_{k,m}
+
+**[CODE]**
+
+.. code-block:: python
+
+   exposure_per_epoch = (l1b_data["spin_period_average"].data
+                         * l1b_data["number_of_spins_per_block"].data
+                         / self.number_of_bins)
+   self.exposure_times = np.full(self.number_of_bins, np.sum(exposure_per_epoch))
+
+The **onboard** spin period is used, consistent with the document's stated
+preference (Table 3.13 footnote a).
+
+.. note::
+
+   Exposure is therefore **identical in every bin**. That is correct as long as
+   every good block contributes to every bin, which is true today because
+   bad-angle bins are masked rather than dropped. It will stop being true the
+   moment per-bin exclusion is implemented (document §3.9.1 step 5 and the
+   ``filter_bad_bins`` stub), and the exposure array will then have to be
+   accumulated per bin.
+
+Count rate, flux and uncertainty
+--------------------------------
+
+**[DOC Eqs. 50, 53-55]**
+
+.. math::
+
+   S_m = \frac{H_m}{\Delta_m}\ \ [\mathrm{cts/s}],
+   \qquad
+   I_m = S_m \times \alpha\ \ [\mathrm{R}],
+   \qquad
+   \sigma^S_m = \frac{\sqrt{H_m}}{\Delta_m},
+   \qquad
+   \sigma^I_m = \sigma^S_m \times \alpha
+
+The calibration factor (document §12.7.5) is derived from ground calibration at
+the PTB synchrotron:
+
+.. math::
+
+   \alpha_0 = L_{1R} \times QE \times A \times \Omega = 3.37\ \mathrm{cps/R}
+
+with ``L_1R = 10⁶/(4π)`` photons s⁻¹ cm⁻² sr⁻¹, ``QE = 0.0041 cts/photon``,
+``Ω = 0.00416 sr``, ``A = 5.067 cm²``. For comparison, TWINS/LAD had
+``α ≈ 2 cps/R``. The full form is expected to be
+
+.. math::
+
+   \alpha(HV, THRS, COMP, t) = \alpha_0 \times f(HV, THRS, COMP, t)
+
+with ``f = 1`` at the reference settings ``HV₀ = 1600 V``, ``THRS₀ = 1.74 V``,
+``COMP₀ = 3.2 V`` and the PTB calibration epoch. The time dependence (detector
+aging) is to be tracked by monitoring stars in the FOV. The SDC never evaluates
+``f``; it just reads whatever ``cps_per_R`` the instrument team delivers.
+
+**[CODE]**
+
+.. code-block:: python
+
+   raw_uncertainties = np.sqrt(self.raw_histograms)
+   if self.number_of_bins > 0 and self.exposure_times[0] > 0 and calibration_factor:
+       self.photon_flux = (self.raw_histograms / self.exposure_times) / calibration_factor
+       self.flux_uncertainties = (raw_uncertainties / self.exposure_times) / calibration_factor
+
+.. important::
+
+   The code **divides** by the calibration factor; the document's Eq. 53 shows a
+   multiplication. The code is dimensionally right - ``α`` is in **cps per
+   Rayleigh**, so ``[cts/s] / [cps/R] = [R]``. Treat Eq. 53 as a typo, not as a
+   specification. If you ever "fix" the code to match the equation you will
+   produce fluxes wrong by a factor of ``α² ≈ 11``.
+
+Uncertainties are pure Poisson, scaled the same way as the counts. The document
+(§12.7.7) notes that the correlation matrix is treated as diagonal at this stage
+(bin-to-bin correlations are an L3 problem), and that the systematic uncertainty
+``σ_α`` on the calibration factor is deliberately **not** folded in here.
+
+If any of the guards fail - no bins, zero exposure, or no calibration factor -
+flux and uncertainties stay at zero, and ``glows_l2`` then returns an empty list
+so no file is written.
+
+Selecting the calibration factor
+--------------------------------
+
+**[CODE]** ``HistogramL2.get_calibration_factor``. The assumption is stated
+explicitly in the docstring: **the calibration is constant over an observational
+day**.
+
+.. code-block:: python
+
+   mid_idx       = len(epoch_values) // 2
+   mid_epoch_utc = et_to_datetime64(ttj2000ns_to_et(epoch_values[mid_idx].item()))
+
+   cal_at_epoch = calibration_dataset.sel(epoch=mid_epoch_utc, method="pad")
+   start_times  = np.array(cal_at_epoch["start_time_utc"].values, dtype="datetime64[ns]")
+   nearest_idx  = np.searchsorted(start_times, mid_epoch_utc, side="right") - 1
+   return float(cal_at_epoch["cps_per_r"].isel(cps_per_r_dim_0=nearest_idx))
+
+Two levels of selection, because the ancillary combiner produces a dataset with
+its own ``epoch`` (file validity) *and* a ``start_time_utc`` variable (the
+calibration table's own step times). The ``l2-calibration`` ``.dat`` file is two
+columns, ``start_time_utc cps_per_R``, where each value applies from its start
+time until the next one, and the last row is open ended.
+
+Spin angle → position angle
+---------------------------
+
+**[DOC §10.6, Eqs. 29-30]** and :ref:`glows-overview`. At L2 the lightcurve is
+re-expressed on ψ\ :sub:`PA`, measured from the **northernmost point** of the
+scanning circle.
+
+**[CODE]** ``HistogramL2.compute_position_angle``:
+
+.. code-block:: python
+
+   glows_mounting_azimuth, _ = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)
+   return (360.0 - glows_mounting_azimuth + spin_offset_correction) % 360.0
+
+``spin_offset_correction`` is a constant from pipeline settings that corrects a
+systematic bias observed in star positions (the validation settings file uses
+``1.047``). It is the code's implementation of ``δψ_G,eff``, which the document
+sets to zero.
+
+Then in ``DailyLightcurve``:
+
+.. code-block:: python
+
+   self.spin_angle = (spin_angle_bin_cntr - position_angle + 360.0) % 360.0
+
+   roll = -np.argmin(self.spin_angle)
+   for arr in (spin_angle, raw_histograms, photon_flux, exposure_times,
+               flux_uncertainties, histogram_flag_array):
+       arr = np.roll(arr, roll)
+
+so that **bin 0 of the L2 product is the northernmost point** and the arrays
+increase monotonically in ψ\ :sub:`PA`.
+
+.. note::
+
+   ``imap_spin_angle_bin_cntr`` is taken from **epoch 0 only**
+   (``l1b_data["imap_spin_angle_bin_cntr"].data[0]``). That is fine because the
+   grid is identical for every block - it is a pure function of ``n_bin``.
+
+Sky coordinates per bin
+-----------------------
+
+**[CODE]** ``DailyLightcurve.compute_ecliptic_coords_of_bin_centers``. Uses the
+**midpoint** block of the day:
+
+.. code-block:: python
+
+   mid_idx = len(l1b_data["imap_start_time"]) // 2
+   pointing_midpoint_time_et = sct_to_et(met_to_sclkticks(l1b_data["imap_start_time"][mid_idx].data))
+
+   azimuth   = spin_angle_bin_centers                       # already psi_PA
+   elevation = get_instrument_mounting_az_el(SpiceFrame.IMAP_GLOWS)[1]
+   az_el     = np.stack((azimuth, np.full_like(azimuth, elevation)), axis=-1)
+
+   ecliptic_coords = frame_transform_az_el(
+       data_time_et, az_el, SpiceFrame.IMAP_DPS, SpiceFrame.ECLIPJ2000)
+   return ecliptic_coords[:, 0], ecliptic_coords[:, 1]
+
+Giving ``ecliptic_lon`` and ``ecliptic_lat`` for each of the 3600 bin centres.
+This is a single-time snapshot for the whole day - acceptable because the spin
+axis is nominally fixed within a pointing, but it does mean the coordinates are
+representative rather than exact for blocks far from the midpoint.
+
+Bad-angle flag propagation
+--------------------------
+
+**[DOC §12.3.4]** *"If a given flag in a bin is True in any histogram of Level-1b,
+it is also equal to True at Level-2."*
+
+**[CODE]**
+
+.. code-block:: python
+
+   flags = l1b_data["histogram_flag_array"].data      # (n_epoch, 4, n_bins)
+   flags_2d = flags.reshape(-1, self.number_of_bins)  # (n_epoch * 4, n_bins)
+   self.histogram_flag_array = np.bitwise_or.reduce(flags_2d, axis=0).astype(np.uint8)
+
+The four separate L1B rows collapse into **one bitmask per bin**, where the bits
+are the ``GLOWSL1bFlags`` values. This is a deliberate shape change from L1B's
+``(4, n_bin)`` to L2's ``(n_bin,)``.
+
+.. warning::
+
+   **[DOC §3.9.1 step 5]** requires the ``active_bad_angle_flags`` mask from
+   pipeline settings to be applied here: *"inactive flags have zeroes set in
+   Level-2 even if they are not zeroed in Level-1B"*. **[CODE]** The mask is
+   parsed into ``PipelineSettings.active_bad_angle_flags`` and then never used.
+   All four flags always propagate.
+
+Daily averages
+--------------
+
+**[DOC §3.9.1 step 8]** *"The daily average is computed as the mean of block
+averages. The daily standard deviation is computed as the spread of block
+averages (to account for possible drifts of ancillary parameters)."* Note that
+this is deliberately **not** an error-propagated combination of the per-block
+standard deviations.
+
+**[CODE]** For ``filter_temperature``, ``hv_voltage``, ``spin_period``,
+``pulse_length`` and ``spin_period_ground``:
+
+.. code-block:: python
+
+   self.X_average = good_data["X_average"].mean(dim="epoch", keepdims=True).data
+   self.X_std_dev = good_data["X_average"].std(dim="epoch", keepdims=True).data
+
+For spacecraft location and velocity, ``mean``/``std`` over epoch on the
+3-vector. For the spin axis, longitude uses ``scipy.stats.circmean`` /
+``circstd`` (it sits near the 0/360 wrap) and latitude uses plain
+``mean``/``std``:
+
+.. code-block:: python
+
+   lon_avg = circmean(np.radians(spin_axis_data[:, 0]), low=0, high=2 * np.pi)
+   lon_std = circstd(np.radians(spin_axis_data[:, 0]), low=0, high=360)
+   lat_avg = float(np.mean(spin_axis_data[:, 1]))
+   lat_std = float(np.std(spin_axis_data[:, 1]))
+
+.. warning::
+
+   ``circstd`` is called with ``high=360`` on data that has already been
+   converted to **radians**, while ``circmean`` on the next line correctly uses
+   ``high=2π``. This looks like a bug; see
+   :ref:`glows-implementation-status`.
+
+Product identity and times
+--------------------------
+
+.. code-block:: python
+
+   repointing      = l1b_dataset.attrs.get("Repointing")
+   self.identifier = int(repointing.replace("repoint", ""))
+
+   self.total_l1b_inputs          = len(l1b_dataset["epoch"])
+   self.number_of_good_l1b_inputs = len(good_data["epoch"])
+
+   self.start_time = good_data["epoch"].data[0]     # first good block midpoint
+   self.end_time   = good_data["epoch"].data[-1]    # last  good block midpoint
+
+The document (Table 3.13 items 3-4) asks for the **UTC start and end time of the
+observational day**. The code uses the first and last *good block epoch*, each of
+which is a block midpoint, so both ends are short by up to a block and by however
+much was culled at the edges. Both are written out as UTC strings via
+``met_to_utc(ttj2000ns_to_met(value))``.
+
+If there are no good blocks at all, the times fall back to the first L1B block's
+``imap_start_time`` and ``imap_start_time + imap_time_offset`` - but that path
+ends in an empty return anyway.
+
+``bad_time_flag_occurrences`` (document Table 3.13 item 24: how many blocks were
+rejected for each flag) is **all zeros**:
+
+.. code-block:: python
+
+   # TODO fill this in
+   self.bad_time_flag_occurrences = np.zeros((1, FLAG_LENGTH), dtype=np.uint16)
+
+L2 output dataset
+-----------------
+
+``imap_glows_l2_hist``. **One epoch per file**, at the midpoint:
+
+.. code-block:: python
+
+   time_data = np.array([(histogram_l2.start_time + histogram_l2.end_time) / 2],
+                        dtype=np.float64)
+
+Coordinates: ``epoch``, ``bins`` (0-3599), ``flags`` (0-16), ``ecliptic`` (0-2).
+Data variables ``bins_label`` and ``flags_label`` carry human-readable names;
+``flags_label`` is literally ``BAD_TIME_FLAG_NAMES``.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 38 22 40
+
+   * - Variable
+     - Dims
+     - Notes
+   * - ``spin_angle``
+     - ``(epoch, bins)``
+     - ψ\ :sub:`PA` degrees, starting at the northernmost point.
+   * - ``photon_flux``
+     - ``(epoch, bins)``
+     - Rayleigh.
+   * - ``flux_uncertainties``
+     - ``(epoch, bins)``
+     - Rayleigh, Poisson only.
+   * - ``raw_histograms``
+     - ``(epoch, bins)``
+     - Daily summed counts.
+   * - ``exposure_times``
+     - ``(epoch, bins)``
+     - Seconds; currently identical in every bin.
+   * - ``histogram_flag_array``
+     - ``(epoch, bins)``
+     - OR-ed ``GLOWSL1bFlags`` bitmask.
+   * - ``ecliptic_lon`` / ``ecliptic_lat``
+     - ``(epoch, bins)``
+     - Degrees, ECLIPJ2000.
+   * - ``number_of_bins``
+     - ``(epoch,)``
+     - The valid bin count before padding.
+   * - ``identifier``
+     - ``(epoch,)``
+     - Pointing number.
+   * - ``start_time`` / ``end_time``
+     - ``(epoch,)``
+     - UTC strings.
+   * - ``number_of_good_l1b_inputs`` / ``total_l1b_inputs``
+     - ``(epoch,)``
+     - Document Table 3.14 items 1.5/1.6.
+   * - ``filter_temperature_average`` / ``_std_dev``
+     - ``(epoch,)``
+     - °C.
+   * - ``hv_voltage_average`` / ``_std_dev``
+     - ``(epoch,)``
+     - V.
+   * - ``spin_period_average`` / ``_std_dev``
+     - ``(epoch,)``
+     - s, onboard.
+   * - ``spin_period_ground_average`` / ``_std_dev``
+     - ``(epoch,)``
+     - s, ground.
+   * - ``pulse_length_average`` / ``_std_dev``
+     - ``(epoch,)``
+     - µs.
+   * - ``position_angle_offset_average`` / ``_std_dev``
+     - ``(epoch,)``
+     - deg; std dev always 0.
+   * - ``spin_axis_orientation_average`` / ``_std_dev``
+     - ``(epoch, latitudinal)``
+     - ``[lon, lat]`` deg.
+   * - ``spacecraft_location_average`` / ``_std_dev``
+     - ``(epoch, ecliptic)``
+     - km.
+   * - ``spacecraft_velocity_average`` / ``_std_dev``
+     - ``(epoch, ecliptic)``
+     - km/s.
+   * - ``bad_time_flag_occurrences``
+     - ``(epoch, flags)``
+     - **Always zero.**
+
+Global attributes ``flight_software_version`` and ``pkts_file_name`` are
+propagated from the L1B input, the former through
+``_normalize_global_attr_to_string`` because CDF ``CDF_CHAR`` attributes cannot
+take arrays.
+
+.. note::
+
+   ``spin_axis_orientation_*`` is written on a ``latitudinal`` dimension that is
+   never declared as a coordinate in ``create_l2_dataset`` (only ``epoch``,
+   ``bins``, ``flags`` and ``ecliptic`` are). Same wart as at L1B.
+
+Testing
+-------
+
+* ``test_glows_l2_data.py`` - calibration factor selection, flux and uncertainty
+  arithmetic, zero-exposure guards, bin-count handling, the bitwise-OR flag
+  propagation (including the zero-epoch case), good-time filtering,
+  ``apply_is_night_offsets`` parametrised over offset combinations, the
+  ψ→ψ\ :sub:`PA` formula, and that the rolled array starts at the minimum. The
+  ecliptic-coordinate test is marked ``@pytest.mark.external_kernel``.
+* ``test_glows_l2.py`` - end-to-end dataset generation, CDF metadata and fill
+  values, the global-attribute normaliser, and the (currently no-op) bin
+  exclusion path.

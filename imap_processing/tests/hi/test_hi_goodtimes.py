@@ -32,8 +32,19 @@ from imap_processing.hi.hi_goodtimes import (
     mark_statistical_filter_0,
     mark_statistical_filter_1,
     mark_statistical_filter_2,
+    mark_unmatched_gain_config,
 )
+from imap_processing.hi.utils import CalibrationProductConfig
 from imap_processing.quality_flags import ImapHiL1bDeFlags
+
+# HV deltas within tolerance of the test cal-prod config's gain_config_id=0.
+# See imap_processing/tests/hi/data/l1/imap_hi_90sensor-cal-prod_20240101_v001.csv
+NOMINAL_HV_DELTAS = {
+    "mcp_delta_v": 875.0,
+    "cem_a_delta_v": 2150.0,
+    "cem_b_delta_v": 2150.0,
+    "tof_v": -8000.0,
+}
 
 
 @pytest.fixture
@@ -2352,6 +2363,112 @@ class TestComputeNormalizedCountsPerSweep:
         assert len(result["normalized_count"]) == 5
         assert result.sizes["esa_sweep"] == 5
 
+    @staticmethod
+    def _create_sets_dataset(
+        esa_steps: list[int],
+        esa_energy_steps: list[int],
+        events_per_set: list[int],
+    ) -> xr.Dataset:
+        """Create a DE dataset with one packet per 8-spin set and AB events."""
+        n_sets = len(esa_steps)
+        set_met = 1000.0 + 120.0 * np.arange(n_sets)
+        ccsds_index = np.repeat(np.arange(n_sets), events_per_set).astype(np.uint16)
+        n_events = len(ccsds_index)
+        ds = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], set_met),
+                "esa_step_met": (["epoch"], set_met),
+                "esa_step": (["epoch"], np.array(esa_steps, dtype=np.uint8)),
+                "esa_energy_step": (
+                    ["epoch"],
+                    np.array(esa_energy_steps, dtype=np.uint8),
+                    {"FILLVAL": 255},
+                ),
+                "tof_ab": (["event_met"], np.zeros(n_events, dtype=np.int32)),
+                "coincidence_type": (
+                    ["event_met"],
+                    np.full(n_events, 12, dtype=np.uint8),
+                ),
+                "ccsds_index": (["event_met"], ccsds_index),
+            },
+            coords={"epoch": np.arange(n_sets), "event_met": np.arange(n_events)},
+        )
+        return _add_sweep_indices(ds)
+
+    def test_normalized_per_sweep_valid_sets(self):
+        """Test incomplete sweeps are normalized by their own number of sets."""
+        sweep = list(range(1, 10))
+        # Full sweep, truncated 1-set sweep, full sweep; 10 events per set
+        esa_steps = [*sweep, 1, *sweep]
+        ds = self._create_sets_dataset(esa_steps, esa_steps, [10] * len(esa_steps))
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        np.testing.assert_array_equal(result["normalized_count"].values, [10, 10, 10])
+
+    def test_excludes_calibration_and_fillval_sets(self):
+        """Test that esa_energy_step 0 and FILLVAL sets are not counted."""
+        sweep = list(range(1, 10))
+        # Sweep 0: ESA 1-9 plus ESA 10 calibration (esa_energy_step=0)
+        # Sweep 1: ESA 1-9 with ESA 5 having a voltage mismatch (FILLVAL)
+        esa_steps = [*sweep, 10, *sweep]
+        esa_energy_steps = [*sweep, 0, 1, 2, 3, 4, 255, 6, 7, 8, 9]
+        # Invalid sets have many events which must not be counted
+        events = [10] * 9 + [100] + [10] * 4 + [100] + [10] * 4
+        ds = self._create_sets_dataset(esa_steps, esa_energy_steps, events)
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        np.testing.assert_array_equal(result["normalized_count"].values, [10, 10])
+
+    def test_set_with_any_invalid_packet_is_invalid(self):
+        """Test that one invalid packet invalidates its whole 8-spin set."""
+        # Two sweeps of ESA 1-3, two packets per 8-spin set, 10 events/packet.
+        # In sweep 1, the ESA 2 set has one valid and one FILLVAL packet.
+        esa_step = np.repeat([1, 2, 3, 1, 2, 3], 2).astype(np.uint8)
+        esa_step_met = np.repeat(1000.0 + 120.0 * np.arange(6), 2)
+        esa_energy_step = esa_step.copy()
+        esa_energy_step[9] = 255
+        n_packets = len(esa_step)
+        ccsds_index = np.repeat(np.arange(n_packets), 10).astype(np.uint16)
+        n_events = len(ccsds_index)
+        ds = xr.Dataset(
+            {
+                "ccsds_met": (["epoch"], 1000.0 + 60.0 * np.arange(n_packets)),
+                "esa_step_met": (["epoch"], esa_step_met),
+                "esa_step": (["epoch"], esa_step),
+                "esa_energy_step": (["epoch"], esa_energy_step, {"FILLVAL": 255}),
+                "tof_ab": (["event_met"], np.zeros(n_events, dtype=np.int32)),
+                "coincidence_type": (
+                    ["event_met"],
+                    np.full(n_events, 12, dtype=np.uint8),
+                ),
+                "ccsds_index": (["event_met"], ccsds_index),
+            },
+            coords={"epoch": np.arange(n_packets), "event_met": np.arange(n_events)},
+        )
+        ds = _add_sweep_indices(ds)
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        # 20 events per valid set; the partially invalid set is fully excluded
+        np.testing.assert_array_equal(result["normalized_count"].values, [20, 20])
+
+    def test_sweep_without_valid_sets_is_nan(self):
+        """Test that a sweep with no valid 8-spin sets gets NaN."""
+        sweep = list(range(1, 10))
+        esa_steps = [*sweep, 1, *sweep]
+        esa_energy_steps = [*sweep, 255, *sweep]
+        ds = self._create_sets_dataset(
+            esa_steps, esa_energy_steps, [10] * len(esa_steps)
+        )
+
+        result = _compute_normalized_counts_per_sweep(ds, tof_ab_limit_ns=15)
+
+        np.testing.assert_array_equal(
+            result["normalized_count"].values, [10, np.nan, 10]
+        )
+
 
 class TestStatisticalFilter0:
     """Test suite for mark_statistical_filter_0() integration tests."""
@@ -2474,6 +2591,28 @@ class TestStatisticalFilter0:
         assert np.any(
             goodtimes_for_filter["cull_flags"].values == CullCode.STAT_FILTER_0
         )
+
+    def test_invalid_sets_do_not_trigger_cull(self, goodtimes_for_filter):
+        """Test that high counts in invalid 8-spin sets don't cull a sweep."""
+        np.random.seed(42)
+        l1b_de_datasets = [
+            self._create_l1b_de_dataset(n_sweeps=2, events_per_met=10) for _ in range(5)
+        ]
+        # Current pointing: second sweep has 5x the events, but all of its
+        # 8-spin sets have a voltage mismatch (esa_energy_step = FILLVAL)
+        current = self._create_l1b_de_dataset(n_sweeps=2, events_per_met=50)
+        current["esa_energy_step"].values[9:] = 255
+        l1b_de_datasets[2] = current
+
+        mark_statistical_filter_0(
+            goodtimes_for_filter, l1b_de_datasets, current_index=2
+        )
+
+        # The first sweep is also 5x but valid, so it is culled; the second
+        # sweep has no valid sets, so it is not
+        cull_flags = goodtimes_for_filter["cull_flags"].values
+        assert np.all(cull_flags[:9] == CullCode.STAT_FILTER_0)
+        assert np.all(cull_flags[9:] == CullCode.GOOD)
 
     def test_insufficient_pointings(self, goodtimes_for_filter):
         """Test that fewer than min_pointings raises ValueError."""
@@ -4279,6 +4418,7 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
             ) as mock_cal_load,
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
@@ -4301,7 +4441,7 @@ class TestApplyGoodtimesFilters:
             mock_cal_load.assert_called_once_with(cal_path)
 
     def test_calls_all_filters(self, tmp_path):
-        """Test that all 8 filters are called."""
+        """Test that all 9 filters are called."""
         mock_goodtimes = MagicMock()
         mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
             "good_bins": 100,
@@ -4317,6 +4457,9 @@ class TestApplyGoodtimesFilters:
                 return_value=mock_cal,
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage") as mock_f0,
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"
+            ) as mock_f0b,
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"
             ) as mock_f1,
@@ -4343,6 +4486,7 @@ class TestApplyGoodtimesFilters:
             )
 
             mock_f0.assert_called_once()
+            mock_f0b.assert_called_once()
             mock_f1.assert_called_once()
             mock_f2.assert_called_once()
             mock_f3.assert_called_once()
@@ -4368,6 +4512,7 @@ class TestApplyGoodtimesFilters:
                 return_value=mock_cal,
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
@@ -4404,6 +4549,7 @@ class TestApplyGoodtimesFilters:
                 return_value=mock_cal,
             ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
             patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
@@ -4726,3 +4872,95 @@ class TestMarkBadVoltage:
         custom_code = 200
         mark_bad_voltage(goodtimes_for_esa, l1b_de_with_zero, cull_code=custom_code)
         assert np.all(goodtimes_for_esa["cull_flags"].values[1, :] == custom_code)
+
+
+class TestMarkUnmatchedGainConfig:
+    """Tests for mark_unmatched_gain_config culling function."""
+
+    @pytest.fixture
+    def cal_config(self, hi_test_cal_prod_config_path):
+        """Cal-prod config containing only gain_config_id=0."""
+        return CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+
+    @pytest.fixture
+    def goodtimes(self):
+        """Create an all-good goodtimes dataset."""
+        met_values = np.array([1000.0, 1050.0, 1100.0])
+        return xr.Dataset(
+            {
+                "cull_flags": xr.DataArray(
+                    np.zeros((3, 90), dtype=np.uint8),
+                    dims=["met", "spin_bin"],
+                ),
+                "esa_step": xr.DataArray(np.array([1, 2, 3]), dims=["met"]),
+            },
+            coords={"met": met_values, "spin_bin": np.arange(90)},
+        )
+
+    @staticmethod
+    def _l1b_de(hv_deltas):
+        return xr.Dataset(attrs=dict(hv_deltas))
+
+    def test_matching_gain_config_unchanged(self, goodtimes, cal_config):
+        """Test that a pointing matching a gain_config_id is not culled."""
+        mark_unmatched_gain_config(
+            goodtimes, self._l1b_de(NOMINAL_HV_DELTAS), cal_config
+        )
+        assert np.all(goodtimes["cull_flags"].values == CullCode.GOOD)
+
+    def test_no_match_culls_all(self, goodtimes, cal_config):
+        """Test that a pointing matching no gain_config_id is fully culled."""
+        # New gain configuration: CEM A/B back voltages raised by ~200 V
+        hv_deltas = dict(NOMINAL_HV_DELTAS, cem_a_delta_v=2350.0, cem_b_delta_v=2350.0)
+        mark_unmatched_gain_config(goodtimes, self._l1b_de(hv_deltas), cal_config)
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+        assert goodtimes.goodtimes.get_cull_statistics()["good_bins"] == 0
+        assert len(goodtimes.goodtimes.get_good_intervals()) == 0
+
+    def test_multiple_matches_culls_all(self, goodtimes, cal_config):
+        """Test that a pointing matching multiple gain_config_ids is culled."""
+        duplicate = cal_config.rename(index={0: 1}, level="gain_config_id")
+        ambiguous_config = pd.concat([cal_config, duplicate])
+        mark_unmatched_gain_config(
+            goodtimes, self._l1b_de(NOMINAL_HV_DELTAS), ambiguous_config
+        )
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+
+    @pytest.mark.parametrize(
+        "field", ["mcp_delta_v", "cem_a_delta_v", "cem_b_delta_v", "tof_v"]
+    )
+    def test_nan_delta_culls_all(self, goodtimes, cal_config, field):
+        """Test that a NaN gain match value culls the full pointing."""
+        hv_deltas = dict(NOMINAL_HV_DELTAS, **{field: np.nan})
+        mark_unmatched_gain_config(goodtimes, self._l1b_de(hv_deltas), cal_config)
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+
+    def test_missing_attribute_culls_all(self, goodtimes, cal_config):
+        """Test that a missing gain match attribute culls the full pointing."""
+        hv_deltas = dict(NOMINAL_HV_DELTAS)
+        del hv_deltas["tof_v"]
+        mark_unmatched_gain_config(goodtimes, self._l1b_de(hv_deltas), cal_config)
+        assert np.all(goodtimes["cull_flags"].values == CullCode.BAD_HV_VALUE)
+
+    def test_combines_with_existing_culls(self, goodtimes, cal_config):
+        """Test that existing cull codes are preserved via bitwise OR."""
+        goodtimes["cull_flags"].values[0, :] = CullCode.DRF
+        mark_unmatched_gain_config(
+            goodtimes,
+            self._l1b_de({k: np.nan for k in NOMINAL_HV_DELTAS}),
+            cal_config,
+        )
+        assert np.all(
+            goodtimes["cull_flags"].values[0, :] == CullCode.DRF | CullCode.BAD_HV_VALUE
+        )
+        assert np.all(goodtimes["cull_flags"].values[1:, :] == CullCode.BAD_HV_VALUE)
+
+    def test_custom_cull_code(self, goodtimes, cal_config):
+        """Test using a custom cull code."""
+        mark_unmatched_gain_config(
+            goodtimes,
+            self._l1b_de({k: np.nan for k in NOMINAL_HV_DELTAS}),
+            cal_config,
+            cull_code=CullCode.DRF,
+        )
+        assert np.all(goodtimes["cull_flags"].values == CullCode.DRF)

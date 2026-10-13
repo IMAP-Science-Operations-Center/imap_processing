@@ -1,0 +1,293 @@
+.. _swapi-l2:
+
+L1 to L2 - Count Rates and ESA Energies
+=======================================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+**Code:** ``imap_processing/swapi/l2/swapi_l2.py`` (312 lines).
+
+**Document:** sections 10.2 and 10.3.
+
+L2 is **the last level this repository produces for SWAPI**. It does two
+things: divide counts by the live time to get rates, and work out what energy
+each of the 72 ESA steps actually was. The second is the only non-trivial
+algorithm at L2, and it is the reason L2 needs ancillary files at all.
+
+**[DOC]** "No additional rejection, culling, or flagging of suspect/bad data is
+performed during L1-L2 processing."
+
+Counts to rates
+---------------
+
+**[DOC]** L1-L2 processing divides counts by time to produce count rates and
+updates the uncertainty:
+
+.. math::
+
+   \mathrm{SWP\_PCEM\_RATE} = \frac{\mathrm{SWP\_PCEM\_COUNTS}}{t_{\mathrm{live}}}
+   \qquad
+   \mathrm{SWP\_PCEM\_RATE\_ERR\_PLUS} =
+     \frac{\mathrm{SWP\_PCEM\_COUNTS\_ERR\_PLUS}}{t_{\mathrm{live}}}
+
+and the same for SCEM and COIN.
+
+.. _swapi-livetime:
+
+The live time constant
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. math::
+
+   t_{\mathrm{live}} = 0.145\ \mathrm{s}
+
+**[DOC]** The exposure time per energy bin is one complete sweep (12 s, coarse
++ fine) divided by the total energy steps (72), giving 0.167 s - but the actual
+time spent acquiring counts is **less** than that, because some of each step is
+spent settling the HVPS. The live time is 0.145 s.
+
+**[CODE]** ``swapi_l2.SWAPI_LIVETIME = 0.145``. It is a module-level constant,
+not an ancillary input, and it is **also imported by the I-ALiRT code**.
+
+.. warning::
+
+   ``SWAPI_LIVETIME`` is hard-coded. **[DOC]** The L2 ancillary list in section
+   10.6 says the L2 product requires an "accumulation time per ESA step (TBC)"
+   ancillary file. If the SWAPI team ever delivers a per-step or time-varying
+   live time, this constant becomes wrong for both L2 and I-ALiRT
+   simultaneously.
+
+**[DOC]** The Poisson uncertainty in the rate is
+
+.. math::
+
+   \Delta C = \frac{\sqrt{N}}{t_{\mathrm{bin}}}
+
+with :math:`N` the counts per energy bin. Since L1 already stored
+:math:`\sqrt{N}`, dividing the L1 uncertainty by :math:`t_{\mathrm{live}}` is
+the same thing. Upper and lower rate uncertainties are the same, "except if we
+modify them to be asymmetric uncertainties in the future."
+
+**[CODE]** Implemented verbatim, with one addition the document does not
+mention:
+
+.. code-block:: python
+
+   for var in ["swp_pcem_rate", "swp_scem_rate", "swp_coin_rate"]:
+       l2_dataset[var] = l2_dataset[var].where(l2_dataset[var] >= 0, np.nan)
+
+Negative rates (which can only arise from L1 fill values) become ``NaN``. The
+uncertainties are **not** given the same treatment, so a step can end up with
+a ``NaN`` rate and a finite uncertainty.
+
+.. _swapi-esa-energy-solve:
+
+The ESA step-to-energy solve
+----------------------------
+
+**[DOC]** Section 10.3. Ground processing from L1 to L2 includes the conversion
+of ESA step number (0 to 71) to energy (keV). The SWAPI Instrument Team
+provides ESA Unit Conversion ADP updates as needed.
+
+**Code:** ``solve_full_sweep_energy(esa_lvl5_data, sweep_table, esa_table_df,
+lut_notes_df, data_time)``.
+
+Why it is not a simple lookup
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The 62 coarse steps sit at fixed voltages, so their energies are tabulated. The
+**9 fine steps move with the solar wind peak**, so their voltages - and
+therefore energies - differ sweep to sweep. The instrument tells you where they
+were only indirectly: ``SWP_SCI.ESA_LVL5`` from the last packet of the sweep
+gives the ESA DAC setting of the **71st** step, and the other 8 fine steps are
+at fixed *index offsets* from it on a monotonic DAC-to-energy ladder.
+
+So the algorithm is: look up the fixed energies, then walk backwards down the
+ladder from the last step.
+
+The document's procedure
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[DOC]** To convert the ESA step number to an energy for a single 72-step
+sweep:
+
+* For ESA step numbers **0-62**, simply use the corresponding ``Energy`` in the
+  ADP.
+* For ESA step numbers **63-71** (where ``Voltage`` and ``Energy`` both read
+  ``Solve``):
+
+  a. Find ``v_p16`` = ``SWP_SCI.ESA_LVL5`` at ``SWP_SCI.SEQ_NUMBER == 11`` in
+     this sweep.
+  b. On the ``LUT_Notes_vx`` tab of the ADP (matching the ``LUT version
+     number`` column), find ``r_p16``, the row number of that voltage in
+     column B (ESA Voltage).
+  c. Energy for step 71 is column C (Energy) on row ``r_p16``.
+  d. Energy for step 70 is column C on row ``r_p16 - 4``.
+  e. ...continuing in steps of 4: step 69 at ``r_p16 - 8``, 68 at
+     ``r_p16 - 12``, 67 at ``r_p16 - 16``, 66 at ``r_p16 - 20``, 65 at
+     ``r_p16 - 24``, 64 at ``r_p16 - 28``, 63 at ``r_p16 - 32``.
+
+The ``-4`` spacing is not magic: it is exactly the ``ESA Index Number`` column
+of the ADP, which reads ``-16, -12, -8, -4, 0, 4, 8, 12, 16`` for steps 63-71.
+
+The implementation
+^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``solve_full_sweep_energy`` loops over sweeps. Per sweep:
+
+**1. Select the right ADP rows.** Filter the ESA table to rows whose
+``timestamp <= sci_start_time`` **and** whose ``Sweep #`` equals this sweep's
+``sweep_table`` value, sort by ``(timestamp, ESA Step #)`` and take the last 72
+rows - i.e. the most recent applicable table version for this sweep table.
+
+.. code-block:: python
+
+   subset = esa_table_df[(esa_table_df["timestamp"] <= time)
+                         & (esa_table_df["Sweep #"] == sweep_id)]
+   subset = subset.sort_values(["timestamp", "ESA Step #"]).iloc[-NUM_ENERGY_STEPS:]
+
+If no row qualifies - the data predates every table entry - the code falls back
+to the **earliest** timestamp for that sweep table, and only raises
+``ValueError`` if even that is empty. This fallback is why the L2 test can run
+against 2024-09-24 data using a table that starts 2025-02-11.
+
+**2. Fill the fixed energies.** ``read_swapi_lut_table`` maps the string
+``"Solve"`` to ``-1`` when reading the CSV, so solve steps are simply the
+negative entries:
+
+.. code-block:: python
+
+   solve_steps = sweep_esa_energies < 0
+   energy_data[i_sweep, ~solve_steps] = sweep_esa_energies[~solve_steps]
+   if not np.any(solve_steps):
+       continue
+
+.. important::
+
+   The code does **not** assume the solve steps are the last 9. The comment is
+   explicit: "Solve steps are the fine sweep steps. This can be variable
+   numbers and is not always the final 9 steps." Anything the ADP marks
+   ``Solve`` is solved, wherever it sits. This is more general than the
+   document's fixed 63-71 recipe, and it is the right call given that the fine
+   allocation is sweep-plan dependent.
+
+**3. Locate the sweep on the DAC ladder.** ``esa_lvl5`` is formatted as a
+4-digit uppercase hex string and matched against the LUT notes table's
+``ESA DAC (Hex)`` column:
+
+.. code-block:: python
+
+   esa_lvl5_hex = np.vectorize(lambda x: format(x, "04X"))(l1_dataset["esa_lvl5"].values)
+   ...
+   matching_indices = np.nonzero(lut_notes_df["ESA DAC (Hex)"].values == esa_lvl5_val)[0]
+   last_energy_step_index = matching_indices[0]
+
+The **first** match is used. (The LUT notes table has repeated DAC values -
+e.g. index 0 and 1 are both ``1FFE`` - so "first match" is a real choice, not a
+formality.) A missing DAC value raises ``ValueError``.
+
+**4. Walk the ladder.** The ``ESA Index Number`` offsets are re-referenced to
+the final solve step, then added to the anchor row:
+
+.. code-block:: python
+
+   fine_offsets = subset["ESA Index Number"].values[solve_steps]
+   fine_offsets -= fine_offsets[-1]           # -> [-32, -28, ..., -4, 0]
+   fine_lut_indices = last_energy_step_index + fine_offsets
+
+This reproduces the document's ``r_p16 - 4k`` pattern for the nominal table
+while generalizing to any offset pattern the ADP declares.
+
+**5. Floor negative indices.** **[CODE]**, not in the document:
+
+.. code-block:: python
+
+   fine_lut_indices[fine_lut_indices < 0] = 0
+
+The source records the rationale as a SWAPI instruction: SWAPI calls this
+"flooring" the index. If the 71st step's DAC lands near the top of the ladder
+(row < 32), back-tracking would run off the end. Example from the comment:
+
+.. code-block:: text
+
+   71st index = 31
+   nine fine energy indices = [31, 27, 23, 19, 15, 11, 7, 3, -1]
+   flooring                 = [31, 27, 23, 19, 15, 11, 7, 3,  0]
+
+.. warning::
+
+   Flooring silently duplicates energies rather than producing a fill value.
+   When it triggers, several fine steps get the same energy and there is
+   **nothing in the product to say it happened** - no flag, no log message. If
+   fine-step energies look degenerate, this is why.
+
+**6. Write it out.** ``esa_energy`` is a (sweep, 72) float array, and every
+rate, rate uncertainty and the flag array get ``DEPEND_1 = "esa_energy"``.
+
+.. code-block:: python
+
+   depend_on_esa_energy = ["swp_l1a_flags", "swp_pcem_rate", "swp_scem_rate",
+                           "swp_coin_rate", "swp_pcem_rate_stat_uncert_plus", ...]
+   for variable in depend_on_esa_energy:
+       l2_dataset[variable].attrs["DEPEND_1"] = "esa_energy"
+
+Worked example
+^^^^^^^^^^^^^^
+
+From the vendored test table (2025-02-11, sweep table 0, LUT version 4):
+
+.. code-block:: text
+
+   ESA Step #   K factor   Voltage   Energy    Sweep #   ESA Index Number
+        0         1.88       619      1,163       0            544
+        1         1.88       619      1,163       0            544
+       ...
+       60         1.88        69        129       0            960
+       61         1.88        64        120       0            976
+       62         1.88        57        107       0            992
+       63         1.88     Solve      Solve       0            -16
+       64         1.88     Solve      Solve       0            -12
+       ...
+       70         1.88     Solve      Solve       0             12
+       71         1.88     Solve      Solve       0             16
+
+Steps 0-34 all read 1163 eV: the ESA is still at the top of the ramp. Energy
+then falls monotonically to 107 eV at step 62. The 9 ``Solve`` rows carry
+offsets ``-16 ... +16`` in steps of 4, which after re-referencing become
+``-32 ... 0``.
+
+**[CODE]** ``test_swapi_l2.py::test_solve_full_sweep_energy`` pins this down:
+for ``esa_lvl5 = 4663`` (hex ``1237``) and sweep table 0, the last 9 energies
+come out as ``[4290, 4199, 4109, 4020, 3934, 3850, 3767, 3687, 3608]`` eV.
+
+Deviations from the document at L2
+----------------------------------
+
+Full list in :ref:`swapi-implementation-status`; the L2-specific ones:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Item
+     - Status
+   * - ``SWP_SC_THRUSTER`` flag
+     - **[DOC]** "an additional flag is added in ``SWP_L1_FLAGS`` to indicate
+       data taken during SC thruster activity, namely, daily repointing
+       maneuvers." **[CODE]** ``# TODO: add thruster firing flag``. Not
+       implemented, and there is no bit reserved for it in ``SWAPIFlags``.
+   * - Other flags
+     - **[CODE]** ``# TODO: add other flags``.
+   * - The ``k`` factor
+     - The ADP's ``K factor`` and ``Voltage`` columns are read into the
+       DataFrame and never used. L2 records energy but not the ``k`` used to
+       derive it, which matters because :math:`k_{L2} = 1.93` is what L3 needs
+       to invert energy back to ESA voltage - see :ref:`swapi-k-factor`.
+   * - ADP file format
+     - **[DOC]** The ADP is an ``.xlsx`` workbook with a main sheet and a
+       ``LUT_Notes_vx`` sheet. **[CODE]** Two separate CSVs are ingested. The
+       xlsx-to-CSV conversion happens outside this repository.
+   * - Energies at L2, not voltages
+     - The document's title for section 10.3 says "ESA Step Number ... to
+       Energy (keV)". The ADP energies and the code both work in **eV/q**
+       (``VALIDMAX`` = 21000, ``LABLAXIS`` = "Energy (eV/q)").

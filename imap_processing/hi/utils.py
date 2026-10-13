@@ -156,7 +156,9 @@ class HiConstants:
         "neg_defl": 1500.0,
         "tof": 50.0,
         "mcp_f": 10.0,
-        "mcp_b": 50.0,
+        # Below the smallest MCP back gain test step (+50 V, measured as
+        # +49.4 V on 2026-02-09), while nominal noise is ~1 V.
+        "mcp_b": 25.0,
         "cem_f": 10.0,
         "cem_bk_a": 25.0,
         "cem_bk_b": 25.0,
