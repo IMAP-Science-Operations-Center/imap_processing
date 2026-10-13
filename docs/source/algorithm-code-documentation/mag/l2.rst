@@ -1,0 +1,277 @@
+.. _mag-l2:
+
+L2 - Released Science Product
+=============================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+**Code:** ``imap_processing/mag/l2/mag_l2.py``,
+``imap_processing/mag/l2/mag_l2_data.py``.
+
+**Document:** section 7.3.6.
+
+L2 is the **final MAG product**. There is no MAG L3, so nothing downstream of
+this repository refines it further.
+
+The idea is simple: take the L1B burst or L1C normal vectors, apply the MAG
+team's per-vector offsets and time deltas, rotate into the science frames, and
+publish. All the difficult work - removing spacecraft and instrument fields,
+thruster interference and the IMAP-Lo pivot platform, and determining the
+spin-plane (Kepko) and spin-axis (Leinweber) offsets - happens at Imperial
+College London and arrives as numbers in an ancillary file. That upstream work is
+described in the public CMAD and summarised in :ref:`mag-cmad`.
+
+Inputs
+------
+
+**[DOC/CODE]** Four input sources:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 72
+
+   * - Input
+     - Notes
+   * - ``l2-calibration``
+     - Slowly varying URF -> ORF matrices, one 3x3 per (sensor, range).
+       ``URFTOORFO`` and ``URFTOORFI``. May span multiple files; combined by
+       ``MagAncillaryCombiner``. Highest version wins for any given day.
+   * - ``l2-{norm,burst}-offsets``
+     - **One hand-created file that must correspond exactly to one L1B or L1C
+       science file.** Per-vector offsets, time deltas, quality flag and quality
+       bitmask.
+   * - L1B burst or L1C normal science data
+     - **Retrieved from the offsets file's** ``Parents`` **attribute**, not from
+       the dependency list.
+   * - SDC config ``ALWAYS_OUTPUT_MAGO``
+     - Default ``True``.
+
+.. important::
+
+   **The offsets file drives the input selection.** ``cli.py`` calls
+   ``retrieve_mag_l1_inputs_from_l2_offsets`` (in ``imap_processing/utils.py``),
+   which reads ``Parents`` from the offsets CDF and downloads exactly those L1
+   files. Any L1B/L1C dependency passed in on the command line is ignored. If
+   the offsets file has no ``Parents``, the code logs a warning and falls back
+   to the passed-in dependency.
+
+   After processing, ``Parents`` on the output datasets is rewritten to name the
+   L1 file that was actually used, so provenance always matches the data.
+
+The offsets file
+----------------
+
+**[DOC]** Generated **daily** by the MAG team. Contains, for every timestamped
+vector in the corresponding L1 file:
+
+* A **3x1 offset** ``H`` in nT to be removed from the data. May be NaN when a
+  good offset cannot be determined, in which case **the corresponding L2 data
+  point must also become NaN**. In the delivered CDFs, invalid values use
+  ``FILLVAL`` outside ``VALIDMIN``/``VALIDMAX``.
+* A **quality flag** to be copied into the L2 CDF.
+* A **quality bitmask** to be copied into the L2 CDF.
+* A **Delta-T** in +/- milliseconds adjusting the vector timestamp.
+* Possibly additional metadata describing how the calibration was determined -
+  interference removal, and so on. This metadata is to be copied into the final
+  science file so the MAG team can annotate products with calibration steps that
+  are not yet defined.
+
+**[CODE]** Variables read: ``offsets``, ``timedeltas``, ``quality_flag``,
+``quality_bitmask``, ``epoch``.
+
+.. _mag-quality-flags:
+
+Quality flags
+-------------
+
+Two variables travel together. Both are produced by the MAG team and arrive in
+the offsets file.
+
+``quality_flag`` is a single value: ``0`` for good data, ``1`` for bad data not
+suitable for science. **[CMAD]** A raised flag is always accompanied by a
+non-zero bitmask.
+
+``quality_bitmask`` is a bitfield. **[CMAD]** section 5.4.5 is the authoritative
+definition (bit 0 is the least significant):
+
+.. list-table::
+   :header-rows: 1
+   :widths: 12 88
+
+   * - Bit
+     - Meaning
+   * - 0
+     - Data is sourced from the secondary sensor.
+   * - 1
+     - Thruster firing signals have been removed (daily firing around 10:00 UT
+       and the pre-thruster activity an hour earlier).
+   * - 2
+     - Spacecraft interference impacts these data (TCMs, IMAP-Lo pivot platform
+       motion).
+   * - 3
+     - Instrument signals have been removed.
+   * - 4-7
+     - Reserved for in-flight calibration.
+
+This matches the ``VAR_NOTES`` on ``qf_bitmask`` in
+``imap_processing/cdf/config/imap_mag_l2_variable_attrs.yaml``. See
+:ref:`mag-cmad-quality` for what triggers each bit.
+
+.. note::
+
+   **[DOC]** SW-009 section 7.2 has an older, different list: eight named bits
+   (``THRUSTERINTERFERENCE``, ``SCINTERFERENCE``, ``SCTONES``,
+   ``INSTRUMENTINTERFERENCE``, ``PIVOTPLATFORMINTERFERENCE``, ``RESERVE6``,
+   ``RESERVE7``, ``SEC_SENS``) with the secondary-sensor bit last. **It is
+   superseded by the CMAD.**
+
+.. warning::
+
+   **[CODE]** MAG does **not** use ``imap_processing/quality_flags.py``. There is
+   no ``MagQualityFlags`` enum; the bitmask is copied through opaquely from the
+   offsets file as a ``uint16``. See :ref:`mag-implementation-status`.
+
+Processing steps
+----------------
+
+1. Select calibration
+^^^^^^^^^^^^^^^^^^^^^
+
+``retrieve_matrix_from_l2_calibration(calibration_dataset, day, use_mago)``
+selects ``URFTOORFO`` or ``URFTOORFI`` for the day.
+
+2. Select and validate offsets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``mag_l2`` raises ``ValueError`` unless
+``np.array_equal(input_data["epoch"], offsets_dataset["epoch"])``. This is the
+document's "fail if these do not match" requirement, enforced as strict epoch
+equality rather than a filename comparison.
+
+.. note::
+
+   The document also requires checking that the **sensor attributes** in the
+   offsets and calibration files match the sensor being produced, and failing if
+   they do not. This is not implemented; there is a
+   ``# TODO Check that the input file matches the offsets file`` at
+   ``mag_l2.py:97``.
+
+3. Select the primary vectors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``ALWAYS_OUTPUT_MAGO`` decides whether MAGo or MAGi is produced. It is ``True``
+and is expected to stay that way unless a sensor fails.
+
+.. warning::
+
+   The docstring on ``mag_l2`` notes that flipping this to ``False`` also
+   requires updating the dependency system so MAGi files become an upstream
+   dependency. It is not a one-line change.
+
+4. Apply the calibration matrix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``MagL2.apply_calibration`` reuses ``mag_l1b.calibrate_vector`` per vector,
+selecting the 3x3 matrix by the range in component 3. The range component is
+then dropped from the vectors and carried as a separate ``range`` time series.
+
+5. Apply offsets, time deltas and flags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``MagL2.__post_init__``:
+
+* ``apply_offsets`` **adds** the offset vector. Any vector whose offset contains
+  ``FILLVAL`` in any axis has **all three components** set to ``FILLVAL`` -
+  this is the code's realisation of the document's "if the offset is NaN, the
+  vector becomes NaN".
+* ``shift_timestamps`` adds ``timedeltas * 1e9`` nanoseconds to the epochs.
+  Lengths must match or it raises.
+* ``quality_flags`` and ``quality_bitmask`` are copied straight from the offsets
+  file into the output.
+
+``constants.FILLVAL = -1e31``, matching the ``FILLVAL`` in the vector CDF
+attributes.
+
+6. Truncate to 24 hours
+^^^^^^^^^^^^^^^^^^^^^^^
+
+``truncate_to_24h`` removes the 30-minute buffers. **This must happen after the
+offsets and time deltas are applied**, since a time delta can move a vector
+across the boundary. ``mag_l2`` calls it explicitly, and
+``generate_dataset`` calls it again per frame (harmlessly, since the second call
+is a no-op once the data is already trimmed).
+
+7. Magnitude
+^^^^^^^^^^^^
+
+``calculate_magnitude`` - ``np.linalg.norm(vectors, axis=1)`` over the three
+components.
+
+8. Transform to output frames
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``rotate_frame`` per frame in ``DEFAULT_L2_FRAMES``:
+
+.. code-block:: python
+
+   DEFAULT_L2_FRAMES = [
+       ValidFrames.SRF,
+       ValidFrames.GSE,
+       ValidFrames.GSM,
+       ValidFrames.RTN,
+       ValidFrames.DSRF,   # last: some vectors may become NaN
+   ]
+
+``rotate_frame`` mutates the dataclass in place, so each rotation chains from the
+previous frame. FILLVAL and NaN values are re-masked after each transform.
+
+.. note::
+
+   **[DOC]** lists DSRF, SRF, RTN and GSE for L2. **[CODE]** additionally
+   produces **GSM**, which the document only mentions for I-ALiRT. Global
+   attributes exist for ``imap_mag_l2_{norm,burst}-gsm``, so this is an
+   intentional extension, not an accident.
+
+9. Output
+^^^^^^^^^
+
+Per frame: ``b_srf`` / ``b_gse`` / ``b_gsm`` / ``b_rtn`` / ``b_dsrf``,
+``quality_flags``, ``quality_bitmask`` (as ``uint16``), ``range``,
+``magnitude``. ``direction_label`` is ``["B_R", "B_T", "B_N"]`` for RTN and
+``["Bx", "By", "Bz"]`` otherwise.
+
+.. note::
+
+   **[DOC]** step 9 also requires the normal-mode stream to carry a header
+   listing the first and last vector packet sequence count and any missing
+   sequence counters. **[CODE]** ``mag_l2`` passes ``global_attributes={}`` into
+   ``MagL2``, so no sequence-counter provenance reaches L2 at all. See
+   :ref:`mag-implementation-status`.
+
+Shared machinery
+----------------
+
+``MagL2L1dBase`` in ``mag_l2_data.py`` is the common base for ``MagL2`` and
+``MagL1d``, because the two levels produce structurally identical files. It
+owns:
+
+* ``generate_dataset`` - builds the ``xr.Dataset``, including calling
+  ``truncate_to_24h`` and constructing
+  ``imap_mag_{level}_{mode}-{frame}`` as the logical source ID.
+* ``truncate_to_24h``
+* ``calculate_magnitude``
+* ``apply_calibration``
+* ``shift_timestamps``
+* ``rotate_frame``
+* ``ValidFrames`` - the frame enum described in :ref:`mag-overview`.
+
+Its docstring notes it "may also be extended for I-ALiRT"; today the I-ALiRT
+path only borrows ``ValidFrames`` and a few static methods.
+
+Validation
+----------
+
+``test_mag_validation.py::test_mag_l2_validation`` covers T021 (burst) and T022
+(norm) in ``imap_processing/tests/mag/validation/L2/``, using real calibration
+and offsets CDFs and an expected-output CSV. Marked
+``@pytest.mark.external_test_data``.

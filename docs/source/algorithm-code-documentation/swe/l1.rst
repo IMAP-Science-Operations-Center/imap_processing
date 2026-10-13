@@ -1,0 +1,573 @@
+.. _swe-l1:
+
+L0 to L1B - Decompression, Reorganization and Rates
+===================================================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+This page covers algorithm document sections 3.4.2 (L0 to L1A) and 3.4.3
+(L1A to L1B).
+
+The pipeline
+------------
+
+.. code-block:: text
+
+   L0 packets
+     |
+     |  ---------------- L1A: swe_l1a.py / swe_science.py ----------------
+     |  1. decommutate by APID (use_derived_value=False)
+     |  2. unpack the 1260-byte SCIENCE_DATA field to (180, 7) uint8
+     |  3. expand 8-bit -> 16-bit counts through the decompression table
+     v
+   imap_swe_l1a_sci  (per quarter cycle)
+     |
+     |  ---------------- L1B: swe_l1b.py ---------------------------------
+     |  4. raw -> engineering units for science metadata
+     |  5. drop calibration-mode quarter cycles
+     |  6. keep only runs of quarter_cycle == 0,1,2,3
+     |  7. checkerboard: (n*4, 180, 7) -> (n, 24, 30, 7)
+     |  8. per-measurement acquisition time
+     |  9. deadtime correction
+     | 10. in-flight gain calibration
+     | 11. counts -> count rate
+     | 12. sqrt(counts) uncertainty; ESA energies from the LUT
+     v
+   imap_swe_l1b_sci  (per full cycle)
+
+Step 1 - decommutation
+----------------------
+
+**[CODE]** ``swe_l1a()`` calls ``packet_file_to_datasets`` with
+``use_derived_value=False`` and the SWE XTCE, then dispatches on APID:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 24 62
+
+   * - APID
+     - Packet
+     - Handling
+   * - 1344
+     - ``SWE_SCIENCE``
+     - Full science processing (``swe_science()``).
+   * - 1330
+     - ``SWE_APP_HK``
+     - Attributes attached, passed through raw.
+   * - 1334
+     - ``SWE_CEM_RAW``
+     - Attributes attached, passed through raw.
+
+Unknown APIDs are logged, not raised. **[DOC]** Section 3.4.2.5 says autonomy,
+static housekeeping, event message and memory dump packets "should also be
+decommutated at this level"; none of them are in the SWE XTCE or the APID enum.
+
+Step 2 - the SCIENCE_DATA field
+-------------------------------
+
+**[DOC]** ``SWE_SCIENCE.SCIENCE_DATA`` is a **1260-byte** fixed field starting
+at byte 32, bit 0, and is the last field before the checksum. Interpret it as a
+3D array:
+
+.. code-block:: text
+
+   7 (CEM_COUNTS)  x  12 (STEPS_EACH_SECOND)  x  15 (SECONDS)
+
+Layout, byte by byte:
+
+.. code-block:: text
+
+   bytes    0- 6   CEM 1..7,  ESA step 1  of second 1   (spin angle bin 1)
+   bytes    7-13   CEM 1..7,  ESA step 2  of second 1
+   ...
+   bytes   77-83   CEM 1..7,  ESA step 12 of second 1   (spin angle bin 2)
+   bytes   84-90   CEM 1..7,  ESA step 1  of second 2   (spin angle bin 3)
+   ...
+   bytes 1253-1259 CEM 1..7,  ESA step 12 of second 15  (spin angle bin 30)
+
+Note the pairing: 12 ESA steps per second span **two** 12-degree spin-angle
+bins (6 steps each).
+
+**[CODE]** ``swe_science()`` does this in one vectorized pass:
+
+.. code-block:: python
+
+   raw_science_array = np.array([
+       np.frombuffer(binary_string, dtype=np.uint8).reshape(180, N_CEMS)
+       for binary_string in l0_dataset["science_data"].values
+   ])
+
+giving ``(n_packets, 180, 7)``. The 180 axis is named ``spin_sector`` in the
+L1A CDF - at L1A that name means "step index within the quarter cycle", **not**
+a 12-degree angle bin.
+
+.. _swe-decompression:
+
+Step 3 - count decompression
+----------------------------
+
+**[DOC]** Flight software compresses each 16-bit counter to 8 bits using the
+scheme inherited from ACE/SWEPAM. This is lossy and irreversible.
+
+To decompress:
+
+1. Split the 8-bit value: upper 4 bits are ``index``, lower 4 bits are
+   ``multi``.
+
+   .. code-block:: text
+
+      Bits:  | 7  6  5  4 | 3  2  1  0 |
+                  index        multi
+
+2. Look up ``base[index]`` and ``step_size[index]``.
+3. ``N = base[index] + multi * step_size[index] + (step_size[index] - 1) / 2``,
+   keeping only the **integer part** of the last term.
+
+The last term places the result in the middle of the compressed bin rather than
+at its lower edge.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 16 30 30 24
+
+   * - index
+     - base
+     - step_size
+     - covers
+   * - 0
+     - 0
+     - 1
+     - 0-15
+   * - 1
+     - 16
+     - 1
+     - 16-31
+   * - 2
+     - 32
+     - 2
+     - 32-63
+   * - 3
+     - 64
+     - 4
+     - 64-127
+   * - 4
+     - 128
+     - 8
+     - 128-255
+   * - 5
+     - 256
+     - 16
+     - 256-511
+   * - 6
+     - 512
+     - 16
+     - 512-767
+   * - 7
+     - 768
+     - 16
+     - 768-1023
+   * - 8
+     - 1024
+     - 32
+     - 1024-1535
+   * - 9
+     - 1536
+     - 32
+     - 1536-2047
+   * - 10
+     - 2048
+     - 64
+     - 2048-3071
+   * - 11
+     - 3072
+     - 128
+     - 3072-5119
+   * - 12
+     - 5120
+     - 256
+     - 5120-9215
+   * - 13
+     - 9216
+     - 512
+     - 9216-17407
+   * - 14
+     - 17408
+     - 1024
+     - 17408-33791
+   * - 15
+     - 33792
+     - 2048
+     - 33792-66559
+
+Worked example from the document: the byte ``230`` = ``0xE6`` gives
+``index = 14``, ``multi = 6``, so
+``17408 + 6*1024 + (1024-1)//2 = 17408 + 6144 + 511 = 24063``. The true value
+was somewhere in 23552-24575.
+
+**[CODE]** ``swe_science.decompressed_counts(cem_count)`` implements exactly
+this with the table as a dict. ``swe_science()`` precomputes all 256 results
+once and then decompresses the whole array by fancy indexing:
+
+.. code-block:: python
+
+   decompression_table = np.array([decompressed_counts(i) for i in range(256)])
+   science_array = decompression_table[raw_science_array]
+
+**[DOC]** The document says decompression "could be done here, or could be part
+of L1a to L1b processing". **[CODE]** SWE does it at L1A, and keeps the raw
+8-bit values in ``raw_science_data`` so the choice is reversible. That variable
+is deleted at the top of L1B.
+
+The same function is imported by the I-ALiRT code, which uses the identical
+scheme (**[DOC]** section 3.4.2.2).
+
+Step 4 - engineering units
+--------------------------
+
+**[CODE]** ``swe_l1b_science()`` reads the APID back out of the L1A global
+attribute ``packet_apid``, looks up the matching ``SWEAPID`` name, and calls
+``convert_raw_to_eu()`` with the ``eu-conversion`` ancillary file. For science
+packets that converts ``SPIN_PHASE``, ``SPIN_PERIOD`` and ``THRESHOLD_DAC``
+(**[DOC]** Appendix A). The full table is in :ref:`swe-ancillary`.
+
+Step 5 - dropping calibration data
+----------------------------------
+
+**[DOC]** Section 3.3.4: in-flight calibration runs use the **same telemetry
+format** as science mode, so L0 and L1 processing is identical, but the data
+"should not be included in the Level 2 or higher science products".
+
+**[CODE]** L1B drops them, not L2:
+
+.. code-block:: python
+
+   science_data = l1a_data_copy["esa_table_num"].data == 0
+   l1a_data_copy = l1a_data_copy.isel({"epoch": science_data})
+
+The comment explains the reasoning: calibration-mode data "looks same as
+science data but it only measures one energy or specific energy steps during
+the whole duration. Right now, only index 0 in LUT collects science data."
+
+This is confirmed by the ESA LUT itself: table 0 cycles through all 24
+voltages, while table 1 holds a single voltage (5.64 V) for all 48 rows -
+exactly what a gain sweep needs. See :ref:`swe-ancillary`.
+
+Step 6 - finding complete full cycles
+-------------------------------------
+
+A full cycle needs four consecutive packets with ``QUARTER_CYCLE`` = 0, 1, 2, 3.
+Partial cycles at the ends of a file, or gaps, must be discarded.
+
+**[CODE]** ``find_cycle_starts()`` (credited to Brandon Stone) does this with a
+sliding window on the first difference, avoiding any Python loop:
+
+.. code-block:: python
+
+   diff = cycles[1:] - cycles[:-1]
+   ione = diff == 1
+   valid = (cycles == 0)[:-3] & ione[:-2] & ione[1:-1] & ione[2:]
+   first_quarter_indices = np.where(valid)[0]
+
+i.e. "this element is 0, and the next three differences are all +1".
+``get_indices_of_full_cycles()` then broadcasts each start index to
+``[i, i+1, i+2, i+3]`` and flattens.
+
+If no full cycle is found, ``swe_l1b_science()`` logs and returns ``None``.
+
+.. _swe-l1-checkerboard:
+
+Step 7 - the checkerboard reorganization
+----------------------------------------
+
+This is the heart of SWE L1B, and it has no direct counterpart in the heritage
+codes - **[DOC]** section 3.4.1 says explicitly that "the SWEPAM code used to
+combine data from different energies and angles to build up a full measurement
+will need to be modified for use with SWE data".
+
+**Goal.** Turn four packets' worth of measurements -
+``(4, 180, 7)`` = 720 measurements - into a ``(24 esa_step, 30 spin_sector, 7)``
+grid, exactly one measurement per cell.
+
+**Inputs.** The ESA LUT ancillary file, filtered to the active table index
+(``esa_table_num``, default 0). Its columns:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 16 84
+
+   * - Column
+     - Meaning
+   * - ``table_idx``
+     - Which of the 8 onboard tables (0-7). 48 rows each.
+   * - ``esa_step``
+     - Step index within the full cycle. Takes values 0-11, 180-191, 360-371,
+       540-551 - i.e. the **first 12 steps of each quarter cycle**, since the
+       pattern then repeats every 12 steps through the 180.
+   * - ``esa_v``
+     - The ESA plate voltage for that step.
+   * - ``v_index``
+     - Which of the 24 energy rows (1-24) that voltage belongs to.
+   * - ``ialirt``
+     - 1 if this step is one of the 8 downlinked in real time.
+
+**[CODE]** ``get_checker_board_pattern()`` builds the index map:
+
+1. Take the 48 rows of the active table, reshape ``v_index - 1`` and
+   ``esa_step`` to ``(4 quarter cycles, 12 steps)``.
+2. Within each quarter cycle, split the 12 steps into ``(2, 6)``: the first 6
+   belong to **even** spin-sector columns, the second 6 to **odd** columns.
+3. Write into a ``(24, 2)`` scratch array: for quarter cycle *i* whose first
+   step index is ``start_esa_step`` (0, 180, 360 or 540), the even column gets
+   ``start_esa_step + 0..5`` at the six ``v_index`` rows for that half, and the
+   odd column gets ``start_esa_step + 6..11`` at its six rows.
+4. ``np.tile`` that ``(24, 2)`` block 15 times to ``(24, 30)``.
+5. Add the column offsets ``[0, 0, 12, 12, 24, 24, ...]`` so that each
+   successive pair of columns advances by 12 steps - 12 steps is exactly one
+   second, i.e. two spin-angle bins.
+
+The result is a ``(24, 30)`` array of indices into the flattened 720-element
+full-cycle array.
+
+``get_esa_energy_pattern()`` runs the identical construction but writes
+``esa_v`` instead of a step index, giving the (24, 30) grid of ESA **voltages**
+that L1B converts to energies.
+
+``populated_data_in_checkerboard_pattern()`` applies the map. It flattens the
+pattern in Fortran order (``order="F"``, column-major) and uses it to index six
+variables:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Variable
+     - Handling
+   * - ``science_data``
+     - Reshaped ``(n_cycles, 720, 7)``, indexed, reshaped ``(n, 24, 30, 7)``.
+   * - ``acq_start_coarse``, ``acq_start_fine``, ``acq_duration``,
+       ``settle_duration``
+     - One value per packet, so repeated 180 times to length 720 before
+       indexing. Result ``(n, 24, 30)``.
+   * - ``esa_step_number``
+     - **Synthesized, not telemetered.** ``tile(arange(180), 4)`` per cycle,
+       put through the same permutation. Result: the 0-179 position of each
+       measurement within its quarter cycle, which is what the acquisition
+       time formula needs.
+
+.. important::
+
+   The checkerboard is a **pure permutation**. Nothing is averaged, summed or
+   dropped, and every one of the 720 measurements lands in exactly one cell.
+   That is what lets L1B keep per-measurement acquisition times, and lets L2
+   emit both a binned and an unbinned product.
+
+Step 8 - acquisition time per measurement
+-----------------------------------------
+
+**[DOC]** Section 3.4.4. ``ACQ_START_COARSE`` and ``ACQ_START_FINE`` give the
+start of the **first data acquisition period** of the quarter cycle, *after*
+the first settle time. Subsequent steps follow at the step period:
+
+.. code-block:: text
+
+   sci_step_acquisition_time_sec =
+       ACQ_START_COARSE + ACQ_START_FINE/1e6
+       + step * (ACQ_DURATION + SETTLE_DURATION)/1e6
+
+   sci_step_acquisition_middle_time_sec =
+       sci_step_acquisition_time_sec + (ACQ_DURATION/1e6)/2
+
+with ``step`` running 0-179 within the quarter cycle. Both durations are in
+**microseconds** in the L1 files.
+
+**[CODE]** Split across two helpers in ``swe_utils.py``:
+
+* ``combine_acquisition_time(coarse, fine)`` -> ``coarse + fine/1e6``
+* ``calculate_data_acquisition_time(start, step, acq_duration, settle_duration)``
+  -> the center-time formula above.
+
+The result becomes the L1B ``acquisition_time`` variable, ``(epoch, 24, 30)``,
+in MET seconds. It is the **center** time, which matters: L2 uses it to look up
+the spin angle, and getting the center rather than the edge is what makes the
+spin angle correct to half a bin.
+
+Step 9 - deadtime correction
+----------------------------
+
+**[DOC]** Non-paralyzable detector model, ``n = m / (1 - m*t)``. The heritage C:
+
+.. code-block:: c
+
+   correct = 1.0 - ((1.5e-6) * c[i][j][k] / tsampl);
+   /* arbitrary x10 cutoff */
+   correct = (correct < 0.1) ? 0.1 : correct;
+   ccounts[i][j][k] = c[i][j][k] / correct;
+
+The 0.1 floor caps the correction at a factor of 10, so a saturated detector
+produces a large but finite number rather than a negative or infinite one.
+
+The document's fragment uses **1.5e-6 s**, but states in the same paragraph
+that "the dead time for SWE will be based on the SWE electronics, with the
+actual value defined during instrument calibration", and the C comment reads
+``dead time = XXXXX sec``.
+
+**[CODE]** ``deadtime_correction(counts, acq_duration)`` uses **360 ns**:
+
+.. code-block:: python
+
+   deadtime = 360e-9
+   correct = 1.0 - (deadtime * (counts / (acq_duration[..., np.newaxis] * 1e-6)))
+   correct = np.maximum(0.1, correct)
+   corrected_count = counts.astype(np.float64) / correct
+
+This is a deliberate substitution of the measured SWE value for the document's
+placeholder, and the 0.1 floor is preserved. ``acq_duration`` is converted from
+microseconds to seconds inline. The same function is reused by the I-ALiRT
+code.
+
+Step 10 - in-flight gain calibration
+------------------------------------
+
+**[DOC]** Sections 3.3.4 and 3.4.3. Weekly, SWE runs a macro that fixes the ESA
+voltage and steps the CEM bias to ``Vnom - 200``, ``Vnom - 100``, ``Vnom``,
+``Vnom + 100``, ``Vnom + 200`` V. On the ground, someone compares the counts at
+the operating level (step 2 of the run) to the counts at the next higher level
+(step 3), assumes the higher level is correct, and uses the ratio as a scale
+factor. That yields **seven multiplicative factors**, one per CEM, per
+calibration run.
+
+The factors arrive as
+``imap_swe_l1b-in-flight-cal_YYYYMMDD_vXXX.csv``, one row per calibration point:
+a MET timestamp followed by seven factors. All factors are 1.0 for times before
+commissioning.
+
+The **filename date convention matters**: when a new calibration measurement is
+added, the file's date is set to the date of the **previous** calibration,
+because only then does linear interpolation become possible back to that
+previous point. Files also carry a trailing row with a far-future timestamp
+repeating the most recent factors, so quicklook processing can proceed before
+the next calibration exists - and so that reprocessing is correctly triggered
+once it does.
+
+Interpolation is **linear in time between the two surrounding calibration
+points**, per measurement. The heritage ``electron_cal()`` exits with an error
+rather than extrapolating past the last point.
+
+**[CODE]** Three functions:
+
+* ``read_in_flight_cal_data(files)`` - concatenates the CSVs, drops rows with
+  no MET, sorts by MET, drops duplicate METs keeping the last.
+* ``calculate_calibration_factor(acquisition_times, cal_times, cal_data)`` -
+  **raises ``ValueError`` if any acquisition time falls outside the calibration
+  time range**, matching the heritage refusal to extrapolate. Then
+  ``np.searchsorted`` to find the bracketing pair and a manual linear
+  interpolation, vectorized over the whole ``(n, 24, 30)`` time array, giving
+  ``(n, 24, 30, 7)``.
+* ``apply_in_flight_calibration(...)`` - multiplies, and sets a quality flag.
+
+**[CODE, beyond the document]** ``SweL1bFlags.LAST_CAL_INTERVAL`` (bit 2) is
+set on any epoch where at least one acquisition time falls after the
+second-to-last calibration entry. That is precisely the region covered by the
+far-future padding row, so the flag marks "these factors are effectively the
+last measured ones held constant, not a true interpolation". This is a sensible
+addition that the document does not ask for.
+
+Step 11 - counts to rate
+------------------------
+
+**[DOC]** "counts can be converted from counts to count rate, simply by
+dividing the corrected counts by the accumulation time for each measurement".
+The accumulation time is ``ACQ_DURATION`` from the science packet
+(nominally 80 ms), settable in flight, expected to change only in response to
+spin rate changes.
+
+**[CODE]** ``convert_counts_to_rate(data, acq_duration)`` - divide by
+``acq_duration * 1e-6``, broadcasting a new trailing axis if needed. This runs
+**after** the gain calibration, so the output ``science_data`` is
+deadtime-corrected, gain-calibrated counts per second.
+
+Step 12 - uncertainty and energies
+----------------------------------
+
+**[CODE]** ``counts_stat_uncert = np.sqrt(populated_data["science_data"])`` -
+Poisson uncertainty on the **decompressed, uncorrected** counts, with a
+``TODO`` noting that SWE may want deadtime correction included. This is not in
+the algorithm document at all; the document never discusses uncertainty.
+
+Two consequences to be aware of, both covered in
+:ref:`swe-implementation-status`:
+
+* The uncertainty is in **counts** while ``science_data`` is in **counts/s**,
+  and L2 applies the same phase-space-density conversion to both.
+* The compression quantization (which for large counts dominates Poisson - a
+  count of 24063 is known only to within ±512) is not included.
+
+**[CODE]** ESA energies are built from the LUT and the analyzer constant:
+
+.. code-block:: python
+
+   esa_energies = get_esa_energy_pattern(esa_lut_files[0])            # (24, 30) volts
+   esa_energies = np.repeat(esa_energies[np.newaxis, :, :], n_cycles // 4, axis=0)
+   esa_energies = esa_energies * swe_constants.ENERGY_CONVERSION_FACTOR
+
+and stored as ``esa_energy`` in eV. See :ref:`swe-l2` for what the conversion
+factor is and :ref:`swe-ancillary` for why it is hard-coded.
+
+Housekeeping and CEM raw
+------------------------
+
+**[DOC]** Section 3.3.2 lists what is in ``SWE_APP_HK``: operation mode, CDH
+monitors, LV monitors, HV monitors, HV settings (enable/disable, limit plug
+status, range), temperature sensors, FEE thresholds, stim pulse status.
+Processing is "decommutation of the CCSDS packets, expansion of each
+housekeeping parameter to the appropriate length in bytes, and conversion from
+raw units to engineering units."
+
+**[CODE]** There is no HK algorithm. The same packet is decommutated twice from
+the same L0 file:
+
+* ``imap_swe_l1a_hk`` - ``swe_l1a()``, ``use_derived_value=False``, raw counts.
+* ``imap_swe_l1b_hk`` - ``swe_l1b()``, ``use_derived_value=True``, XTCE-derived
+  engineering units.
+
+Note the L1B HK product reads the **L0 file**, not the L1A HK CDF. String-valued
+HK variables get a separate attribute set (``l1b_hk_string_attrs``).
+
+**[DOC]** Section 3.4.2.4: ``SWE_CEM_RAW`` starts at byte 14, bit 0 with seven
+consecutive 4-byte fields, CEM1 through CEM7, uncompressed. **[CODE]** The XTCE
+actually defines **fourteen** count fields - ``CEM1..7_COUNTS_LATCHED`` and
+``CEM1..7_COUNTS_LIVE`` - plus ``SHCOARSE``, ``THRESHOLD_DAC``,
+``STIM_CFG_REG`` and ``CKSUM``. The XTCE is the authority; Appendix B warns that
+the packet definitions were still moving.
+
+Tests
+-----
+
+``imap_processing/tests/swe/``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 64
+
+   * - File
+     - Covers
+   * - ``test_swe_l1a_science.py``
+     - Packet count, ``decompressed_counts`` against the document's worked
+       example, raw and derived field values against
+       ``idle_export_*.SWE_SCIENCE_*.csv``, data ordering, and full
+       decompression against the raw/EU validation pair.
+   * - ``test_swe_l1a_hk.py``, ``test_swe_l1a_cem_raw.py``
+     - Decommutation against ``idle_export_eu`` CSVs.
+   * - ``test_swe_l1a.py``
+     - CDF creation for all three L1A products.
+   * - ``test_swe_l1b.py``
+     - Full cycle index finding, calibration interpolation, the
+       ``LAST_CAL_INTERVAL`` flag, the checkerboard pattern against
+       ``checker-board-indices.csv``, the end-to-end L1B, and count rates.
+   * - ``test_swe_l2.py``
+     - Phase space density, flux, angle bin lookup, binning, and end-to-end L2
+       at both 15 s and 14.6 s spin periods.
+
+Test L0 data are real GSEOS exports from 2024-05-10 (``l0_data/``), with
+matching validation CSVs in ``l0_validation_data/`` and ancillary files in
+``lut/``.

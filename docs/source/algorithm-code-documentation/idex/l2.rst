@@ -1,0 +1,575 @@
+.. _idex-l2:
+
+L2A, L2B and L2C Processing
+===========================
+
+.. include:: /algorithm-code-documentation/_ai_generated_notice.inc
+
+L2A turns six waveforms into physical quantities per dust impact. L2B and L2C
+turn a month of those impacts into count rates and sky maps.
+
+.. important::
+
+   **A large part of what L2A and L2B compute is deliberately overwritten before
+   the dataset is returned.** The TOF mass spectrum and the mass-binned rate
+   products are computed, tested, and then filled with NaN (L2A) or integer fill
+   (L2B/L2C), because the science team has not validated them. The variables
+   remain in the product so the CDF schema is stable across releases.
+
+   This is intentional, it is asserted by the test suite, and it is documented
+   in **[DOC]** sections 4.7.7 and 4.7.11. Do not "fix" it by deleting the NaN
+   block. The withheld variables are listed in full below.
+
+L2A: per-event science
+----------------------
+
+**[CODE]** ``imap_processing/idex/idex_l2a.py``, ~1330 lines.
+``idex_l2a(l1b_dataset, ancillary_files)``. Input is one L1B 10-day science
+file plus two calibration CSVs; output is one L2A 10-day file with the same
+``epoch`` records.
+
+Calibration inputs
+^^^^^^^^^^^^^^^^^^
+
+``load_calibration_files()`` reads two single-row CSVs, skipping the header row
+and taking the **first 8 values** of each:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 60
+
+   * - Ancillary key
+     - Purpose
+   * - ``l2a-calibration-curve-t-rise``
+     - Relates target rise time to impact speed. Inverted to get velocity.
+   * - ``l2a-calibration-curve-yield-params``
+     - Charge yield (C/kg) as a function of impact speed. Used to get mass.
+
+**[DOC]** Table 4.3 gives the current parameter values:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 16 10 10 10 10 12 12 10 10
+
+   * - Calibration
+     - log A
+     - a1
+     - a2
+     - a3
+     - vb (km/s)
+     - vc (km/s)
+     - k
+     - σ
+   * - Rise time
+     - 1.27
+     - −0.2
+     - −2.1
+     - −0.37
+     - 5.3
+     - 13.3
+     - 13.3
+     - 0.28
+   * - Charge yield
+     - 0.06
+     - 2.8
+     - 5.9
+     - 4.1
+     - 13.0
+     - 22.7
+     - 8.2
+     - 0.40
+
+A ninth value (Δ = 1.33 and 1.47 respectively) is present in each file as a
+reported error factor and is **not read** - hence the ``[:8]`` slice. The 8th
+value (σ, unpacked as ``_m`` in ``log_smooth_powerlaw``) is read but also unused
+in the current formula.
+
+.. warning::
+
+   ``load_calibration_files`` uses ``.values.flatten()[:8]`` with no validation.
+   A calibration file with a different column order, an extra leading column, or
+   a different number of header rows will silently produce eight wrong numbers
+   rather than an error.
+
+The waveform fit
+^^^^^^^^^^^^^^^^
+
+**[CODE]** ``estimate_dust_mass()`` + ``fit_impact()``, applied independently to
+``Target_Low``, ``Target_High`` and ``Ion_Grid`` against the low-rate time axis.
+The model is the LDEX impact-charge pulse:
+
+.. math::
+
+   y(t) = C_0 + H(t - t_0)\,A
+          \left[1 - \exp\!\left(-\frac{t-t_0}{\tau_r}\right)\right]
+          \exp\!\left(-\frac{t-t_0}{\tau_d}\right)
+
+with :math:`H` the Heaviside step. The five fitted parameters, in the order they
+appear in ``{channel}_fit_parameters`` and in
+``target_fit_parameter_labels``:
+
+``time_of_impact`` (:math:`t_0`), ``constant_offset`` (:math:`C_0`),
+``amplitude`` (:math:`A`), ``rise_time`` (:math:`\tau_r`),
+``discharge_time`` (:math:`\tau_d`).
+
+Initial guesses and bounds:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 36 40
+
+   * - Parameter
+     - Initial guess
+     - Bounds
+   * - :math:`t_0`
+     - 0 µs
+     - unbounded
+   * - :math:`C_0`
+     - mean of the first **5 µs** of the record (the pre-trigger baseline)
+     - unbounded
+   * - :math:`A`
+     - the largest absolute excursion from the baseline
+     - **strictly positive** for target channels; for ``Ion_Grid``, strictly
+       positive *or* strictly negative depending on the sign of the initial
+       guess, because the ion-grid signal polarity varies
+   * - :math:`\tau_r`
+     - 0.371 µs
+     - strictly positive
+   * - :math:`\tau_d`
+     - 37.1 µs
+     - strictly positive
+
+Fit via ``scipy.optimize.curve_fit`` with ``maxfev=100_000``. A ``RuntimeError``
+(fit did not converge) is caught: the function logs a warning and returns all
+NaN for that event and channel rather than raising.
+
+Impact charge from the fit
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** The reported charge is **not** the fitted amplitude parameter. The
+code evaluates the analytic maximum of the fitted pulse,
+
+.. math::
+
+   t_{max} = t_0 + \tau_r \ln\!\left(\frac{\tau_d}{\tau_r} + 1\right)
+
+evaluates the model there, and takes
+
+.. math::
+
+   Q_{impact} = \left| y(t_{max}) - C_0 \right|
+
+The comment explains why: evaluating the analytic extremum avoids being limited
+by the discrete 246 ns sample grid. ``chi_square()`` then returns the sum of
+squared residuals and the reduced chi-square, following lmfit's
+``_calculate_statistics()`` convention (``redchi = chisqr / max(1, ndata -
+nparams)``).
+
+Per channel, L2A writes seven variables:
+``{channel}_fit_parameters``, ``{channel}_impact_charge``,
+``{channel}_velocity_estimate``, ``{channel}_dust_mass_estimate``,
+``{channel}_chi_squared``, ``{channel}_reduced_chi_squared``,
+``{channel}_fit_results`` (the modelled waveform).
+
+Velocity from rise time
+^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``invert_rise_time_to_velocity()``. Both IDEX calibration curves
+share one functional form, a **smoothly transitioning triple power law in log
+space** (``log_smooth_powerlaw``):
+
+.. math::
+
+   \log_{10} y = \log_{10} A + a_1 \log_{10} v
+     + \log_{10}\left[
+         \left(1 + \left(\tfrac{v}{v_b}\right)^{k}\right)^{(a_2-a_1)/k}
+         \left(1 + \left(\tfrac{v}{v_c}\right)^{k}\right)^{(a_3-a_2)/k}
+       \right]
+
+:math:`a_1, a_2, a_3` are the slopes of the low-, mid- and high-velocity
+segments; :math:`v_b` and :math:`v_c` are the transition speeds; :math:`k` sets
+the sharpness of both transitions. For the rise-time curve :math:`y = \tau_r`
+in µs; for the yield curve :math:`y = Y(v)` in C/kg.
+
+Because the calibration is defined forward (:math:`\tau_r = f(v)`), velocity is
+recovered by a scalar root solve in :math:`\log_{10} v` using Brent's method
+over the bracket
+
+.. math::
+
+   -1 \le \log_{10} v \le 2
+   \qquad\Longleftrightarrow\qquad
+   0.1 \le v \le 100\ \mathrm{km\,s^{-1}}
+
+A non-finite or non-positive rise time, or a root that does not exist inside
+that bracket, returns NaN (logged at ``ERROR`` level) and the mass estimate
+becomes NaN too.
+
+Mass from charge and velocity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``calculate_mass_from_velocity()``. Evaluate the yield curve at the
+estimated velocity, convert the fitted charge to coulombs, divide:
+
+.. math::
+
+   m_{dust} = \frac{Q_{impact} \times 10^{-12}}{Y(v)}
+
+With :math:`Y` in C/kg and :math:`Q` in C, the result is in **kilograms**, which
+is what ``UNITS: Kg`` in ``imap_idex_l2a_variable_attrs.yaml`` declares. Keep
+that in mind when reading the L2B section below.
+
+Ion-grid velocity and mass
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[DOC]** Section 4.7.9 lists this under "Future Work". **[CODE]** It is
+implemented, in ``calculate_ion_grid_velocity_and_mass()``, using exactly the
+relation the document specifies:
+
+.. math::
+
+   v(Q_I/Q_T) = c \left(\frac{Q_I}{Q_T}\right)^{p} + v_0,
+   \qquad c = 55\ \mathrm{km/s},\quad p = -3.2,\quad v_0 = 1.5\ \mathrm{km/s}
+
+The constants are ``ION_GRID_VELOCITY_SCALE``, ``ION_GRID_VELOCITY_EXPONENT``
+and ``ION_GRID_VELOCITY_OFFSET`` in ``idex_constants.py``.
+
+The target charge :math:`Q_T` is chosen by saturation state: **Target High if
+unsaturated, else Target Low if unsaturated, else give up**. Both charges are
+taken as absolute values. Zero or non-finite charges, or a saturated Ion Grid,
+return ``(NaN, NaN)``.
+
+The resulting mass is computed from the **target** charge at the ion-grid
+velocity, not from the ion-grid charge:
+
+.. code-block:: python
+
+   mass_estimate = calculate_mass_from_velocity(target_charge, velocity_estimate,
+                                                yield_params)
+
+which matches the document's statement that ":math:`Q_I` and :math:`v_{IG}` will
+then be fed into equations 4.27 and 4.30" only loosely - the document's wording
+suggests :math:`Q_I`, the code uses :math:`Q_T`. Worth confirming with the IDEX
+team; the charge-yield curve is calibrated against target charge, so the code's
+choice is the physically defensible one.
+
+.. note::
+
+   The document also states that "for the current release, the ion-grid-derived
+   velocity and mass estimates are explicitly replaced with NaN". **That is no
+   longer true.** ``ion_grid_velocity_estimate`` and
+   ``ion_grid_dust_mass_estimate`` are **not** in the current NaN block; they
+   are masked only by the saturation and science-event rules described in
+   :ref:`idex-event-classification`.
+
+The TOF mass scale
+^^^^^^^^^^^^^^^^^^
+
+**[CODE]** ``time_to_mass()``. Uses ``TOF_High`` only. The goal is to find the
+affine map from flight time to :math:`\sqrt{m}`:
+
+.. math::
+
+   t_i = t_{\text{offset}} + A\sqrt{m_i}
+   \qquad\Longrightarrow\qquad
+   m(t) = \left(\frac{t - t_{\text{shift}}}{A}\right)^{2}
+
+The algorithm is a brute-force cross-correlation search:
+
+1. Load 21 reference ion masses from ``atomic_masses.csv`` (H, H₂, C, O, Na, Mg
+   and Si isotopes, K, Ca, several Fe isotopes, Au).
+2. Build a comb of 10 candidate stretch factors, ``np.linspace(1400, 1500, 10)``
+   in nanoseconds.
+3. For each stretch, build a synthetic spike train ``t_i``: zeros everywhere,
+   ``1`` at the sample index closest to each predicted peak time.
+4. Cross-correlate that spike train with the measured TOF waveform
+   (``np.correlate(..., mode="full")``). The lag of the maximum is the best
+   ``t_shift`` for that stretch.
+5. Pick the stretch with the highest correlation, convert shift to seconds via
+   ``FM_SAMPLING_RATE`` and stretch to seconds via ``NS_TO_S``, and apply the
+   squared map above to get a per-sample mass scale in amu.
+
+.. warning::
+
+   The stretch search window is hardcoded: ``min_stretch = 1400``, span 100 ns,
+   10 steps - a 10 ns grid. There is no check that the best stretch landed
+   inside the window rather than on its edge, and no diagnostic is emitted if
+   it does. If the instrument's true stretch factor is outside 1400-1500 ns,
+   every mass scale will be wrong in the same direction with no warning. This
+   is one reason the mass scale is currently withheld.
+
+Peak detection and EMG fits
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** Peaks are found with ``scipy.signal.find_peaks(tof, prominence=0.01)``
+on the converted TOF High waveform. Around each peak, ``analyze_peaks()`` takes
+a ±5-sample slice and fits an **exponentially modified Gaussian**
+(``scipy.stats.exponnorm.pdf``) parameterised by shape ``k``, location ``mu``
+and scale ``sigma``, with :math:`\lambda = 1/(k\sigma)`. The three reported
+parameters, per ``peak_fit_parameter_labels``, are ``mu``, ``sigma``,
+``lambda``.
+
+Results are written into a fixed **500-slot** array indexed by rounded integer
+mass. If two peaks round to the same integer mass, the second is pushed to the
+next free slot upward; anything that cannot find a slot below 500 is discarded
+with a warning. ``calculate_area_under_emg()`` integrates the fitted PDF over
+the slice with ``scipy.integrate.quad``.
+
+Two quality metrics accompany the peaks:
+
+``tof_snr`` (``calculate_snr``)
+  Baseline window **−7 µs ≤ t ≤ −5 µs** on the high-rate axis - pre-impact, by
+  construction. :math:`\mathrm{SNR} = (\max(\text{TOF}) - \overline{b}) /
+  \sigma_b`. Returns all-NaN with a warning if the window is empty.
+
+``tof_peak_kappa`` (``calculate_kappa``)
+  The mean signed distance between each detected peak's assigned mass and the
+  nearest integer. Near zero means the mass scale lines up with real atomic
+  masses; large means it does not. A cheap self-consistency check on
+  ``time_to_mass``.
+
+.. note::
+
+   The docstring says kappa "ranges between zero and one" and that "closer to
+   zero indicates better accuracy", but the implementation takes a **signed**
+   mean of ``mass - round(mass)``, which ranges over (−0.5, 0.5] and can
+   cancel: a spectrum whose peaks are equally split high and low of integer
+   would score a near-perfect kappa. An absolute value or RMS would match the
+   documented intent.
+
+The L2A NaN block
+^^^^^^^^^^^^^^^^^
+
+**[CODE]** Three separate masking stages run at the end of ``idex_l2a()``, in
+this order:
+
+1. ``_mask_saturated_derived_estimates()`` - per-channel, per-event, driven by
+   the saturation flags. Raises ``KeyError`` if a saturation flag is missing.
+2. ``_mask_non_science_derived_estimates()`` - per-event, driven by
+   ``science_event_flag``. Silently skips if the flag is absent.
+3. The **unconditional NaN block** - these ten variables are overwritten with
+   NaN for every event, no exceptions:
+
+   * ``tof_peak_area_under_fit``
+   * ``tof_peak_chi_square``
+   * ``tof_peak_fit_parameters``
+   * ``tof_peak_kappa``
+   * ``tof_peak_reduced_chi_square``
+   * ``tof_snr``
+   * ``mass``
+   * ``mass_scale``
+
+   **[DOC]** Section 4.7.7 lists the same set plus
+   ``ion_grid_dust_mass_estimate`` and ``ion_grid_velocity_estimate``, which are
+   no longer in the code's block.
+
+What **is** published from L2A: the fit parameters, impact charges, fit results
+and chi-squares for all three low-rate channels, and the velocity and mass
+estimates for all three (subject to the saturation and science-event masks),
+plus the L1B time axes and the ten SPICE context variables copied forward.
+
+Future work at L2A
+^^^^^^^^^^^^^^^^^^
+
+**[DOC]** Sections 4.7.8 and 4.7.10 describe two planned changes, neither
+started in the code:
+
+* **Combined target fits.** Fit ``Target_High`` and ``Target_Low`` as one
+  waveform - high gain where it is unsaturated, low gain where it is not - after
+  baseline-correcting and converting both to common charge units. One best
+  estimate of charge, rise time and decay time per event instead of two, plus a
+  fit-quality flag.
+* **Combined TOF fits.** The same idea across TOF High / Mid / Low, to get a
+  more robust time-to-mass conversion, better peak detection across saturated
+  and low-amplitude regions, peak areas, and quality metrics.
+
+Note that the saturation infrastructure both of these need **already exists**
+(see :ref:`idex-event-classification`) - the per-channel saturation flags and
+the gain-walking logic in ``_saturation_aware_width()`` are the same pattern.
+
+L2B and L2C: counts, rates and maps
+-----------------------------------
+
+**[CODE]** ``imap_processing/idex/idex_l2b.py``, ~840 lines.
+``idex_l2b(l2a_datasets, msg_data_l1b) -> [l2b_dataset, l2c_dataset]``.
+
+Inputs are **three** 10-day L2A science files and one or more L1B message files.
+Both input lists are concatenated along ``epoch`` and sorted; the message
+datasets are additionally de-duplicated.
+
+Daily binning
+^^^^^^^^^^^^^
+
+Everything is per **day of year**, derived with ``epoch_to_doy()``. Unique DOYs
+are extracted with ``dict.fromkeys`` to preserve encounter order across a New
+Year boundary. Each day's ``epoch`` value in the output is the **mean epoch of
+that day's events**, not midnight.
+
+Only events with ``dust_hit_flag == 1`` are counted
+(``_get_dust_hit_indices()``).
+
+The bin edges
+^^^^^^^^^^^^^
+
+**[CODE]** Hardcoded at module level in ``idex_l2b.py``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
+
+   * - Dimension
+     - Edges
+   * - ``MASS_BIN_EDGES``
+     - 10 log-spaced bins from ``6.31e-17`` to ``1.00e-14`` **kg**.
+   * - ``CHARGE_BIN_EDGES``
+     - 10 log-spaced bins from ``1.00e-01`` to ``1.00e+04`` **pC**.
+   * - ``SPIN_PHASE_BIN_EDGES``
+     - ``[0, 90, 180, 270, 360]`` - four quadrants.
+   * - Sky grid
+     - ``AzElSkyGrid(IDEX_SPACING_DEG)`` with ``IDEX_SPACING_DEG = 6``, i.e. a
+       60 × 30 rectangular grid, from the shared
+       ``imap_processing/ena_maps/`` machinery.
+
+Reported bin centres are the **geometric** means of the log-spaced edges
+(``sqrt(edge[:-1] * edge[1:])``) and the arithmetic midpoints for spin phase.
+
+``bin_spin_phases()`` shifts by +45° before digitising, so the four quadrants
+are centred on 0/90/180/270 rather than starting there: **315-45, 45-135,
+135-225, 225-315**. Values outside [0, 360) log a warning.
+
+Which L2A variables feed the bins
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** Only the **Target Low** channel:
+
+.. code-block:: python
+
+   mass_vals   = l2a_dataset["target_low_dust_mass_estimate"]
+   charge_vals = l2a_dataset["target_low_impact_charge"]
+
+Target High and Ion Grid are not used at L2B at all. Values are clipped to the
+first and last bin edge before histogramming, so out-of-range events land in the
+end bins rather than being dropped.
+
+.. warning::
+
+   **Suspected unit bug.** L2B applies ``mass_vals = FG_TO_KG * mass_vals``
+   (femtograms → kg, i.e. ×1e-15) to a variable that L2A produces in
+   **kilograms** and declares as ``UNITS: Kg``. Against mass bin edges of
+   6.31e-17 to 1.00e-14 kg, this pushes every physically plausible mass far
+   below the lowest edge, where the clip sends it into the bottom bin.
+
+   The effect is currently invisible because the mass-binned outputs are
+   fill-valued (below), which is probably why it has survived. It must be
+   resolved before those products are released - either L2A should report
+   femtograms, or L2B should drop the conversion. See
+   :ref:`idex-implementation-status`.
+
+Count rates
+^^^^^^^^^^^
+
+**[CODE]** Rates are corrected for **science-acquisition uptime only**, derived
+entirely from the L1B message product's ``science_on`` variable:
+
+.. math::
+
+   \mathrm{rate} = \frac{\mathrm{counts}}
+                        {0.01 \times P_{on}(\mathrm{doy}) \times 86400}
+
+where :math:`P_{on}` is the percentage of that day the instrument was
+acquiring. ``get_science_acquisition_on_percentage()`` walks the on/off event
+list, splits each interval at day boundaries, and accumulates on-time and
+total-time per DOY. Two conventions worth knowing:
+
+* The state before the first message is **assumed to be the opposite** of the
+  first message's state, and a synthetic event is inserted at midnight of the
+  first day.
+* The last interval is extended to the end of its day.
+
+Days with no uptime information get :math:`P_{on} = -1`; days with
+:math:`P_{on} \le 0` get ``rate_calculation_quality_flags = 0`` and their rates
+stay at the initialised value (``-1`` for the charge/mass-binned arrays, ``NaN``
+for the agnostic ones - note the inconsistency). Missing DOYs are logged.
+
+.. note::
+
+   ``dead_time`` is computed at L1B and is **not** used here. The rate is
+   corrected for acquisition uptime but not for per-event dead time. At ~16
+   events per day the correction is negligible, but the omission is
+   undocumented.
+
+The L2B / L2C variable sets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Shared between both products: ``on_off_times``, ``on_off_events``,
+``impact_day_of_year``, ``impact_charge``, ``mass`` and their label arrays.
+
+**L2B** (``imap_idex_l2b_sci-1mo``), binned on ``spin_phase``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 20 44
+
+   * - Variable
+     - Dimensions
+     - Published?
+   * - ``counts``
+     - (epoch, spin_phase)
+     - **yes**
+   * - ``rate``
+     - (epoch, spin_phase)
+     - **yes**
+   * - ``counts_by_charge``
+     - (epoch, impact_charge, spin_phase)
+     - no - integer fill
+   * - ``counts_by_mass``
+     - (epoch, mass, spin_phase)
+     - no - integer fill
+   * - ``rate_by_charge``
+     - (epoch, impact_charge, spin_phase)
+     - no - NaN
+   * - ``rate_by_mass``
+     - (epoch, mass, spin_phase)
+     - no - NaN
+   * - ``rate_calculation_quality_flags``
+     - (epoch,)
+     - **yes** - 1 = good, 0 = insufficient uptime data
+
+**L2C** (``imap_idex_l2c_rectangular-map-1mo``), the same quantities binned on
+``rectangular_lon_pixel`` × ``rectangular_lat_pixel`` instead of spin phase:
+``counts_map`` and ``rate_map`` are **published**; ``counts_by_charge_map``,
+``counts_by_mass_map``, ``rate_by_charge_map`` and ``rate_by_mass_map`` are
+fill-valued.
+
+The L2C dataset carries three extra global attributes: ``sky_tiling_type`` =
+``RECTANGULAR``, ``Spacing_degrees`` = ``6``, ``Spice_reference_frame`` =
+``ECLIPJ2000``.
+
+The L2B / L2C fill block
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+**[CODE]** Exactly as at L2A, the mass- and charge-binned arrays are computed
+and then overwritten immediately before return. The code comment states the
+reason: *"Keep the mass/charge computations above for validation and future
+work, but withhold those products from publication until the fitting routines
+and derived values are validated. The agnostic products are intentionally left
+untouched."*
+
+Integer arrays are filled with ``IDEX_INT_FILLVAL = np.iinfo(np.int64).min``;
+float arrays with ``np.nan``.
+
+So the honest summary of what a consumer can use from a monthly IDEX product
+today is: **dust-hit counts and uptime-corrected rates, by spin quadrant and by
+6° sky pixel, per day, with a per-day quality flag.** Everything mass- or
+charge-resolved is a placeholder.
+
+The geometry caveat
+^^^^^^^^^^^^^^^^^^^
+
+The L2C map bins on ``longitude`` and ``latitude``, which L1B derives from the
+**IDEX boresight pointing direction** at the event epoch. It is where the
+instrument was looking, not a reconstructed dust arrival direction - IDEX has no
+per-event direction-of-arrival measurement. Longitudes are wrapped with
+``np.mod(..., 360)`` and latitudes clipped to [−90, 90]; non-finite geometry is
+dropped by the agnostic path but *not* by the charge/mass path, which clips
+instead.
