@@ -86,6 +86,14 @@ def process_science_data(
     data variable dimensions according to specifications in
     a CDF yaml file.
 
+    Most variables share attributes across datasets, but the h, he4 and fe
+    rates and their uncertainties have the same names in the summed and
+    sectored datasets while their dimensions differ (2D vs. 4D). To handle
+    this, these variables have a "_summed" or "_sectored" suffix in the YAML
+    file (i.e. h_stat_uncert_minus_summed vs. h_stat_uncert_minus_sectored).
+    cno and nemgsi only exist in the sectored dataset but use the "_sectored"
+    suffix as well for consistency.
+
     Parameters
     ----------
     l1a_counts_dataset : xr.Dataset
@@ -114,7 +122,7 @@ def process_science_data(
         dataset = process_standard_rates_data(l1a_counts_dataset, livetime)
         logical_source = "imap_hit_l1b_standard-rates"
     elif descriptor == "summed-rates":
-        dataset = process_summed_rates_data(l1a_counts_dataset, livetime)
+        dataset = process_summed_rates_data(l1a_counts_dataset, livetime, attr_mgr)
         logical_source = "imap_hit_l1b_summed-rates"
     elif descriptor == "sectored-rates":
         dataset = process_sectored_rates_data(l1a_counts_dataset, livetime)
@@ -123,19 +131,28 @@ def process_science_data(
     # Update attributes and dimensions
     if dataset and logical_source:
         dataset.attrs = attr_mgr.get_global_attributes(logical_source)
-        # TODO: Add CDF attributes to yaml
+
         for field in dataset.data_vars.keys():
+            var = str(field)
             try:
+                if (
+                    descriptor in ("summed-rates", "sectored-rates")
+                    and var.split("_", maxsplit=1)[0]
+                    in ("h", "he4", "cno", "nemgsi", "fe")
+                    and ("_" not in var or "uncert" in var)
+                ):
+                    # Retrieve attributes specific to the summed or sectored data
+                    attrs = attr_mgr.get_variable_attributes(
+                        f"{var}_{descriptor.split('-', maxsplit=1)[0]}"
+                    )
+                else:
+                    attrs = attr_mgr.get_variable_attributes(var)
                 # Create a dict of dimensions using the DEPEND_I keys in the attributes
-                dims = {
-                    key: value
-                    for key, value in attr_mgr.get_variable_attributes(field).items()
-                    if "DEPEND" in key
-                }
-                dataset[field].attrs = attr_mgr.get_variable_attributes(field)
+                dims = {key: value for key, value in attrs.items() if "DEPEND" in key}
+                dataset[field].attrs = attrs
                 dataset[field].assign_coords(dims)
             except KeyError:
-                logger.warning(f"Field {field} not found in attribute manager.")
+                logger.warning(f"Field {var} not found in attribute manager.")
 
         # Skip schema check for epoch to prevent attr_mgr from adding the
         # DEPEND_0 attribute which isn't required for epoch
@@ -305,7 +322,9 @@ def sum_livetime_10min(livetime: xr.DataArray) -> xr.DataArray:
 
 
 def process_summed_rates_data(
-    l1a_counts_dataset: xr.Dataset, livetime: xr.DataArray
+    l1a_counts_dataset: xr.Dataset,
+    livetime: xr.DataArray,
+    attr_mgr: ImapCdfAttributes | None = None,
 ) -> xr.Dataset:
     """
     Will process L1B summed rates data from L1A raw counts data.
@@ -329,6 +348,12 @@ def process_summed_rates_data(
         1D array of livetime values calculated from the livetime counter.
         Shape equals the number of epochs in the dataset.
 
+    attr_mgr : ImapCdfAttributes, optional
+        The attribute manager for the L1B data level. Used to set CDF
+        attributes on the per-particle energy coordinate variables, which
+        are created fresh here (unlike the other coordinates, they aren't
+        inherited from the L1A dataset).
+
     Returns
     -------
     xr.Dataset
@@ -346,6 +371,7 @@ def process_summed_rates_data(
             l1a_counts_dataset,
             particle,
             energy_ranges,
+            attr_mgr,
         )
         # Calculate rates using livetime
         l1b_summed_rates_dataset = calculate_rates(
@@ -432,7 +458,6 @@ def process_sectored_rates_data(
     # # Compute rates, skipping fill values, and add to the L1B dataset
     for var in data_vars:
         if "sectored_counts" in var:
-            # Determine the new variable name for the L1B dataset
             if "_sectored_counts" in var:
                 new_var = var.replace("_sectored_counts", "")
             else:
