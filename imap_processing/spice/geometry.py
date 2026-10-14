@@ -49,6 +49,7 @@ class SpiceFrame(IntEnum):
     IMAP_LO_BASE = -43100
     IMAP_LO = -43101
     IMAP_LO_STAR_SENSOR = -43102
+    IMAP_LO_INSTR = -43103
     IMAP_HI_45 = -43150
     IMAP_HI_90 = -43151
     IMAP_ULTRA_45 = -43200
@@ -96,6 +97,7 @@ BORESIGHT_LOOKUP = {
     SpiceFrame.IMAP_LO_BASE: np.array([0, -1, 0]),
     SpiceFrame.IMAP_LO: np.array([0, -1, 0]),
     SpiceFrame.IMAP_LO_STAR_SENSOR: np.array([0, -1, 0]),
+    SpiceFrame.IMAP_LO_INSTR: np.array([0, -1, 0]),
     SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
     SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
     SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -146,7 +148,9 @@ def imap_state(
     return np.asarray(state)
 
 
-def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
+def get_instrument_mounting_az_el(
+    instrument: SpiceFrame, et: float = 0.0
+) -> np.ndarray:
     """
     Calculate the azimuth and elevation angle of instrument mounting.
 
@@ -158,6 +162,11 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
     ----------
     instrument : SpiceFrame
         Instrument to get the azimuth and elevation angles for.
+    et : float
+        Ephemeris time at which to evaluate the mounting. Only matters for
+        frames that move relative to the spacecraft: IMAP_LO_INSTR and
+        IMAP_LO_STAR_SENSOR ride on the Lo pivot platform, so a Lo pivot CK
+        covering `et` must be loaded. Defaults to 0.
 
     Returns
     -------
@@ -172,6 +181,8 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
     # Most of these vectors are the same as the instrument boresight vector.
     mounting_normal_vector = {
         SpiceFrame.IMAP_LO_BASE: np.array([0, 0, -1]),
+        SpiceFrame.IMAP_LO_INSTR: np.array([0, -1, 0]),
+        SpiceFrame.IMAP_LO_STAR_SENSOR: np.array([0, -1, 0]),
         SpiceFrame.IMAP_HI_45: np.array([0, 1, 0]),
         SpiceFrame.IMAP_HI_90: np.array([0, 1, 0]),
         SpiceFrame.IMAP_ULTRA_45: np.array([0, 0, 1]),
@@ -187,9 +198,8 @@ def get_instrument_mounting_az_el(instrument: SpiceFrame) -> np.ndarray:
     }
 
     # Get the instrument mounting normal vector expressed in the spacecraft frame
-    # The reference frames are fixed, so the et argument can be fixed at 0
     instrument_normal_sc = frame_transform(
-        0, mounting_normal_vector[instrument], instrument, SpiceFrame.IMAP_SPACECRAFT
+        et, mounting_normal_vector[instrument], instrument, SpiceFrame.IMAP_SPACECRAFT
     )
     # Convert the cartesian coordinate to azimuth/elevation angles in degrees
     return np.rad2deg(
@@ -223,7 +233,7 @@ def get_spacecraft_to_instrument_spin_phase_offset(instrument: SpiceFrame) -> fl
         The spin phase offset from the spacecraft to the instrument.
     """
     phase_offset_lookup = {
-        # Phase offset values based on imap_130.tf frame kernel
+        # Phase offset values based on imap_140.tf frame kernel
         # See docstring notes for details on how these values were determined.
         SpiceFrame.IMAP_LO: 60 / 360,  # (330 + 90) % 360 = 60
         SpiceFrame.IMAP_HI_45: 344.8264 / 360,  # 255 + 90 = 345
@@ -469,97 +479,6 @@ def instrument_pointing(
         The instrument pointing at the specified times.
     """
     pointing = frame_transform(et, BORESIGHT_LOOKUP[instrument], instrument, to_frame)
-    if cartesian:
-        return pointing
-    if isinstance(et, typing.Collection):
-        return np.rad2deg([spiceypy.reclat(vec)[1:] for vec in pointing])
-    return np.rad2deg(spiceypy.reclat(pointing)[1:])
-
-
-def get_lo_pivot_boresight(pivot_angle: float) -> npt.NDArray:
-    """
-    Calculate IMAP-Lo boresight direction as a function of pivot angle.
-
-    IMAP-Lo has a pivot mechanism that rotates the instrument about its X-axis.
-    The base boresight direction in IMAP_LO_BASE frame is [0, -1, 0] (negative Y).
-    This function rotates that boresight about the X-axis by the specified
-    pivot angle to get the actual boresight direction.
-
-    At a pivot angle of 90 degrees, the boresight points in the -Z direction
-    in the IMAP_LO_BASE frame, which corresponds to near-zero off-pointing in the
-    despun (IMAP_DPS) frame.
-
-    Parameters
-    ----------
-    pivot_angle : float
-        The pivot angle in degrees. Nominal value is 90 degrees.
-
-    Returns
-    -------
-    boresight : np.ndarray
-        The boresight unit vector (shape (3,)) in the IMAP_LO_BASE frame.
-    """
-    # Base boresight direction in IMAP_LO_BASE frame (negative Y)
-    base_boresight = BORESIGHT_LOOKUP[SpiceFrame.IMAP_LO_BASE]
-
-    # Convert pivot angle to radians
-    # Negate the angle because the SPICE rotate function rotates counterclockwise
-    # when viewed from positive axis, but we want the physical pivot direction
-    # where 90 degrees gives us -Z direction (into the spin plane)
-    pivot_rad = np.deg2rad(-pivot_angle)
-
-    # Use SPICE rotate function to create rotation matrix about X-axis (axis 1)
-    # spiceypy.rotate returns a rotation matrix for the specified angle about
-    # the specified axis (1=X, 2=Y, 3=Z)
-    rotation_matrix = spiceypy.rotate(pivot_rad, 1)
-    boresight = spiceypy.mxv(rotation_matrix, base_boresight)
-
-    return np.asarray(boresight)
-
-
-def lo_instrument_pointing(
-    et: float | npt.NDArray,
-    pivot_angle: float,
-    to_frame: SpiceFrame,
-    cartesian: bool = False,
-) -> npt.NDArray:
-    """
-    Compute IMAP-Lo instrument pointing accounting for pivot angle.
-
-    This function computes the Lo boresight direction in the specified reference
-    frame, accounting for the instrument's pivot mechanism. The pivot rotates
-    the boresight about the instrument's X-axis.
-
-    By default, the coordinates returned are (Longitude, Latitude) coordinates in
-    the reference frame `to_frame`. In the IMAP_DPS frame, Longitude corresponds
-    to spin angle and Latitude corresponds to off-pointing angle.
-
-    Parameters
-    ----------
-    et : float or np.ndarray
-        Ephemeris time(s) at which to compute instrument pointing.
-    pivot_angle : float
-        The Lo pivot angle in degrees. Nominal value is 90 degrees.
-    to_frame : SpiceFrame
-        Reference frame in which the pointing is to be expressed.
-        Typically SpiceFrame.IMAP_DPS for spin angle / off-pointing calculations.
-    cartesian : bool
-        If set to True, the pointing is returned in Cartesian coordinates.
-        Defaults to False.
-
-    Returns
-    -------
-    pointing : np.ndarray
-        The instrument pointing at the specified times.
-        If cartesian=False (default): returns (longitude, latitude) in degrees.
-        If cartesian=True: returns (x, y, z) unit vectors.
-    """
-    # Get the pivot-adjusted boresight in IMAP_LO_BASE frame
-    boresight = get_lo_pivot_boresight(pivot_angle)
-
-    # Transform from IMAP_LO_BASE to the target frame
-    pointing = frame_transform(et, boresight, SpiceFrame.IMAP_LO_BASE, to_frame)
-
     if cartesian:
         return pointing
     if isinstance(et, typing.Collection):

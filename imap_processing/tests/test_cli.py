@@ -39,7 +39,7 @@ from imap_processing.cli import (
     main,
 )
 from imap_processing.spice import config as spice_config
-from imap_processing.spice.geometry import get_lo_pivot_boresight
+from imap_processing.spice.geometry import SpiceFrame, instrument_pointing
 from imap_processing.spice.time import met_to_sclkticks, met_to_ttj2000ns, sct_to_et
 from imap_processing.tests.conftest import generate_repoint_data
 
@@ -848,7 +848,7 @@ LO_PIVOT_DEPENDENCY_FILES = (
     '[{"type": "science","files": ['
     '"imap_lo_l1b_nhk_20251110-repoint00100_v001.cdf"]}, '
     '{"type": "spice","files": ["naif0012.tls", "imap_sclk_0005.tsc", '
-    '"imap_130.tf"]}, '
+    '"imap_140.tf"]}, '
     '{"type": "repoint","files": ["imap_2025_315_01.repoint"]}]'
 )
 
@@ -966,7 +966,7 @@ def test_lo_pivot_kernel_process(monkeypatch, tmp_path, spice_test_data_path):
     for subdir, kernel in [
         ("lsk", "naif0012.tls"),
         ("sclk", "imap_sclk_0000.tsc"),
-        ("fk", "imap_130.tf"),
+        ("fk", "imap_140.tf"),
     ]:
         (spice_dir / subdir).mkdir(parents=True)
         shutil.copy(spice_test_data_path / kernel, spice_dir / subdir / kernel)
@@ -999,7 +999,7 @@ def test_lo_pivot_kernel_process(monkeypatch, tmp_path, spice_test_data_path):
                 {"type": "science", "files": [nhk_name]},
                 {
                     "type": "spice",
-                    "files": ["naif0012.tls", "imap_sclk_0000.tsc", "imap_130.tf"],
+                    "files": ["naif0012.tls", "imap_sclk_0000.tsc", "imap_140.tf"],
                 },
                 {"type": "repoint", "files": ["imap_2025_315_01.repoint"]},
             ],
@@ -1016,15 +1016,16 @@ def test_lo_pivot_kernel_process(monkeypatch, tmp_path, spice_test_data_path):
         [
             str(spice_dir / "lsk" / "naif0012.tls"),
             str(spice_dir / "sclk" / "imap_sclk_0000.tsc"),
-            str(spice_dir / "fk" / "imap_130.tf"),
+            str(spice_dir / "fk" / "imap_140.tf"),
             str(kernels[0]),
         ]
     ):
         et = sct_to_et(met_to_sclkticks(repoint_starts[1] + 3 * 3600))
-        boresight = spiceypy.mxv(
-            spiceypy.pxform("IMAP_LO", "IMAP_LO_BASE", et), [0, -1, 0]
+        boresight_sc = instrument_pointing(
+            et, SpiceFrame.IMAP_LO, SpiceFrame.IMAP_SPACECRAFT, cartesian=True
         )
-    np.testing.assert_allclose(boresight, get_lo_pivot_boresight(75.0), atol=1e-12)
+    # The IMAP_LO boresight is the pivot angle away from spacecraft +Z.
+    np.testing.assert_allclose(np.rad2deg(np.arccos(boresight_sc[2])), 75.0, atol=1e-8)
 
 
 @mock.patch("imap_processing.cli.ultra_l1a.ultra_l1a")

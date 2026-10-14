@@ -273,7 +273,7 @@ def test_calculate_spin_offsets(
     kernels = [
         "naif0012.tls",
         "imap_sclk_0000.tsc",
-        "imap_130.tf",
+        "imap_140.tf",
         "imap_science_130.tf",
         "sim_1yr_imap_attitude.bc",
         "sim_1yr_imap_pointing_frame.bc",
