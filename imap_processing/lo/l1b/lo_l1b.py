@@ -23,6 +23,7 @@ from imap_processing.spice.geometry import (
     cartesian_to_latitudinal,
     frame_transform,
     get_instrument_mounting_az_el,
+    get_spacecraft_to_instrument_spin_phase_offset,
     instrument_pointing,
 )
 from imap_processing.spice.repoint import (
