@@ -429,7 +429,7 @@ def process_sweep_data(full_sweep_sci: xr.Dataset, cem_prefix: str) -> xr.Datase
 
 def process_swapi_science(
     sci_dataset: xr.Dataset, hk_dataset: xr.Dataset
-) -> xr.Dataset:
+) -> xr.Dataset | None:
     """
     Will process SWAPI science data and create CDF file.
 
@@ -442,8 +442,9 @@ def process_swapi_science(
 
     Returns
     -------
-    dataset : xarray.Dataset
-        Dataset.
+    dataset : xarray.Dataset, optional
+        Dataset or None. If there is no HVSCI mode found in any
+        science packets, then return None.
     """
     # ====================================================
     # Step 1: Filter full cycle data
@@ -455,6 +456,10 @@ def process_swapi_science(
     # Find indices of good sweep cycles
     good_data_indices = filter_good_data(full_sweep_sci)
     good_sweep_sci = full_sweep_sci.isel({"epoch": good_data_indices})
+
+    if good_sweep_sci.dims["epoch"] == 0:
+        logger.info("No data to process: no HVSCI mode found in any science packets.")
+        return None
 
     # ====================================================
     # Step 2: Process good sweep data
@@ -754,7 +759,9 @@ def process_swapi_science(
     return dataset
 
 
-def swapi_l1(dependencies: ProcessingInputCollection, descriptor: str) -> xr.Dataset:
+def swapi_l1(
+    dependencies: ProcessingInputCollection, descriptor: str
+) -> list[xr.Dataset]:
     """
     Will process SWAPI level 0 data to level 1.
 
@@ -768,7 +775,7 @@ def swapi_l1(dependencies: ProcessingInputCollection, descriptor: str) -> xr.Dat
 
     Returns
     -------
-    processed_data : xarray.Dataset
+    processed_data : list[xarray.Dataset]
         Set of processed data.
     """
     xtce_definition = (
@@ -800,7 +807,7 @@ def swapi_l1(dependencies: ProcessingInputCollection, descriptor: str) -> xr.Dat
         sci_dataset = process_swapi_science(
             l0_unpacked_dict[SWAPIAPID.SWP_SCI], l1b_hk_ds
         )
-        return [sci_dataset]
+        return [sci_dataset] if sci_dataset is not None else []
 
     elif descriptor == "hk":
         logger.info(f"Processing HK data for {l0_files[0]}.")
