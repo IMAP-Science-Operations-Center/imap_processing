@@ -32,6 +32,10 @@ def test_packets_created():
             "last_data_received": [],
             "rate_kbps": [],
         },
+        "NOAA": {
+            "last_data_received": [],
+            "rate_kbps": [],
+        },
         "UKSA": {
             "last_data_received": [],
             "rate_kbps": [],
@@ -99,6 +103,7 @@ def test_format_ingest_data():
                 "ID  Description   LastDataRcvd  ConnectionTime  Rate (kbps)\n"
             )
             log_lines.append("10  Kiel          001-15:00:00  001-08:00:00    2.0\n")
+            log_lines.append("12  NOAA          365-14:30:00  365-09:00:00    4.0\n")
 
         current_time += timedelta(seconds=1)
 
@@ -109,3 +114,6 @@ def test_format_ingest_data():
     assert data["Kiel"]["last_data_received"][0] == "2025-12-31T08:00:00Z"
     assert data["Kiel"]["last_data_received"][-1] == "2026-01-01T15:00:00Z"
     assert data["Kiel"]["rate_kbps"][0] == 2.0
+    assert "NOAA" in data["stations"]
+    assert data["NOAA"]["last_data_received"] == ["2025-12-31T14:30:00Z"]
+    assert data["NOAA"]["rate_kbps"] == [4.0]
