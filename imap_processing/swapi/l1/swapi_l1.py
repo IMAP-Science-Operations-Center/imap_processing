@@ -457,7 +457,7 @@ def process_swapi_science(
     good_data_indices = filter_good_data(full_sweep_sci)
     good_sweep_sci = full_sweep_sci.isel({"epoch": good_data_indices})
 
-    if good_sweep_sci.dims["epoch"] == 0:
+    if good_sweep_sci.sizes["epoch"] == 0:
         logger.info("No data to process: no HVSCI mode found in any science packets.")
         return None
 
