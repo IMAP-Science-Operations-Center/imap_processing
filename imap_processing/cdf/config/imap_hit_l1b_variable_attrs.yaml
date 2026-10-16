@@ -1,6 +1,7 @@
-# TODO: add attributes for science packets
-
 # <=== Defaults ===>
+# Shared fill value for all floating point variables
+double_fillval: &double_fillval -1.0E+31
+
 # Assumed values for all variable attrs unless overwritten
 default_attrs: &default
   DEPEND_0: epoch
@@ -22,13 +23,70 @@ hk_metadata_attrs: &metadata_default
   FORMAT: A2
   VAR_TYPE: metadata
 
+hk_float_attrs: &hk_float_default
+  <<: *default
+  FILLVAL: *double_fillval
+  FORMAT: F9.3
+  VALIDMAX: 10000000000
+
+hk_voltage_attrs: &hk_voltage_default
+  <<: *hk_float_default
+  UNITS: V
+
+hk_temp_attrs: &hk_temp_default
+  <<: *hk_float_default
+  UNITS: C
+  VALIDMIN: -25
+
 default_uint32_attrs: &default_uint32
   <<: *default
   FILLVAL: 4294967295
   FORMAT: I10
   VALIDMAX: 4294967295
   VALIDMIN: 0
-  dtype: uint32
+
+default_rate_attrs: &default_rate_attrs
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FILLVAL: *double_fillval
+  FORMAT: F15.3
+  SCALEMAX: 10000000000
+  SCALEMIN: 0.0001
+  SCALETYP: log
+  UNITS: "counts / livetime fraction"
+  VALIDMAX: 10000000000
+  VALIDMIN: 0
+  VAR_TYPE: data
+
+default_rate_uncert_attrs: &default_rate_uncert_attrs
+  <<: *default_rate_attrs
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
+
+default_particle_rate_attrs: &default_particle_rate_attrs
+  <<: *default_rate_attrs
+  DISPLAY_TYPE: spectrogram
+  UNITS: "1 / integration time"
+
+default_particle_uncert_attrs: &default_particle_uncert_attrs
+  <<: *default_particle_rate_attrs
+  DISPLAY_TYPE: no_plot
+  VAR_TYPE: support_data
+
+default_energy_attrs: &default_energy_attrs
+  DISPLAY_TYPE: no_plot
+  FILLVAL: *double_fillval
+  FORMAT: F5.1
+  SCALETYP: log
+  UNITS: "MeV/nuc"
+  VALIDMAX: 1000
+  VALIDMIN: 0
+  VAR_TYPE: support_data
+
+default_energy_delta_attrs: &default_energy_delta_attrs
+  <<: *default_energy_attrs
+  SCALEMAX: 1000
+  SCALEMIN: 0.0001
 
 # <=== Coordinates ===>
 adc_channels:   # adc_channels is a dependency for leak_i data variable
@@ -60,6 +118,7 @@ sc_tick:
   <<: *default_uint32
   CATDESC: CCSDS secondary header - Spacecraft Tick
   FIELDNAM: Spacecraft Tick
+  LABLAXIS: sc_tick
   VAR_TYPE: support_data
 
 fsw_version_a:
@@ -91,7 +150,7 @@ num_good_cmds:
   CATDESC: Number of Good Commands
   FIELDNAM: Number of Good Commands
   FORMAT: I3
-  LABLAXIS: Counts
+  LABLAXIS: Good cmds
   VALIDMAX: 255
 
 last_good_cmd:
@@ -99,7 +158,7 @@ last_good_cmd:
   CATDESC: Last Good Command
   FIELDNAM: Last Good Command
   FORMAT: I3
-  LABLAXIS: Last cmd
+  LABLAXIS: Last good cmd
   VALIDMAX: 255
 
 last_good_seq_num:
@@ -107,7 +166,7 @@ last_good_seq_num:
   CATDESC: Last Good Sequence Number
   FIELDNAM: Last Good Sequence Number
   FORMAT: I3
-  LABLAXIS: Last num
+  LABLAXIS: Last good seq num
   VALIDMAX: 255
 
 num_bad_cmds:
@@ -115,7 +174,7 @@ num_bad_cmds:
   CATDESC: Number of Bad Commands
   FIELDNAM: Number of Bad Commands
   FORMAT: I3
-  LABLAXIS: Counts
+  LABLAXIS: Bad cmds
   VALIDMAX: 255
 
 last_bad_cmd:
@@ -123,7 +182,7 @@ last_bad_cmd:
   CATDESC: Last Bad Command
   FIELDNAM: Last Bad Command
   FORMAT: I3
-  LABLAXIS: Last cmd
+  LABLAXIS: Last bad cmd
   VALIDMAX: 255
 
 last_bad_seq_num:
@@ -131,7 +190,7 @@ last_bad_seq_num:
   CATDESC: Last Bad Sequence Number
   FIELDNAM: Last Bad Sequence Number
   FORMAT: I3
-  LABLAXIS: Last num
+  LABLAXIS: Last bad seq num
   VALIDMAX: 255
 
 fee_running:
@@ -139,42 +198,42 @@ fee_running:
   CATDESC: State - FEE Running (1) or Reset (0)
   FIELDNAM: FEE Running (1) or Reset (0)
   FORMAT: A7
-  LABLAXIS: State
+  LABLAXIS: FEE running
 
 mram_disabled:
   <<: *metadata_default
   CATDESC: State - MRAM Disabled (1) or Enabled (0)
   FIELDNAM: MRAM Disabled (1) or Enabled (0)
   FORMAT: A8
-  LABLAXIS: State
+  LABLAXIS: MRAM disabled
 
 enable_50khz:
   <<: *metadata_default
   CATDESC: State - 50kHz Enabled (1) or Disabled (0)
   FIELDNAM: 50kHz Enabled (1) or Disabled (0)
   FORMAT: A8
-  LABLAXIS: State
+  LABLAXIS: 50kHz enabled
 
 enable_hvps:
   <<: *metadata_default
   CATDESC: State - HVPS Enabled (1) or Disabled (0)
   FIELDNAM: HVPS Enabled (1) or Disabled (0)
   FORMAT: A8
-  LABLAXIS: State
+  LABLAXIS: HVPS enabled
 
 table_status:
   <<: *metadata_default
   CATDESC: State - Table Status OK (1) or Error (0)
   FIELDNAM: Table Status OK (1) or Error (0)
   FORMAT: A5
-  LABLAXIS: Status
+  LABLAXIS: Table status
 
 heater_control:
   <<: *metadata_default
   CATDESC: State - Heater Control (0=None, 1=Pri, 2=Sec)
   FIELDNAM: Heater Control (0=None, 1=Pri, 2=Sec)
   FORMAT: A4
-  LABLAXIS: State
+  LABLAXIS: Heater control
 
 adc_mode:
   <<: *metadata_default
@@ -195,7 +254,7 @@ dyn_thresh_lvl:
   CATDESC: Dynamic Threshold Level (0-3)
   FIELDNAM: Dynamic Threshold Level (0-3)
   FORMAT: I1
-  LABLAXIS: Level
+  LABLAXIS: Dyn thresh level
   VALIDMAX: 3
 
 num_evnt_last_hk:
@@ -259,290 +318,1523 @@ phasic_stat:
   CATDESC: State - Phasic Status
   FIELDNAM: Phasic Status
   FORMAT: A7
-  LABLAXIS: Status
+  LABLAXIS: Phasic status
 
 active_heater:
   <<: *metadata_default
   CATDESC: State - Active Heater
   FIELDNAM: Active Heater
   FORMAT: A9
-  LABLAXIS: State
+  LABLAXIS: Active heater
 
 heater_on:
   <<: *metadata_default
   CATDESC: State - Heater On/Off
   FIELDNAM: Heater On/Off
   FORMAT: A3
-  LABLAXIS: State
+  LABLAXIS: Heater on
 
 test_pulser_on:
   <<: *metadata_default
   CATDESC: State - Test Pulser On/Off
   FIELDNAM: Test Pulser On/Off
   FORMAT: A3
-  LABLAXIS: State
+  LABLAXIS: Test pulser on
 
 dac0_enable:
   <<: *metadata_default
   CATDESC: State - DAC 0 Enable
   FIELDNAM: DAC 0 Enable
   FORMAT: A7
-  LABLAXIS: State
+  LABLAXIS: DAC 0 enable
 
 dac1_enable:
   <<: *metadata_default
   CATDESC: State - DAC 1 Enable
   FIELDNAM: DAC 1 Enable
   FORMAT: A7
-  LABLAXIS: State
+  LABLAXIS: DAC 1 enable
 
 preamp_l234a:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: Preamp L234A Voltage
   FIELDNAM: Preamp L234A Voltage
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: Preamp L234A
 
 preamp_l1a:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: Preamp L1A Voltage
   FIELDNAM: Preamp L1A Voltage
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: Preamp L1A
 
 preamp_l1b:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: Preamp L1B Voltage
   FIELDNAM: Preamp L1B Voltage
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: Preamp L1B
 
 preamp_l234b:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: Preamp L234B Voltage
   FIELDNAM: Preamp L234B Voltage
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: Preamp L234B
 
 temp0:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: FEE LDO Regulator Mounted on the Board Next to the Low-dropout Regulator
   FIELDNAM: FEE LDO Regulator
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: Temp0
 
 temp1:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: Primary Heater Mounted on the Board Next to the Primary Heater Circuit
   FIELDNAM: Primary Heater
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: Temp1
 
 temp2:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: FEE FPGA Mounted on the Board Next to the FPGA
   FIELDNAM: FEE FPGA
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: Temp2
 
 temp3:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: Secondary Heater
   FIELDNAM: Secondary Heater
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: Temp3
 
 analog_temp:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: Chassis Temp Mounted on the Analog Board Close to Thermostats, Heaters, and Chassis
   FIELDNAM: Analog Temp
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: Analog temp
 
 hvps_temp:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: Board Temp Mounted Inside Faraday Cage in Middle of Board Near Connector Side
   FIELDNAM: Board Temp
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: HVPS temp
 
 idpu_temp:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: LDO Temp Mounted on Top of the Low-dropout Regulator
   FIELDNAM: LDO Temp
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: IDPU temp
 
 lvps_temp:
-  <<: *default
+  <<: *hk_temp_default
   CATDESC: Board Temp Mounted in the Middle of Board on Opposite Side of Hottest Component
   FIELDNAM: Board Temp
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Temperature
-  UNITS: C
-  VALIDMAX: 10000000000
-  VALIDMIN: -25
+  LABLAXIS: LVPS temp
 
 ebox_3d4vd:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: 3.4VD Ebox (Digital)
   FIELDNAM: 3.4VD Ebox (Digital)
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: 3.4VD Ebox
 
 ebox_5d1vd:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: 5.1VD Ebox (Digital)
   FIELDNAM: 5.1VD Ebox (Digital)
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: 5.1VD Ebox
 
 ebox_p12va:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: +12VA Ebox (Analog)
   FIELDNAM: +12VA Ebox (Analog)
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: +12VA Ebox
 
 ebox_m12va:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: -12VA Ebox (Analog)
   FIELDNAM: -12VA Ebox (Analog)
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: -12VA Ebox
   VALIDMIN: -12.2
 
 ebox_p5d7va:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: +5.7VA Ebox (Analog)
   FIELDNAM: +5.7VA Ebox (Analog)
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: +5.7VA Ebox
 
 ebox_m5d7va:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: -5.7VA Ebox (Analog)
   FIELDNAM: -5.7VA Ebox (Analog)
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: -5.7VA Ebox
   VALIDMIN: -6
 
 ref_p5v:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: +5V ref
   FIELDNAM: +5V ref
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: +5V ref
 
 l1ab_bias:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: L1A/B Bias
   FIELDNAM: L1A/B Bias
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: L1A/B Bias
 
 l2ab_bias:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: L2A/B Bias
   FIELDNAM: L2A/B Bias
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: L2A/B Bias
 
 l34a_bias:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: L3/4A Bias
   FIELDNAM: L3/4A Bias
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: L3/4A Bias
 
 l34b_bias:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: L3/4B Bias
   FIELDNAM: L3/4B Bias
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: L3/4B Bias
 
 ebox_p2d0vd:
-  <<: *default
+  <<: *hk_voltage_default
   CATDESC: +2.0VD Ebox (Digital)
   FIELDNAM: +2.0VD Ebox (Digital)
-  FILLVAL: -1.0000000E+31
-  FORMAT: F9.3
-  LABLAXIS: Voltage
-  UNITS: V
-  VALIDMAX: 10000000000
+  LABLAXIS: +2.0VD Ebox
 
+
+# <=== Science Data Variable Attributes (source: https://lasp.colorado.edu/galaxy/spaces/IMAP/pages/207619340/HIT+CDF+Product+Designs) ===>
+
+dynamic_threshold_state:
+  CATDESC: Raw dynamic threshold state per integration
+  DEPEND_0: epoch
+  DISPLAY_TYPE: time_series
+  FIELDNAM: Dynamic Threshold State
+  FILLVAL: 255
+  FORMAT: I1
+  LABLAXIS: Dynamic threshold state
+  SCALEMAX: 3
+  SCALEMIN: 0
+  SCALETYP: linear
+  UNITS: ' '
+  VALIDMAX: 3
+  VALIDMIN: 0
+  VAR_TYPE: data
+
+
+# <=== Standard Rates Data Variable Attributes ===>
+
+sngrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard sngrates Count Rates
+  DELTA_MINUS_VAR: sngrates_stat_uncert_minus
+  DELTA_PLUS_VAR: sngrates_stat_uncert_plus
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  FIELDNAM: sngrates_count_rate
+  LABLAXIS: "sngrates Count Rate"
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
+
+coinrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard coinrates Count Rates
+  DELTA_MINUS_VAR: coinrates_stat_uncert_minus
+  DELTA_PLUS_VAR: coinrates_stat_uncert_plus
+  DEPEND_1: coinrates_index
+  FIELDNAM: coinrates_count_rate
+  LABLAXIS: "coinrates Count Rate"
+  LABL_PTR_1: coinrates_index_label
+
+pbufrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard pbufrates Count Rates
+  DELTA_MINUS_VAR: pbufrates_stat_uncert_minus
+  DELTA_PLUS_VAR: pbufrates_stat_uncert_plus
+  DEPEND_1: pbufrates_index
+  FIELDNAM: pbufrates_count_rate
+  LABLAXIS: "pbufrates Count Rate"
+  LABL_PTR_1: pbufrates_index_label
+
+l2fgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard l2fgrates Count Rates
+  DELTA_MINUS_VAR: l2fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l2fgrates_stat_uncert_plus
+  DEPEND_1: l2fgrates_index
+  FIELDNAM: l2fgrates_count_rate
+  LABLAXIS: "l2fgrates Count Rate"
+  LABL_PTR_1: l2fgrates_index_label
+
+l2bgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard l2bgrates Count Rates
+  DELTA_MINUS_VAR: l2bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l2bgrates_stat_uncert_plus
+  DEPEND_1: l2bgrates_index
+  FIELDNAM: l2bgrates_count_rate
+  LABLAXIS: "l2bgrates Count Rate"
+  LABL_PTR_1: l2bgrates_index_label
+
+l3fgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard l3fgrates Count Rates
+  DELTA_MINUS_VAR: l3fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l3fgrates_stat_uncert_plus
+  DEPEND_1: l3fgrates_index
+  FIELDNAM: l3fgrates_count_rate
+  LABLAXIS: "l3fgrates Count Rate"
+  LABL_PTR_1: l3fgrates_index_label
+
+l3bgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard l3bgrates Count Rates
+  DELTA_MINUS_VAR: l3bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l3bgrates_stat_uncert_plus
+  DEPEND_1: l3bgrates_index
+  FIELDNAM: l3bgrates_count_rate
+  LABLAXIS: "l3bgrates Count Rate"
+  LABL_PTR_1: l3bgrates_index_label
+
+penfgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard penfgrates Count Rates
+  DELTA_MINUS_VAR: penfgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: penfgrates_stat_uncert_plus
+  DEPEND_1: penfgrates_index
+  FIELDNAM: penfgrates_count_rate
+  LABLAXIS: "penfgrates Count Rate"
+  LABL_PTR_1: penfgrates_index_label
+
+penbgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard penbgrates Count Rates
+  DELTA_MINUS_VAR: penbgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: penbgrates_stat_uncert_plus
+  DEPEND_1: penbgrates_index
+  FIELDNAM: penbgrates_count_rate
+  LABLAXIS: "penbgrates Count Rate"
+  LABL_PTR_1: penbgrates_index_label
+
+ialirtrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard ialirtrates Count Rates
+  DELTA_MINUS_VAR: ialirtrates_stat_uncert_minus
+  DELTA_PLUS_VAR: ialirtrates_stat_uncert_plus
+  DEPEND_1: ialirtrates_index
+  FIELDNAM: ialirtrates_count_rate
+  LABLAXIS: "ialirtrates Count Rate"
+  LABL_PTR_1: ialirtrates_index_label
+
+l4fgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard l4fgrates Count Rates
+  DELTA_MINUS_VAR: l4fgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l4fgrates_stat_uncert_plus
+  DEPEND_1: l4fgrates_index
+  FIELDNAM: l4fgrates_count_rate
+  LABLAXIS: "l4fgrates Count Rate"
+  LABL_PTR_1: l4fgrates_index_label
+
+l4bgrates:
+  <<: *default_rate_attrs
+  CATDESC: Standard l4bgrates Count Rates
+  DELTA_MINUS_VAR: l4bgrates_stat_uncert_minus
+  DELTA_PLUS_VAR: l4bgrates_stat_uncert_plus
+  DEPEND_1: l4bgrates_index
+  FIELDNAM: l4bgrates_count_rate
+  LABLAXIS: "l4bgrates Count Rate"
+  LABL_PTR_1: l4bgrates_index_label
+
+sngrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for sngrates Count Rates
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  FIELDNAM: sngrates_uncertainty
+  LABLAXIS: "sngrates Plus Uncertainty"
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
+
+coinrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for coinrates Count Rates
+  DEPEND_1: coinrates_index
+  FIELDNAM: coinrates_uncertainty
+  LABLAXIS: "coinrates Plus Uncertainty"
+  LABL_PTR_1: coinrates_index_label
+
+pbufrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for pbufrates Count Rates
+  DEPEND_1: pbufrates_index
+  FIELDNAM: pbufrates_uncertainty
+  LABLAXIS: "pbufrates Plus Uncertainty"
+  LABL_PTR_1: pbufrates_index_label
+
+l2fgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for l2fgrates Count Rates
+  DEPEND_1: l2fgrates_index
+  FIELDNAM: l2fgrates_uncertainty
+  LABLAXIS: "l2fgrates Plus Uncertainty"
+  LABL_PTR_1: l2fgrates_index_label
+
+l2bgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for l2bgrates Count Rates
+  DEPEND_1: l2bgrates_index
+  FIELDNAM: l2bgrates_uncertainty
+  LABLAXIS: "l2bgrates Plus Uncertainty"
+  LABL_PTR_1: l2bgrates_index_label
+
+l3fgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for l3fgrates Count Rates
+  DEPEND_1: l3fgrates_index
+  FIELDNAM: l3fgrates_uncertainty
+  LABLAXIS: "l3fgrates Plus Uncertainty"
+  LABL_PTR_1: l3fgrates_index_label
+
+l3bgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for l3bgrates Count Rates
+  DEPEND_1: l3bgrates_index
+  FIELDNAM: l3bgrates_uncertainty
+  LABLAXIS: "l3bgrates Plus Uncertainty"
+  LABL_PTR_1: l3bgrates_index_label
+
+penfgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for penfgrates Count Rates
+  DEPEND_1: penfgrates_index
+  FIELDNAM: penfgrates_uncertainty
+  LABLAXIS: "penfgrates Plus Uncertainty"
+  LABL_PTR_1: penfgrates_index_label
+
+penbgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for penbgrates Count Rates
+  DEPEND_1: penbgrates_index
+  FIELDNAM: penbgrates_uncertainty
+  LABLAXIS: "penbgrates Plus Uncertainty"
+  LABL_PTR_1: penbgrates_index_label
+
+ialirtrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for ialirtrates Count Rates
+  DEPEND_1: ialirtrates_index
+  FIELDNAM: ialirtrates_uncertainty
+  LABLAXIS: "ialirtrates Plus Uncertainty"
+  LABL_PTR_1: ialirtrates_index_label
+
+l4fgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for l4fgrates Count Rates
+  DEPEND_1: l4fgrates_index
+  FIELDNAM: l4fgrates_uncertainty
+  LABLAXIS: "l4fgrates Plus Uncertainty"
+  LABL_PTR_1: l4fgrates_index_label
+
+l4bgrates_stat_uncert_plus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Plus Uncertainty for l4bgrates Count Rates
+  DEPEND_1: l4bgrates_index
+  FIELDNAM: l4bgrates_uncertainty
+  LABLAXIS: "l4bgrates Plus Uncertainty"
+  LABL_PTR_1: l4bgrates_index_label
+
+sngrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for sngrates Count Rates
+  DEPEND_1: gain
+  DEPEND_2: sngrates_index
+  FIELDNAM: sngrates_uncertainty
+  LABLAXIS: "sngrates Minus Uncertainty"
+  LABL_PTR_1: gain_label
+  LABL_PTR_2: sngrates_index_label
+
+coinrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for coinrates Count Rates
+  DEPEND_1: coinrates_index
+  FIELDNAM: coinrates_uncertainty
+  LABLAXIS: "coinrates Minus Uncertainty"
+  LABL_PTR_1: coinrates_index_label
+
+pbufrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for pbufrates Count Rates
+  DEPEND_1: pbufrates_index
+  FIELDNAM: pbufrates_uncertainty
+  LABLAXIS: "pbufrates Minus Uncertainty"
+  LABL_PTR_1: pbufrates_index_label
+
+l2fgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for l2fgrates Count Rates
+  DEPEND_1: l2fgrates_index
+  FIELDNAM: l2fgrates_uncertainty
+  LABLAXIS: "l2fgrates Minus Uncertainty"
+  LABL_PTR_1: l2fgrates_index_label
+
+l2bgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for l2bgrates Count Rates
+  DEPEND_1: l2bgrates_index
+  FIELDNAM: l2bgrates_uncertainty
+  LABLAXIS: "l2bgrates Minus Uncertainty"
+  LABL_PTR_1: l2bgrates_index_label
+
+l3fgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for l3fgrates Count Rates
+  DEPEND_1: l3fgrates_index
+  FIELDNAM: l3fgrates_uncertainty
+  LABLAXIS: "l3fgrates Minus Uncertainty"
+  LABL_PTR_1: l3fgrates_index_label
+
+l3bgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for l3bgrates Count Rates
+  DEPEND_1: l3bgrates_index
+  FIELDNAM: l3bgrates_uncertainty
+  LABLAXIS: "l3bgrates Minus Uncertainty"
+  LABL_PTR_1: l3bgrates_index_label
+
+penfgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for penfgrates Count Rates
+  DEPEND_1: penfgrates_index
+  FIELDNAM: penfgrates_uncertainty
+  LABLAXIS: "penfgrates Minus Uncertainty"
+  LABL_PTR_1: penfgrates_index_label
+
+penbgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for penbgrates Count Rates
+  DEPEND_1: penbgrates_index
+  FIELDNAM: penbgrates_uncertainty
+  LABLAXIS: "penbgrates Minus Uncertainty"
+  LABL_PTR_1: penbgrates_index_label
+
+ialirtrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for ialirtrates Count Rates
+  DEPEND_1: ialirtrates_index
+  FIELDNAM: ialirtrates_uncertainty
+  LABLAXIS: "ialirtrates Minus Uncertainty"
+  LABL_PTR_1: ialirtrates_index_label
+
+l4fgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for l4fgrates Count Rates
+  DEPEND_1: l4fgrates_index
+  FIELDNAM: l4fgrates_uncertainty
+  LABLAXIS: "l4fgrates Minus Uncertainty"
+  LABL_PTR_1: l4fgrates_index_label
+
+l4bgrates_stat_uncert_minus:
+  <<: *default_rate_uncert_attrs
+  CATDESC: Minus Uncertainty for l4bgrates Count Rates
+  DEPEND_1: l4bgrates_index
+  FIELDNAM: l4bgrates_uncertainty
+  LABLAXIS: "l4bgrates Minus Uncertainty"
+  LABL_PTR_1: l4bgrates_index_label
+
+# <=== Summed Rates - Particle Variable Attributes
+# h, he4 and fe (and their uncertainties) exist in both the summed-rates
+# and sectored-rates products under the same variable name. Their
+# attributes are stored under product-specific keys (e.g. h_summed,
+# h_sectored) and hit_l1b.py appends the suffix when looking them up.
+# All other variables use their plain name. ===>
+
+h_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for H Summed
+  DELTA_MINUS_VAR: h_energy_delta_minus
+  DELTA_PLUS_VAR: h_energy_delta_plus
+  FIELDNAM: h_energy
+  LABLAXIS: "H energy"
+
+he3_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for He3 Summed
+  DELTA_MINUS_VAR: he3_energy_delta_minus
+  DELTA_PLUS_VAR: he3_energy_delta_plus
+  FIELDNAM: he3_energy
+  LABLAXIS: "He3 energy"
+
+he4_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for He4 Summed
+  DELTA_MINUS_VAR: he4_energy_delta_minus
+  DELTA_PLUS_VAR: he4_energy_delta_plus
+  FIELDNAM: he4_energy
+  LABLAXIS: "He4 energy"
+
+he_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for He Summed
+  DELTA_MINUS_VAR: he_energy_delta_minus
+  DELTA_PLUS_VAR: he_energy_delta_plus
+  FIELDNAM: he_energy
+  LABLAXIS: "He energy"
+
+c_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for C Summed
+  DELTA_MINUS_VAR: c_energy_delta_minus
+  DELTA_PLUS_VAR: c_energy_delta_plus
+  FIELDNAM: c_energy
+  LABLAXIS: "C energy"
+
+n_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for N Summed
+  DELTA_MINUS_VAR: n_energy_delta_minus
+  DELTA_PLUS_VAR: n_energy_delta_plus
+  FIELDNAM: n_energy
+  LABLAXIS: "N energy"
+
+o_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for O Summed
+  DELTA_MINUS_VAR: o_energy_delta_minus
+  DELTA_PLUS_VAR: o_energy_delta_plus
+  FIELDNAM: o_energy
+  LABLAXIS: "O energy"
+
+ne_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Ne Summed
+  DELTA_MINUS_VAR: ne_energy_delta_minus
+  DELTA_PLUS_VAR: ne_energy_delta_plus
+  FIELDNAM: ne_energy
+  LABLAXIS: "Ne energy"
+
+na_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Na Summed
+  DELTA_MINUS_VAR: na_energy_delta_minus
+  DELTA_PLUS_VAR: na_energy_delta_plus
+  FIELDNAM: na_energy
+  LABLAXIS: "Na energy"
+
+mg_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Mg Summed
+  DELTA_MINUS_VAR: mg_energy_delta_minus
+  DELTA_PLUS_VAR: mg_energy_delta_plus
+  FIELDNAM: mg_energy
+  LABLAXIS: "Mg energy"
+
+al_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Al Summed
+  DELTA_MINUS_VAR: al_energy_delta_minus
+  DELTA_PLUS_VAR: al_energy_delta_plus
+  FIELDNAM: al_energy
+  LABLAXIS: "Al energy"
+
+si_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Si Summed
+  DELTA_MINUS_VAR: si_energy_delta_minus
+  DELTA_PLUS_VAR: si_energy_delta_plus
+  FIELDNAM: si_energy
+  LABLAXIS: "Si energy"
+
+s_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for S Summed
+  DELTA_MINUS_VAR: s_energy_delta_minus
+  DELTA_PLUS_VAR: s_energy_delta_plus
+  FIELDNAM: s_energy
+  LABLAXIS: "S energy"
+
+ar_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Ar Summed
+  DELTA_MINUS_VAR: ar_energy_delta_minus
+  DELTA_PLUS_VAR: ar_energy_delta_plus
+  FIELDNAM: ar_energy
+  LABLAXIS: "Ar energy"
+
+ca_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Ca Summed
+  DELTA_MINUS_VAR: ca_energy_delta_minus
+  DELTA_PLUS_VAR: ca_energy_delta_plus
+  FIELDNAM: ca_energy
+  LABLAXIS: "Ca energy"
+
+fe_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Fe Summed
+  DELTA_MINUS_VAR: fe_energy_delta_minus
+  DELTA_PLUS_VAR: fe_energy_delta_plus
+  FIELDNAM: fe_energy
+  LABLAXIS: "Fe energy"
+
+ni_energy_mean:
+  <<: *default_energy_attrs
+  CATDESC: Geometric mean energy per nuc. for Ni Summed
+  DELTA_MINUS_VAR: ni_energy_delta_minus
+  DELTA_PLUS_VAR: ni_energy_delta_plus
+  FIELDNAM: ni_energy
+  LABLAXIS: "Ni energy"
+
+h_summed:
+  <<: *default_particle_rate_attrs
+  CATDESC: H Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: h_stat_uncert_minus
+  DELTA_PLUS_VAR: h_stat_uncert_plus
+  DEPEND_1: h_energy_mean
+  FIELDNAM: h_count_rate_summed
+  LABLAXIS: "H count rate summed"
+
+he3:
+  <<: *default_particle_rate_attrs
+  CATDESC: He3 Summed Omnidirectional Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: he3_stat_uncert_minus
+  DELTA_PLUS_VAR: he3_stat_uncert_plus
+  DEPEND_1: he3_energy_mean
+  FIELDNAM: he3_count_rate_summed
+  LABLAXIS: "He3 count rate summed"
+
+he4_summed:
+  <<: *default_particle_rate_attrs
+  CATDESC: He4 Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: he4_stat_uncert_minus
+  DELTA_PLUS_VAR: he4_stat_uncert_plus
+  DEPEND_1: he4_energy_mean
+  FIELDNAM: he4_count_rate_summed
+  LABLAXIS: "He4 count rate summed"
+
+he:
+  <<: *default_particle_rate_attrs
+  CATDESC: He (total) Summed Omnidirectional Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: he_stat_uncert_minus
+  DELTA_PLUS_VAR: he_stat_uncert_plus
+  DEPEND_1: he_energy_mean
+  FIELDNAM: he_count_rate_summed
+  LABLAXIS: "He count rate summed"
+
+c:
+  <<: *default_particle_rate_attrs
+  CATDESC: C Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: c_stat_uncert_minus
+  DELTA_PLUS_VAR: c_stat_uncert_plus
+  DEPEND_1: c_energy_mean
+  FIELDNAM: c_count_rate_summed
+  LABLAXIS: "C count rate summed"
+
+n:
+  <<: *default_particle_rate_attrs
+  CATDESC: N Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: n_stat_uncert_minus
+  DELTA_PLUS_VAR: n_stat_uncert_plus
+  DEPEND_1: n_energy_mean
+  FIELDNAM: n_count_rate_summed
+  LABLAXIS: "N count rate summed"
+
+o:
+  <<: *default_particle_rate_attrs
+  CATDESC: O Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: o_stat_uncert_minus
+  DELTA_PLUS_VAR: o_stat_uncert_plus
+  DEPEND_1: o_energy_mean
+  FIELDNAM: o_count_rate_summed
+  LABLAXIS: "O count rate summed"
+
+ne:
+  <<: *default_particle_rate_attrs
+  CATDESC: Ne Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: ne_stat_uncert_minus
+  DELTA_PLUS_VAR: ne_stat_uncert_plus
+  DEPEND_1: ne_energy_mean
+  FIELDNAM: ne_count_rate_summed
+  LABLAXIS: "Ne count rate summed"
+
+na:
+  <<: *default_particle_rate_attrs
+  CATDESC: Na Summed Omnidirectional Count Rates in 2 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: na_stat_uncert_minus
+  DELTA_PLUS_VAR: na_stat_uncert_plus
+  DEPEND_1: na_energy_mean
+  FIELDNAM: na_count_rate_summed
+  LABLAXIS: "Na count rate summed"
+
+mg:
+  <<: *default_particle_rate_attrs
+  CATDESC: Mg Summed Omnidirectional Count Rates in 4 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: mg_stat_uncert_minus
+  DELTA_PLUS_VAR: mg_stat_uncert_plus
+  DEPEND_1: mg_energy_mean
+  FIELDNAM: mg_count_rate_summed
+  LABLAXIS: "Mg count rate summed"
+
+al:
+  <<: *default_particle_rate_attrs
+  CATDESC: Al Summed Omnidirectional Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: al_stat_uncert_minus
+  DELTA_PLUS_VAR: al_stat_uncert_plus
+  DEPEND_1: al_energy_mean
+  FIELDNAM: al_count_rate_summed
+  LABLAXIS: "Al count rate summed"
+
+si:
+  <<: *default_particle_rate_attrs
+  CATDESC: Si Summed Omnidirectional Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: si_stat_uncert_minus
+  DELTA_PLUS_VAR: si_stat_uncert_plus
+  DEPEND_1: si_energy_mean
+  FIELDNAM: si_count_rate_summed
+  LABLAXIS: "Si count rate summed"
+
+s:
+  <<: *default_particle_rate_attrs
+  CATDESC: S Summed Omnidirectional Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: s_stat_uncert_minus
+  DELTA_PLUS_VAR: s_stat_uncert_plus
+  DEPEND_1: s_energy_mean
+  FIELDNAM: s_count_rate_summed
+  LABLAXIS: "S count rate summed"
+
+ar:
+  <<: *default_particle_rate_attrs
+  CATDESC: Ar Summed Omnidirectional Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: ar_stat_uncert_minus
+  DELTA_PLUS_VAR: ar_stat_uncert_plus
+  DEPEND_1: ar_energy_mean
+  FIELDNAM: ar_count_rate_summed
+  LABLAXIS: "Ar count rate summed"
+
+ca:
+  <<: *default_particle_rate_attrs
+  CATDESC: Ca Summed Omnidirectional Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: ca_stat_uncert_minus
+  DELTA_PLUS_VAR: ca_stat_uncert_plus
+  DEPEND_1: ca_energy_mean
+  FIELDNAM: ca_count_rate_summed
+  LABLAXIS: "Ca count rate summed"
+
+fe_summed:
+  <<: *default_particle_rate_attrs
+  CATDESC: Fe Summed Omnidirectional Count Rates in 5 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: fe_stat_uncert_minus
+  DELTA_PLUS_VAR: fe_stat_uncert_plus
+  DEPEND_1: fe_energy_mean
+  FIELDNAM: fe_count_rate_summed
+  LABLAXIS: "Fe count rate summed"
+
+ni:
+  <<: *default_particle_rate_attrs
+  CATDESC: Ni Summed Omnidirectional Count Rates in 3 energy bins (useful for quiet times)
+  DELTA_MINUS_VAR: ni_stat_uncert_minus
+  DELTA_PLUS_VAR: ni_stat_uncert_plus
+  DEPEND_1: ni_energy_mean
+  FIELDNAM: ni_count_rate_summed
+  LABLAXIS: "Ni count rate summed"
+
+h_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: H energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: h_energy_mean
+  FIELDNAM: h_energy_delta_plus
+  LABLAXIS: "H energy delta plus"
+
+h_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: H energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: h_energy_mean
+  FIELDNAM: h_energy_min
+  LABLAXIS: "H energy delta minus"
+
+he3_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: He3 energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: he3_energy_mean
+  FIELDNAM: he3_energy_delta_plus
+  LABLAXIS: "He3 energy delta plus"
+
+he3_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: He3 energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: he3_energy_mean
+  FIELDNAM: he3_energy_min
+  LABLAXIS: "He3 energy delta minus"
+
+he4_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: He4 energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: he4_energy_mean
+  FIELDNAM: he4_energy_delta_plus
+  LABLAXIS: "He4 energy delta plus"
+
+he4_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: He4 energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: he4_energy_mean
+  FIELDNAM: he4_energy_min
+  LABLAXIS: "He4 energy delta minus"
+
+c_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: C energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: c_energy_mean
+  FIELDNAM: c_energy_delta_plus
+  LABLAXIS: "C energy delta plus"
+
+c_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: C energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: c_energy_mean
+  FIELDNAM: c_energy_min
+  LABLAXIS: "C energy delta minus"
+
+n_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: N energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: n_energy_mean
+  FIELDNAM: n_energy_delta_plus
+  LABLAXIS: "N energy delta plus"
+
+n_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: N energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: n_energy_mean
+  FIELDNAM: n_energy_min
+  LABLAXIS: "N energy delta minus"
+
+o_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: O energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: o_energy_mean
+  FIELDNAM: o_energy_delta_plus
+  LABLAXIS: "O energy delta plus"
+
+o_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: O energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: o_energy_mean
+  FIELDNAM: o_energy_min
+  LABLAXIS: "O energy delta minus"
+
+ne_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ne energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: ne_energy_mean
+  FIELDNAM: ne_energy_delta_plus
+  LABLAXIS: "Ne energy delta plus"
+
+ne_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ne energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: ne_energy_mean
+  FIELDNAM: ne_energy_min
+  LABLAXIS: "Ne energy delta minus"
+
+na_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Na energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: na_energy_mean
+  FIELDNAM: na_energy_delta_plus
+  LABLAXIS: "Na energy delta plus"
+
+na_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Na energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: na_energy_mean
+  FIELDNAM: na_energy_min
+  LABLAXIS: "Na energy delta minus"
+
+mg_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Mg energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: mg_energy_mean
+  FIELDNAM: mg_energy_delta_plus
+  LABLAXIS: "Mg energy delta plus"
+
+mg_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Mg energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: mg_energy_mean
+  FIELDNAM: mg_energy_min
+  LABLAXIS: "Mg energy delta minus"
+
+al_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Al energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: al_energy_mean
+  FIELDNAM: al_energy_delta_plus
+  LABLAXIS: "Al energy delta plus"
+
+al_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Al energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: al_energy_mean
+  FIELDNAM: al_energy_min
+  LABLAXIS: "Al energy delta minus"
+
+si_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Si energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: si_energy_mean
+  FIELDNAM: si_energy_delta_plus
+  LABLAXIS: "Si energy delta plus"
+
+si_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Si energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: si_energy_mean
+  FIELDNAM: si_energy_min
+  LABLAXIS: "Si energy delta minus"
+
+s_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: S energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: s_energy_mean
+  FIELDNAM: s_energy_delta_plus
+  LABLAXIS: "S energy delta plus"
+
+s_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: S energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: s_energy_mean
+  FIELDNAM: s_energy_min
+  LABLAXIS: "S energy delta minus"
+
+ar_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ar energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: ar_energy_mean
+  FIELDNAM: ar_energy_delta_plus
+  LABLAXIS: "Ar energy delta plus"
+
+ar_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ar energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: ar_energy_mean
+  FIELDNAM: ar_energy_min
+  LABLAXIS: "Ar energy delta minus"
+
+ca_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ca energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: ca_energy_mean
+  FIELDNAM: ca_energy_delta_plus
+  LABLAXIS: "Ca energy delta plus"
+
+ca_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ca energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: ca_energy_mean
+  FIELDNAM: ca_energy_min
+  LABLAXIS: "Ca energy delta minus"
+
+fe_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Fe energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: fe_energy_mean
+  FIELDNAM: fe_energy_delta_plus
+  LABLAXIS: "Fe energy delta plus"
+
+fe_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Fe energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: fe_energy_mean
+  FIELDNAM: fe_energy_min
+  LABLAXIS: "Fe energy delta minus"
+
+ni_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ni energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: ni_energy_mean
+  FIELDNAM: ni_energy_delta_plus
+  LABLAXIS: "Ni energy delta plus"
+
+ni_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ni energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: ni_energy_mean
+  FIELDNAM: ni_energy_min
+  LABLAXIS: "Ni energy delta minus"
+
+h_stat_uncert_plus_summed:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for H Summed
+  DEPEND_1: h_energy_mean
+  FIELDNAM: h_plus_uncertainty
+  LABLAXIS: "H plus uncertainty summed"
+
+h_stat_uncert_minus_summed:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for H Summed
+  DEPEND_1: h_energy_mean
+  FIELDNAM: h_minus_uncertainty
+  LABLAXIS: "H minus uncertainty summed"
+
+he3_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for He3 Summed
+  DEPEND_1: he3_energy_mean
+  FIELDNAM: he3_plus_uncertainty
+  LABLAXIS: "He3 plus uncertainty summed"
+
+he3_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for He3 Summed
+  DEPEND_1: he3_energy_mean
+  FIELDNAM: he3_minus_uncertainty
+  LABLAXIS: "He3 minus uncertainty summed"
+
+he4_stat_uncert_plus_summed:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for He4 Summed
+  DEPEND_1: he4_energy_mean
+  FIELDNAM: he4_plus_uncertainty
+  LABLAXIS: "He4 plus uncertainty summed"
+
+he4_stat_uncert_minus_summed:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for He4 Summed
+  DEPEND_1: he4_energy_mean
+  FIELDNAM: he4_minus_uncertainty
+  LABLAXIS: "He4 minus uncertainty summed"
+
+he_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for He Summed
+  DEPEND_1: he_energy_mean
+  FIELDNAM: he_plus_uncertainty
+  LABLAXIS: "He plus uncertainty summed"
+
+he_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for He Summed
+  DEPEND_1: he_energy_mean
+  FIELDNAM: he_minus_uncertainty
+  LABLAXIS: "He minus uncertainty summed"
+
+c_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for C Summed
+  DEPEND_1: c_energy_mean
+  FIELDNAM: c_plus_uncertainty
+  LABLAXIS: "C plus uncertainty summed"
+
+c_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for C Summed
+  DEPEND_1: c_energy_mean
+  FIELDNAM: c_minus_uncertainty
+  LABLAXIS: "C minus uncertainty summed"
+
+n_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for N Summed
+  DEPEND_1: n_energy_mean
+  FIELDNAM: n_plus_uncertainty
+  LABLAXIS: "N plus uncertainty summed"
+
+n_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for N Summed
+  DEPEND_1: n_energy_mean
+  FIELDNAM: n_minus_uncertainty
+  LABLAXIS: "N minus uncertainty summed"
+
+o_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for O Summed
+  DEPEND_1: o_energy_mean
+  FIELDNAM: o_plus_uncertainty
+  LABLAXIS: "O plus uncertainty summed"
+
+o_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for O Summed
+  DEPEND_1: o_energy_mean
+  FIELDNAM: o_minus_uncertainty
+  LABLAXIS: "O minus uncertainty summed"
+
+ne_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Ne Summed
+  DEPEND_1: ne_energy_mean
+  FIELDNAM: ne_plus_uncertainty
+  LABLAXIS: "Ne plus uncertainty summed"
+
+ne_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Ne Summed
+  DEPEND_1: ne_energy_mean
+  FIELDNAM: ne_minus_uncertainty
+  LABLAXIS: "Ne minus uncertainty summed"
+
+na_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Na Summed
+  DEPEND_1: na_energy_mean
+  FIELDNAM: na_plus_uncertainty
+  LABLAXIS: "Na plus uncertainty summed"
+
+na_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Na Summed
+  DEPEND_1: na_energy_mean
+  FIELDNAM: na_minus_uncertainty
+  LABLAXIS: "Na minus uncertainty summed"
+
+mg_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Mg Summed
+  DEPEND_1: mg_energy_mean
+  FIELDNAM: mg_plus_uncertainty
+  LABLAXIS: "Mg plus uncertainty summed"
+
+mg_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Mg Summed
+  DEPEND_1: mg_energy_mean
+  FIELDNAM: mg_minus_uncertainty
+  LABLAXIS: "Mg minus uncertainty summed"
+
+al_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Al Summed
+  DEPEND_1: al_energy_mean
+  FIELDNAM: al_plus_uncertainty
+  LABLAXIS: "Al plus uncertainty summed"
+
+al_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Al Summed
+  DEPEND_1: al_energy_mean
+  FIELDNAM: al_minus_uncertainty
+  LABLAXIS: "Al minus uncertainty summed"
+
+si_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Si Summed
+  DEPEND_1: si_energy_mean
+  FIELDNAM: si_plus_uncertainty
+  LABLAXIS: "Si plus uncertainty summed"
+
+si_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Si Summed
+  DEPEND_1: si_energy_mean
+  FIELDNAM: si_minus_uncertainty
+  LABLAXIS: "Si minus uncertainty summed"
+
+s_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for S Summed
+  DEPEND_1: s_energy_mean
+  FIELDNAM: s_plus_uncertainty
+  LABLAXIS: "S plus uncertainty summed"
+
+s_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for S Summed
+  DEPEND_1: s_energy_mean
+  FIELDNAM: s_minus_uncertainty
+  LABLAXIS: "S minus uncertainty summed"
+
+ar_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Ar Summed
+  DEPEND_1: ar_energy_mean
+  FIELDNAM: ar_plus_uncertainty
+  LABLAXIS: "Ar plus uncertainty summed"
+
+ar_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Ar Summed
+  DEPEND_1: ar_energy_mean
+  FIELDNAM: ar_minus_uncertainty
+  LABLAXIS: "Ar minus uncertainty summed"
+
+ca_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Ca Summed
+  DEPEND_1: ca_energy_mean
+  FIELDNAM: ca_plus_uncertainty
+  LABLAXIS: "Ca plus uncertainty summed"
+
+ca_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Ca Summed
+  DEPEND_1: ca_energy_mean
+  FIELDNAM: ca_minus_uncertainty
+  LABLAXIS: "Ca minus uncertainty summed"
+
+fe_stat_uncert_plus_summed:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Fe Summed
+  DEPEND_1: fe_energy_mean
+  FIELDNAM: fe_plus_uncertainty
+  LABLAXIS: "Fe plus uncertainty summed"
+
+fe_stat_uncert_minus_summed:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Fe Summed
+  DEPEND_1: fe_energy_mean
+  FIELDNAM: fe_minus_uncertainty
+  LABLAXIS: "Fe minus uncertainty summed"
+
+ni_stat_uncert_plus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Ni Summed
+  DEPEND_1: ni_energy_mean
+  FIELDNAM: ni_plus_uncertainty
+  LABLAXIS: "Ni plus uncertainty summed"
+
+ni_stat_uncert_minus:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Ni Summed
+  DEPEND_1: ni_energy_mean
+  FIELDNAM: ni_minus_uncertainty
+  LABLAXIS: "Ni minus uncertainty summed"
+
+# <=== he_energy_delta_plus/minus (spreadsheet gap, synthesized -- see comment above) ===>
+
+he_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: He energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: he_energy_mean
+  FIELDNAM: he_energy_delta_plus
+  LABLAXIS: "He energy delta plus"
+
+he_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: He energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: he_energy_mean
+  FIELDNAM: he_energy_min
+  LABLAXIS: "He energy delta minus"
+
+# <=== Sectored Rates - Particle Variable Attributes
+# Keys end in _sectored; hit_l1b.py appends the suffix when building the
+# sectored-rates product. The energy coordinates are inherited from L1A.
+# The h/he4/fe energy deltas share the plain entries above; cno and nemgsi
+# only exist in this product, so their energy deltas are defined here. ===>
+
+h_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: H Sectored Count Rates in 3 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: h_stat_uncert_minus
+  DELTA_PLUS_VAR: h_stat_uncert_plus
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: h_count_rate_sectored
+  LABLAXIS: "H count rate sectored"
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: He4 Sectored Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: he4_stat_uncert_minus
+  DELTA_PLUS_VAR: he4_stat_uncert_plus
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: he4_count_rate_sectored
+  LABLAXIS: "He4 count rate sectored"
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: C, N, O Macropixel Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: cno_stat_uncert_minus
+  DELTA_PLUS_VAR: cno_stat_uncert_plus
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: cno_count_rate_sectored
+  LABLAXIS: "CNO count rate sectored"
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+nemgsi_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: Ne, Mg, Si Sectored Count Rates in 2 energy bins, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: nemgsi_stat_uncert_minus
+  DELTA_PLUS_VAR: nemgsi_stat_uncert_plus
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: nemgsi_count_rate_sectored
+  LABLAXIS: "NeMgSi count rate sectored"
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+fe_sectored:
+  <<: *default_particle_rate_attrs
+  CATDESC: Fe Sectored Count Rates in 1 energy bin, 8 zenith angle bins, and 15 azimuth angle bins
+  DELTA_MINUS_VAR: fe_stat_uncert_minus
+  DELTA_PLUS_VAR: fe_stat_uncert_plus
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: fe_count_rate_sectored
+  LABLAXIS: "Fe count rate sectored"
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+h_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for H Sectored
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: h_plus_uncertainty
+  LABLAXIS: "H plus uncertainty sectored"
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+h_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for H Sectored
+  DEPEND_1: h_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: h_minus_uncertainty
+  LABLAXIS: "H minus uncertainty sectored"
+  LABL_PTR_1: h_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for He4 Sectored
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: he4_plus_uncertainty
+  LABLAXIS: "He4 plus uncertainty sectored"
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+he4_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for He4 Sectored
+  DEPEND_1: he4_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: he4_minus_uncertainty
+  LABLAXIS: "He4 minus uncertainty sectored"
+  LABL_PTR_1: he4_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for C, N, O Sectored
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: cno_plus_uncertainty
+  LABLAXIS: "CNO plus uncertainty sectored"
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for C, N, O Sectored
+  DEPEND_1: cno_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: cno_minus_uncertainty
+  LABLAXIS: "CNO minus uncertainty sectored"
+  LABL_PTR_1: cno_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+nemgsi_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Ne, Mg, Si Sectored
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: nemgsi_plus_uncertainty
+  LABLAXIS: "NeMgSi plus uncertainty sectored"
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+nemgsi_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Ne, Mg, Si Sectored
+  DEPEND_1: nemgsi_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: nemgsi_minus_uncertainty
+  LABLAXIS: "NeMgSi minus uncertainty sectored"
+  LABL_PTR_1: nemgsi_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+fe_stat_uncert_plus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Plus uncertainty for Fe Sectored
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: fe_plus_uncertainty
+  LABLAXIS: "Fe plus uncertainty sectored"
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+fe_stat_uncert_minus_sectored:
+  <<: *default_particle_uncert_attrs
+  CATDESC: Minus uncertainty for Fe Sectored
+  DEPEND_1: fe_energy_mean
+  DEPEND_2: azimuth
+  DEPEND_3: zenith
+  FIELDNAM: fe_minus_uncertainty
+  LABLAXIS: "Fe minus uncertainty sectored"
+  LABL_PTR_1: fe_energy_mean_label
+  LABL_PTR_2: azimuth_label
+  LABL_PTR_3: zenith_label
+
+cno_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: C, N, O energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: cno_energy_mean
+  FIELDNAM: cno_energy_delta_plus
+  LABLAXIS: "C, N, O energy delta plus"
+
+cno_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: C, N, O energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: cno_energy_mean
+  FIELDNAM: cno_energy_min
+  LABLAXIS: "C, N, O energy delta minus"
+
+nemgsi_energy_delta_plus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ne, Mg, Si energy per nuc. delta plus (maximum bin energy per nuc. minus geometric mean)
+  DEPEND_0: nemgsi_energy_mean
+  FIELDNAM: nemgsi_energy_delta_plus
+  LABLAXIS: "Ne, Mg, Si energy delta plus"
+
+nemgsi_energy_delta_minus:
+  <<: *default_energy_delta_attrs
+  CATDESC: Ne, Mg, Si energy per nuc. delta minus (geometric mean minus minimum bin energy per nuc.)
+  DEPEND_0: nemgsi_energy_mean
+  FIELDNAM: nemgsi_energy_min
+  LABLAXIS: "Ne, Mg, Si energy delta minus"
