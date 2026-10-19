@@ -442,7 +442,7 @@ def process_swapi_science(
 
     Returns
     -------
-    dataset : xarray.Dataset, optional
+    dataset : xarray.Dataset or None
         Dataset or None. If there is no HVSCI mode found in any
         science packets, then return None.
     """
