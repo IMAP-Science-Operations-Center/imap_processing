@@ -356,7 +356,12 @@ def add_energy_variables(
     attr_mgr: ImapCdfAttributes | None = None,
 ) -> xr.Dataset:
     """
-    Add energy min and max variables to the dataset.
+    Add energy mean and delta variables to the dataset.
+
+    The energy mean for each energy range is the geometric mean of the
+    minimum and maximum energies, sqrt(energy_min * energy_max), rounded to
+    three decimal places. The deltas are the distances from that mean to the
+    minimum (delta minus) and maximum (delta plus) energies.
 
     Parameters
     ----------
@@ -385,8 +390,9 @@ def add_energy_variables(
     """
     updated_ds = dataset.copy()
 
+    # Geometric mean of the minimum and maximum energy of each range
     energy_mean: np.ndarray = np.round(
-        np.mean(np.array([energy_min_values, energy_max_values]), axis=0), 3
+        np.sqrt(np.array(energy_min_values) * np.array(energy_max_values)), 3
     ).astype(np.float32)
 
     def _attrs(var_name: str) -> dict:
