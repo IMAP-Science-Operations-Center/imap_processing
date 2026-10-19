@@ -259,7 +259,7 @@ def test_add_energy_variables():
     particle = "test_particle"
     energy_min = np.array([1.8, 4.0, 6.0], dtype=np.float32)
     energy_max = np.array([2.2, 6.0, 10.0], dtype=np.float32)
-    energy_mean = np.mean([energy_min, energy_max], axis=0)
+    energy_mean = np.array([1.99, 4.899, 7.746], dtype=np.float32)
 
     # Call the function
     dataset = add_energy_variables(dataset, particle, energy_min, energy_max)
@@ -268,15 +268,21 @@ def test_add_energy_variables():
     assert f"{particle}_energy_delta_minus" in dataset.data_vars
     assert f"{particle}_energy_delta_plus" in dataset.data_vars
     assert f"{particle}_energy_mean" in dataset.coords
-    assert np.all(
-        dataset[f"{particle}_energy_delta_minus"].values
-        == np.array(energy_mean - np.array(energy_min), dtype=np.float32)
+    np.testing.assert_allclose(
+        dataset[f"{particle}_energy_mean"].values, energy_mean, rtol=0, atol=1e-6
     )
-    assert np.all(
-        dataset[f"{particle}_energy_delta_plus"].values
-        == np.array(energy_max - energy_mean, dtype=np.float32)
+    np.testing.assert_allclose(
+        dataset[f"{particle}_energy_delta_minus"].values,
+        energy_mean - energy_min,
+        rtol=0,
+        atol=1e-6,
     )
-    assert np.all(dataset[f"{particle}_energy_mean"].values == energy_mean)
+    np.testing.assert_allclose(
+        dataset[f"{particle}_energy_delta_plus"].values,
+        energy_max - energy_mean,
+        rtol=0,
+        atol=1e-6,
+    )
 
 
 def test_sum_particle_data(sample_dataset):
@@ -364,9 +370,12 @@ def test_add_summed_particle_data_to_dataset(sample_dataset):
         len(energy_ranges),
     )
 
-    assert np.all(
-        dataset_to_update[f"{particle}_energy_mean"].values
-        == np.mean([[1.8, 4.0], [2.2, 6.0]], axis=0)
+    # Geometric means: sqrt(1.8 * 2.2) = 1.98997, sqrt(4.0 * 6.0) = 4.89898
+    np.testing.assert_allclose(
+        dataset_to_update[f"{particle}_energy_mean"].values,
+        np.array([1.99, 4.899], dtype=np.float32),
+        rtol=0,
+        atol=1e-6,
     )
 
 
