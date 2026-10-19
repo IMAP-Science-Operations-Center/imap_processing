@@ -242,3 +242,14 @@ def test_swapi_l1_cdf(mock_get_file_paths, swapi_l0_test_data_path):
     cdf_filename = "imap_swapi_l1_sci_20240924_v001.0001.cdf"
     cdf_path = write_cdf(processed_data[0])
     assert cdf_path.name == cdf_filename
+
+
+def test_process_swapi_no_valid_data(decom_test_data):
+    """Test process swapi science"""
+    ds_data = decom_test_data[SWAPIAPID.SWP_SCI]
+
+    # make all modes invalid.
+    ds_data["mode"].data = np.zeros(ds_data["plan_id"].data.shape) * -1
+    processed_data = process_swapi_science(ds_data, decom_test_data[SWAPIAPID.SWP_HK])
+    # process_swapi_science should return None if there is no valid data to process
+    assert processed_data is None
