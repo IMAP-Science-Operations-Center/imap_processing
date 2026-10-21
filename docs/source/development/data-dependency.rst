@@ -103,8 +103,13 @@ We handle and track dependencies using a YAML config file that acts like a datab
 config file expects a specific format, and is used to determine the upstream and downstream
 dependencies of each product.
 
-Each product has entry for inputs, outputs and partition. The inputs are list of inputs needed to start
-processing the product, and outputs are the products that will be produced after processing. Partition
+Each processing job has entries for inputs, outputs and partition.
+Each job is identified with a `(job_data_level, job_descriptor)` pair,
+and these fields are distinct from (but generally related to) the job's output products'
+data levels and descriptors, because a given job can produce more than one output product.
+
+The inputs are list of inputs needed to start
+processing the job, and outputs are the products that will be produced after processing. Partition
 specifies the partitioning scheme for the product, which is used to determine the date range of
 the data of the file produced from the processing job. For example, if the partition is daily,
 then the file produced from the processing job will have a date range of 1 day. If the partition
