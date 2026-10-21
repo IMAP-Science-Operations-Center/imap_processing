@@ -21,6 +21,10 @@ def test_packets_created():
     actual_output = packets_created(datetime(2026, 7, 31, 16, 33, 39, 0), lines)
 
     expected = {
+        "Censipam": {
+            "last_data_received": [],
+            "rate_kbps": [],
+        },
         "Kiel": {
             "last_data_received": [
                 "2026-01-21T09:57:58Z",
@@ -104,6 +108,7 @@ def test_format_ingest_data():
             )
             log_lines.append("10  Kiel          001-15:00:00  001-08:00:00    2.0\n")
             log_lines.append("12  NOAA          365-14:30:00  365-09:00:00    4.0\n")
+            log_lines.append("17  Censipam      365-14:45:00  365-10:00:00    2.2\n")
 
         current_time += timedelta(seconds=1)
 
@@ -117,3 +122,6 @@ def test_format_ingest_data():
     assert "NOAA" in data["stations"]
     assert data["NOAA"]["last_data_received"] == ["2025-12-31T14:30:00Z"]
     assert data["NOAA"]["rate_kbps"] == [4.0]
+    assert "Censipam" in data["stations"]
+    assert data["Censipam"]["last_data_received"] == ["2025-12-31T14:45:00Z"]
+    assert data["Censipam"]["rate_kbps"] == [2.2]

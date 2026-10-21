@@ -6,7 +6,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-STATIONS = ["Kiel", "UKSA", "Mopra", "NOAA", "tlmrelay"]
+STATIONS = ["Kiel", "UKSA", "Mopra", "NOAA", "Censipam", "tlmrelay"]
 
 
 def packets_created(start_file_creation: datetime, lines: list) -> dict:
