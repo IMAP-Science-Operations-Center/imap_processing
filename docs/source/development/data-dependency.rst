@@ -248,6 +248,8 @@ Dependency config best practices
 
 - The major version of each job output should be greater than or equal to the major version
   of any data products on which that job output depends within the same instrument.
+- For a job that has exactly one output, if that output is a science output,
+  then the job descriptor should match the output's descriptor.
 
 These best practices are checked by a GitHub action running
 on every PR in the sds-data-manager repo,
