@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+import cdflib
 import imap_data_access
 import numpy as np
 import pandas as pd
@@ -139,6 +140,23 @@ def test_write_cdf_extra_cdf_kwargs(test_dataset):
         assert xarray_to_cdf.call_args.kwargs["terminate_on_warning"] is True
         assert xarray_to_cdf.call_args.kwargs["istp"] is True
         assert xarray_to_cdf.call_args.kwargs["compression"] == 9
+
+
+def test_write_cdf_l2_epoch_attribute_types(test_dataset):
+    """Test epoch attribute is TT2000, while epoch_delta attributes stay INT8."""
+    test_dataset.attrs["Logical_source"] = "imap_swe_l2_sci"
+    swe_attrs = ImapCdfAttributes()
+    test_dataset["epoch_delta"] = (
+        "epoch",
+        np.ones(3, dtype=np.int64),
+        swe_attrs.get_variable_attributes("epoch_delta", check_schema=False),
+    )
+    file_path = write_cdf(test_dataset, terminate_on_warning=False)
+
+    with cdflib.CDF(file_path) as cdf:
+        for att in ("FILLVAL", "VALIDMIN", "VALIDMAX"):
+            assert cdf.attget(att, "epoch").Data_Type == "CDF_TIME_TT2000"
+            assert cdf.attget(att, "epoch_delta").Data_Type == "CDF_INT8"
 
 
 def test_write_cdf_converts_extension_array(test_dataset):
