@@ -894,7 +894,15 @@ def _accumulate_pointing(
         logger.warning("No histogram epochs fall within the good-time windows.")
         return
 
-    spin_angles = _dps_spin_angles()
+    if "spin_angle" in histrates:
+        spin_angles = np.asarray(histrates["spin_angle"].values, dtype=float)
+    else:
+        logger.warning(
+            "Histogram rates have no spin_angle; using the nominal spin angles, "
+            "without Lo's spin-start offset."
+        )
+        spin_angles = _dps_spin_angles()
+
     keep = _spin_phase_mask(spin_angles, pivot_angle, map_descriptor.spin_phase)
     if not keep.any():
         return
