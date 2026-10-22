@@ -35,12 +35,9 @@ logger = logging.getLogger(__name__)
 fillval = -9223372036854775808
 
 # Processing dates [start, end) for which the sectored counts product is not created.
-# For this period the HIT team supplied custom L0 files, built from
-# telemetry-efficiency corrected PHA data, which are uploaded to the SDC as the
-# latest version of imap_hit_l0_raw. These files contain only the science APID,
-# and their frame headers do not carry a valid hdr_minute_cnt, so sectored counts
-# (which use hdr_minute_cnt % 10 to identify species and energy) cannot be
-# produced from them. The HIT team is not releasing sectored data for this period.
+# For this period the HIT team supplied custom L0 files. These files contain
+# only the science APID, and their frame headers do not carry a valid
+# hdr_minute_cnt, so sectored counts cannot be produced from them.
 # New flight software was uploaded on 2026-05-18, and 2026-05-20 is the first
 # processing day with sectored data available. The end date is exclusive.
 SECTORED_UNAVAILABLE_DATE_RANGE = (datetime(2026, 2, 1), datetime(2026, 5, 20))
