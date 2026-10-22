@@ -623,7 +623,7 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
     # Process the sample data into datasets to be validated
     processed_datasets = hit_l1a(sci_packet_filepath, packet_date="20100105")
     standard_counts_data = processed_datasets[0]
-    sectored_counts_data = processed_datasets[1]
+    sectored_counts_data = processed_datasets[2]
 
     # The validation data contains all science data variables for both
     # standard and sectored datasets. When comparing each dataset to the
@@ -846,11 +846,11 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
                 == "imap_hit_l1a_counts-standard"
             )
             assert (
-                processed_datasets[1].attrs["Logical_source"]
+                processed_datasets[2].attrs["Logical_source"]
                 == "imap_hit_l1a_counts-sectored"
             )
             assert (
-                processed_datasets[2].attrs["Logical_source"]
+                processed_datasets[1].attrs["Logical_source"]
                 == "imap_hit_l1a_direct-events"
             )
 
@@ -859,3 +859,21 @@ def test_hit_l1a(hk_packet_filepath, sci_packet_filepath):
         ValueError, match="Packet date is required for processing L1A data."
     ):
         hit_l1a(packet_filepath, "")
+
+
+def test_hit_l1a_no_sectored(sci_packet_filepath):
+    """Test that sectored data is not processed.
+
+    Parameters
+    ----------
+    sci_packet_filepath : Path
+        File path to ccsds file for science data
+    """
+    processed_datasets = hit_l1a(sci_packet_filepath, packet_date="20260308")
+    assert isinstance(processed_datasets, list)
+    assert all(isinstance(ds, xr.Dataset) for ds in processed_datasets)
+    assert len(processed_datasets) == 2
+    assert (
+        processed_datasets[0].attrs["Logical_source"] == "imap_hit_l1a_counts-standard"
+    )
+    assert processed_datasets[1].attrs["Logical_source"] == "imap_hit_l1a_direct-events"
