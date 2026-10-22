@@ -152,7 +152,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
         # NOTE: this ignore is needed to avoid a mypy error in Git
         # tests.
-        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[  # type: ignore[index]
+        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[  # type: ignore[index, unused-ignore]
             "sectorates"
         ].values[i]
 
@@ -512,21 +512,21 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
             "Epoch values are empty. Cannot proceed with livetime subsetting."
         )
 
-    # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
-    start_idx = np.where(epoch_livetime_vals == epoch_vals[0])[0][0]
-    end_idx = np.where(epoch_livetime_vals == epoch_vals[-1])[0][0]
+    # find where each epoch belongs in epoch_livetime array
+    sorted_inds: np.ndarray = (
+        np.asarray(np.searchsorted(epoch_livetime_vals, epoch_vals, side="right")) - 1
+    )
+    # Get exact matches between epoch livetimes and epochs
+    exact_match = epoch_livetime_vals[sorted_inds] == epoch_vals
+    livetime_ids = sorted_inds[exact_match]
 
-    if start_idx < 10:
+    if np.any(livetime_ids < 10):
         raise ValueError(
-            "Start index for livetime is less than 10. This indicates that the "
+            "Indices for livetime include values less than 10. This indicates that the "
             "dataset is too small to shift livetime correctly."
         )
 
-    # Compute shifted indices by 10 minutes
-    start_trimmed = max(start_idx - 10, 0)
-    end_trimmed = max(end_idx - 10, 0)
-
-    return dataset.isel(epoch_livetime=slice(start_trimmed, end_trimmed + 1))
+    return dataset.isel(epoch_livetime=livetime_ids - 10)
 
 
 def filter_dataset_to_processing_day(
