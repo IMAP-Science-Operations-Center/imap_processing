@@ -34,14 +34,12 @@ logger = logging.getLogger(__name__)
 # Fill value for missing data
 fillval = -9223372036854775808
 
-# First processing day for which the sectored counts product is created.
-# For processing days before this date, the HIT team supplied custom L0 files
-# (2026-02-01 through 2026-05-18). These files contain only the science APID,
-# and their frame headers do not carry a valid hdr_minute_cnt, so sectored
-# counts cannot be produced from them. New flight software was uploaded on
-# 2026-05-18, and the regular L0 data starting 2026-05-19 contains valid
-# sectored data.
-SECTORED_AVAILABLE_START_DATE = datetime(2026, 5, 19)
+# Processing dates [start, end) for which the sectored counts product is not
+# created. The end date is exclusive. Before 2026-05-19 the HIT team supplied
+# custom L0 files with no valid hdr_minute_cnt, so sectored counts cannot be
+# produced from them. The start is the day before launch rather than an open
+# bound so that tests, which use data from 2010, still produce sectored counts.
+SECTORED_UNAVAILABLE_DATE_RANGE = (datetime(2025, 9, 23), datetime(2026, 5, 19))
 
 
 def hit_l1a(packet_file: Path, packet_date: str | None) -> list[xr.Dataset]:
@@ -621,8 +619,9 @@ def process_science(
     sci_dataset = decom_hit(dataset)
 
     # Skip the sectored counts product for dates without sectored data
+    sectored_start, sectored_end = SECTORED_UNAVAILABLE_DATE_RANGE
     processing_day = datetime.strptime(packet_date, "%Y%m%d")
-    create_sectored = SECTORED_AVAILABLE_START_DATE <= processing_day
+    create_sectored = not (sectored_start <= processing_day < sectored_end)
 
     sectored_count_rates_dataset = None
     if create_sectored:
@@ -638,7 +637,8 @@ def process_science(
     else:
         logger.info(
             f"Skipping HIT L1A sectored counts for {packet_date}: sectored data is "
-            f"not available before {SECTORED_AVAILABLE_START_DATE.date()}"
+            f"not available from {sectored_start.date()} to {sectored_end.date()} "
+            "(end exclusive)"
         )
 
     # TODO:
