@@ -34,6 +34,13 @@ logger = logging.getLogger(__name__)
 # Fill value for missing data
 fillval = -9223372036854775808
 
+# Processing dates [start, end) for which the sectored counts product is not
+# created. The end date is exclusive. Before 2026-05-19 the HIT team supplied
+# custom L0 files with no valid hdr_minute_cnt, so sectored counts cannot be
+# produced from them. The start is the day before launch rather than an open
+# bound so that tests, which use data from 2010, still produce sectored counts.
+SECTORED_UNAVAILABLE_DATE_RANGE = (datetime(2025, 9, 23), datetime(2026, 5, 19))
+
 
 def hit_l1a(packet_file: Path, packet_date: str | None) -> list[xr.Dataset]:
     """
@@ -152,7 +159,7 @@ def subcom_sectorates(sci_dataset: xr.Dataset) -> xr.Dataset:
     for i, mod_10 in enumerate(hdr_min_count_mod_10):
         # NOTE: this ignore is needed to avoid a mypy error in Git
         # tests.
-        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[  # type: ignore[index]
+        data_by_species_and_energy_range[mod_10]["counts"][i] = updated_dataset[  # type: ignore[index, unused-ignore]
             "sectorates"
         ].values[i]
 
@@ -611,11 +618,28 @@ def process_science(
     # Decommutate and decompress the science data
     sci_dataset = decom_hit(dataset)
 
-    # Create dataset for sectored data organized by species type
-    sectored_dataset = subcom_sectorates(sci_dataset)
+    # Skip the sectored counts product for dates without sectored data
+    sectored_start, sectored_end = SECTORED_UNAVAILABLE_DATE_RANGE
+    processing_day = datetime.strptime(packet_date, "%Y%m%d")
+    create_sectored = not (sectored_start <= processing_day < sectored_end)
 
-    # Subset sectored data for complete sets (10 min intervals covering all species)
-    sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
+    sectored_count_rates_dataset = None
+    if create_sectored:
+        # Create dataset for sectored data organized by species type.
+        # This uses the unfiltered science data since sectored counts need the
+        # buffer of frames before the processing day for livetime.
+        sectored_dataset = subcom_sectorates(sci_dataset)
+
+        # Subset sectored data for complete sets (10 min intervals covering all
+        # species)
+        sectored_dataset = subset_sectored_counts(sectored_dataset, packet_date)
+        sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
+    else:
+        logger.info(
+            f"Skipping HIT L1A sectored counts for {packet_date}: sectored data is "
+            f"not available from {sectored_start.date()} to {sectored_end.date()} "
+            "(end exclusive)"
+        )
 
     # TODO:
     #  - headers are values per packet rather than per frame. Do these need to align
@@ -637,13 +661,13 @@ def process_science(
 
     # Calculate uncertainties for count rates
     count_rates_dataset = calculate_uncertainties(count_rates_dataset)
-    sectored_count_rates_dataset = calculate_uncertainties(sectored_dataset)
 
     l1a_datasets: dict = {
         "imap_hit_l1a_counts-standard": count_rates_dataset,
-        "imap_hit_l1a_counts-sectored": sectored_count_rates_dataset,
         "imap_hit_l1a_direct-events": pha_raw_dataset,
     }
+    if sectored_count_rates_dataset is not None:
+        l1a_datasets["imap_hit_l1a_counts-sectored"] = sectored_count_rates_dataset
 
     # Update attributes and dimensions
     for logical_source, ds in l1a_datasets.items():
