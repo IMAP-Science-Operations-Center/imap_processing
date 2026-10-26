@@ -46,12 +46,12 @@ l1b_target_base: &l1b_target_base
 waveform_statistics_base: &waveform_statistics_base
   <<: *l1b_data_base
   DISPLAY_TYPE: time_series
-  VAR_TYPE: support_data
   VAR_NOTES: >-
     Calculated from finite samples in the first 3 microseconds of each record,
     using start <= time < start + 3 us, where start is the earliest finite sample
     time on that channel's time axis. Baseline is the arithmetic mean; RMS is
     sqrt(mean((signal - baseline)^2)), with ddof=0. Missing windows are fill values.
+  VAR_TYPE: support_data
 
 trigger_base: &trigger_base
   <<: *l1b_data_base
