@@ -43,6 +43,16 @@ l1b_target_base: &l1b_target_base
   DEPEND_1: time_low_sample_rate_index
   LABL_PTR_1: time_low_sample_rate_label
 
+waveform_statistics_base: &waveform_statistics_base
+  <<: *l1b_data_base
+  DISPLAY_TYPE: time_series
+  VAR_TYPE: support_data
+  VAR_NOTES: >-
+    Calculated from finite samples in the first 3 microseconds of each record,
+    using start <= time < start + 3 us, where start is the earliest finite sample
+    time on that channel's time axis. Baseline is the arithmetic mean; RMS is
+    sqrt(mean((signal - baseline)^2)), with ddof=0. Missing windows are fill values.
+
 trigger_base: &trigger_base
   <<: *l1b_data_base
   DISPLAY_TYPE: no_plot
@@ -242,6 +252,96 @@ ion_grid:
   VAR_NOTES: This is the ion grid signal from IDEX.
         Sampled at 3.75 Msps with 12-bit resolution.
         Data is used to quantify dust charge.
+
+tof_high_baseline:
+  <<: *waveform_statistics_base
+  CATDESC: Mean baseline of the TOF High waveform.
+  FIELDNAM: TOF High Baseline
+  LABLAXIS: TOF HG Baseline
+  UNITS: mA
+  VALIDMAX: 0.076725
+
+tof_high_rms:
+  <<: *waveform_statistics_base
+  CATDESC: Baseline-subtracted RMS noise of the TOF High waveform.
+  FIELDNAM: TOF High RMS
+  LABLAXIS: TOF HG RMS
+  UNITS: mA
+  VALIDMAX: 0.076725
+
+tof_mid_baseline:
+  <<: *waveform_statistics_base
+  CATDESC: Mean baseline of the TOF Mid waveform.
+  FIELDNAM: TOF Mid Baseline
+  LABLAXIS: TOF MG Baseline
+  UNITS: mA
+  VALIDMAX: 2.99739
+
+tof_mid_rms:
+  <<: *waveform_statistics_base
+  CATDESC: Baseline-subtracted RMS noise of the TOF Mid waveform.
+  FIELDNAM: TOF Mid RMS
+  LABLAXIS: TOF MG RMS
+  UNITS: mA
+  VALIDMAX: 2.99739
+
+tof_low_baseline:
+  <<: *waveform_statistics_base
+  CATDESC: Mean baseline of the TOF Low waveform.
+  FIELDNAM: TOF Low Baseline
+  LABLAXIS: TOF LG Baseline
+  UNITS: mA
+  VALIDMAX: 137.082
+
+tof_low_rms:
+  <<: *waveform_statistics_base
+  CATDESC: Baseline-subtracted RMS noise of the TOF Low waveform.
+  FIELDNAM: TOF Low RMS
+  LABLAXIS: TOF LG RMS
+  UNITS: mA
+  VALIDMAX: 137.082
+
+target_high_baseline:
+  <<: *waveform_statistics_base
+  CATDESC: Mean baseline of the Target High waveform.
+  FIELDNAM: Target High Baseline
+  LABLAXIS: Target HG Baseline
+  VALIDMAX: 667.485
+
+target_high_rms:
+  <<: *waveform_statistics_base
+  CATDESC: Baseline-subtracted RMS noise of the Target High waveform.
+  FIELDNAM: Target High RMS
+  LABLAXIS: Target HG RMS
+  VALIDMAX: 667.485
+
+target_low_baseline:
+  <<: *waveform_statistics_base
+  CATDESC: Mean baseline of the Target Low waveform.
+  FIELDNAM: Target Low Baseline
+  LABLAXIS: Target LG Baseline
+  VALIDMAX: 64701.0
+
+target_low_rms:
+  <<: *waveform_statistics_base
+  CATDESC: Baseline-subtracted RMS noise of the Target Low waveform.
+  FIELDNAM: Target Low RMS
+  LABLAXIS: Target LG RMS
+  VALIDMAX: 64701.0
+
+ion_grid_baseline:
+  <<: *waveform_statistics_base
+  CATDESC: Mean baseline of the Ion Grid waveform.
+  FIELDNAM: Ion Grid Baseline
+  LABLAXIS: Ion Grid Baseline
+  VALIDMAX: 3.05487
+
+ion_grid_rms:
+  <<: *waveform_statistics_base
+  CATDESC: Baseline-subtracted RMS noise of the Ion Grid waveform.
+  FIELDNAM: Ion Grid RMS
+  LABLAXIS: Ion Grid RMS
+  VALIDMAX: 3.05487
 
 detector_voltage:
   <<: *trigger_base

@@ -32,7 +32,11 @@ from imap_processing.idex.idex_constants import (
     ConversionFactors,
 )
 from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
-from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
+from imap_processing.idex.idex_utils import (
+    calculate_baseline_and_rms,
+    get_idex_attrs,
+    setup_dataset,
+)
 from imap_processing.spice.geometry import (
     SpiceBody,
     SpiceFrame,
@@ -292,6 +296,7 @@ def idex_l1b_science(l1a_dataset: xr.Dataset) -> xr.Dataset:
         conversion_table_path=var_information_path,
         packet_name="IDEX_SCI",
     )
+    l1b_dataset.update(get_waveform_statistics(l1b_dataset, idex_attrs))
 
     logger.info("IDEX L1B science data processing completed.")
     return l1b_dataset
@@ -376,6 +381,44 @@ def convert_waveforms(
         )
 
     return waveforms_converted
+
+
+def get_waveform_statistics(
+    dataset: xr.Dataset, idex_attrs: ImapCdfAttributes
+) -> dict[str, xr.DataArray]:
+    """
+    Create event-level baseline and RMS fields for all six converted waveforms.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        L1b waveforms in engineering units and sample times in microseconds.
+    idex_attrs : ImapCdfAttributes
+        CDF attribute manager object.
+
+    Returns
+    -------
+    statistics : dict[str, xarray.DataArray]
+        Mean baseline and baseline-subtracted RMS noise in the first 3 microseconds
+        of each waveform. TOF fields are in mA; target and ion-grid fields are in pC.
+    """
+    statistics = {}
+    for channel in ConversionFactors:
+        waveform = dataset[channel.name]
+        time_name = waveform.dims[-1].removesuffix("_index")
+        baseline, rms = calculate_baseline_and_rms(
+            waveform.data, dataset[time_name].data
+        )
+        for suffix, values in (("baseline", baseline), ("rms", rms)):
+            name = f"{channel.name.lower()}_{suffix}"
+            statistics[name] = xr.DataArray(
+                values,
+                dims="epoch",
+                coords={"epoch": dataset.epoch},
+                name=name,
+                attrs=idex_attrs.get_variable_attributes(name),
+            )
+    return statistics
 
 
 def get_trigger_mode_and_level(

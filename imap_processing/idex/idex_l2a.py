@@ -32,14 +32,20 @@ from imap_processing import imap_module_directory
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_constants import SPICE_ARRAYS
 from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
-from imap_processing.idex.idex_utils import get_idex_attrs, setup_dataset
+from imap_processing.idex.idex_utils import (
+    calculate_baseline_and_rms,
+    get_idex_attrs,
+    setup_dataset,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class BaselineNoiseTime(IntEnum):
     """
-    Time range in microseconds that mark the baseline noise before a Dust impact.
+    Legacy TOF baseline window, retained for compatibility.
+
+    L1b statistics and L2a processing now use the first 3 microseconds instead.
 
     Attributes
     ----------
@@ -128,7 +134,12 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
         dims=("epoch", "time_high_sample_rate_index"),
         attrs=idex_attrs.get_variable_attributes("mass_scale"),
     )
-    snr = calculate_snr(tof_high, hs_time)
+    snr = calculate_snr(
+        tof_high,
+        hs_time,
+        l1b_dataset.get("tof_high_baseline"),
+        l1b_dataset.get("tof_high_rms"),
+    )
     # Find peaks for each event. The peaks represent a TOF of an ion.
     # Peaks_2d is a list of variable-length arrays
     peaks_2d = [find_peaks(tof, prominence=0.01)[0] for tof in tof_high]
@@ -194,14 +205,27 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             l2a_dataset[flag_name].attrs = idex_attrs.get_variable_attributes(flag_name)
 
     for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
+        baseline = l1b_dataset.get(f"{waveform.lower()}_baseline")
+        if baseline is None:
+            # Older L1b products do not contain the event-level statistics.
+            baseline_values, _ = calculate_baseline_and_rms(
+                l1b_dataset[waveform].data, ls_time.data
+            )
+            baseline = xr.DataArray(baseline_values, dims="epoch")
         # Get the dust mass estimates and fit results
         fit_results = xr.apply_ufunc(
             estimate_dust_mass,
             ls_time,
             l1b_dataset[waveform],
+            False,
+            waveform,
+            baseline,
             input_core_dims=[
                 ["time_low_sample_rate_index"],
                 ["time_low_sample_rate_index"],
+                [],
+                [],
+                [],
             ],
             output_core_dims=[
                 ["target_fit_parameter_index"],
@@ -213,7 +237,6 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             vectorize=True,
             output_dtypes=[np.float64] * 6,
             keep_attrs=True,
-            kwargs={"waveform_name": waveform},
         )
         # Calculate mass and velocity estimates
         if waveform == "Ion_Grid":
@@ -784,7 +807,12 @@ def calculate_kappa(mass_scales: np.ndarray, peaks_2d: list) -> NDArray:
     return kappas
 
 
-def calculate_snr(tof_high: xr.DataArray, hs_time: xr.DataArray) -> NDArray:
+def calculate_snr(
+    tof_high: xr.DataArray,
+    hs_time: xr.DataArray,
+    baseline: xr.DataArray | NDArray | None = None,
+    rms: xr.DataArray | NDArray | None = None,
+) -> NDArray:
     """
     Calculate the signal-to-noise ratio.
 
@@ -794,33 +822,24 @@ def calculate_snr(tof_high: xr.DataArray, hs_time: xr.DataArray) -> NDArray:
         The time of flight array.
     hs_time : xarray.DataArray
         The high sampling time array.
+    baseline : xarray.DataArray or numpy.ndarray, optional
+        Per-event L1b mean baseline. Calculated from the first 3 microseconds
+        when baseline or rms is omitted, for compatibility with older products.
+    rms : xarray.DataArray or numpy.ndarray, optional
+        Per-event L1b baseline-subtracted RMS noise (ddof=0).
 
     Returns
     -------
     numpy.ndarray
         Signal-to-noise ratio at each event.
     """
-    # Find indices where Time (High Sampling) is between -7 and -5 ns (no signal yet)
-    # To determine the baseline noise
-    baseline_noise = np.where(
-        np.logical_and(
-            hs_time >= BaselineNoiseTime.START, hs_time <= BaselineNoiseTime.STOP
-        ),
-        tof_high,
-        np.nan,
-    )
-    if np.all(np.isnan(baseline_noise)):
-        logger.warning(
-            "Unable to find baseline noise. "
-            f"There is no signal from {BaselineNoiseTime.START} to "
-            f"{BaselineNoiseTime.STOP} ns. Returning np.nan SNR values"
+    if baseline is None or rms is None:
+        baseline, rms = calculate_baseline_and_rms(
+            np.asarray(tof_high), np.asarray(hs_time)
         )
-        return np.full(len(hs_time), fill_value=np.nan)
-    # Get the max signal without baseline noise
-    tof_max = np.max(tof_high, axis=1) - np.nanmean(baseline_noise, axis=1)
-    tof_sigma = np.nanstd(baseline_noise, axis=1, ddof=1)
-    # Return snr ratio
-    return tof_max / tof_sigma
+    tof_max = np.max(tof_high, axis=1) - np.asarray(baseline)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.asarray(tof_max / np.asarray(rms))
 
 
 def analyze_peaks(
@@ -1003,6 +1022,7 @@ def estimate_dust_mass(
     target_signal: xr.DataArray,
     remove_noise: bool = False,
     waveform_name: str = "",
+    baseline_mean: float | None = None,
 ) -> tuple[NDArray, float, float, float, NDArray]:
     """
     Filter and fit the target or ion grid signals to get the total dust impact charge.
@@ -1018,6 +1038,9 @@ def estimate_dust_mass(
         signal.
     waveform_name : str
         Channel name used to select channel-specific fit bounds.
+    baseline_mean : float, optional
+        L1b mean baseline used to initialize the fit. Calculated from the first
+        3 microseconds when omitted, for compatibility with older products.
 
     Returns
     -------
@@ -1037,23 +1060,14 @@ def estimate_dust_mass(
     """
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
-    # window_start = float(np.min(time))
-    window_stop = float(np.min(time)) + 5.0
-    # good_mask = np.logical_and(time >= window_start, time <= window_stop)
-    good_mask = time <= window_stop
-    if not np.any(good_mask):
-        logger.warning(
-            "Unable to find baseline noise. "
-            f"There is no signal in the first 5 microseconds of the waveform "
-            f"(Beginning to {window_stop} us)."
-        )
+    if baseline_mean is None:
+        baseline, _ = calculate_baseline_and_rms(signal, time)
+        baseline_mean = float(baseline)
     if remove_noise:
         logger.debug(
             "estimate_dust_mass fits the raw low-rate waveform directly; "
             "remove_noise is ignored for this fit path."
         )
-    signal_before_impact = signal[good_mask]
-    baseline_mean = float(np.mean(signal_before_impact))
     channel_name = waveform_name or str(getattr(target_signal, "name", ""))
 
     # Initial Guess for the parameters of the ion grid signal
