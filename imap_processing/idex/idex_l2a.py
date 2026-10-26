@@ -822,10 +822,10 @@ def calculate_snr(
         The time of flight array.
     hs_time : xarray.DataArray
         The high sampling time array.
-    baseline : xarray.DataArray or numpy.ndarray, optional
+    baseline : xarray.DataArray or numpy.ndarray or None
         Per-event L1b mean baseline. Calculated from the first 3 microseconds
         when baseline or rms is omitted, for compatibility with older products.
-    rms : xarray.DataArray or numpy.ndarray, optional
+    rms : xarray.DataArray or numpy.ndarray or None
         Per-event L1b baseline-subtracted RMS noise (ddof=0).
 
     Returns
@@ -1038,7 +1038,7 @@ def estimate_dust_mass(
         signal.
     waveform_name : str
         Channel name used to select channel-specific fit bounds.
-    baseline_mean : float, optional
+    baseline_mean : float or None
         L1b mean baseline used to initialize the fit. Calculated from the first
         3 microseconds when omitted, for compatibility with older products.
 
