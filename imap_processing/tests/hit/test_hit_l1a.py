@@ -16,7 +16,7 @@ from imap_processing.hit.l1a.hit_l1a import (
     calculate_uncertainties,
     decom_hit,
     filter_dataset_to_processing_day,
-    find_complete_mod10_sets,
+    find_mod10_set_ids,
     hit_l1a,
     subcom_sectorates,
     subset_livetime,
@@ -140,31 +140,31 @@ def test_update_livetime_coord():
 def test_subset_livetime():
     """Test the subset_livetime function."""
 
-    # Test case 1: Normal case with valid epoch and epoch_livetime sizes
+    # Test case 1: Complete sets
 
-    # epoch_livetime goes from 0 to 59 (simulates 60 minutes)
-    epoch_livetime = np.arange(60)
+    # 60 frames (60 minutes) in 6 sets of 10 frames
+    all_frame_epochs = np.arange(60)
+    frame_set_ids = np.repeat(np.arange(6), 10)
 
-    # epoch is 30 minute subset of epoch_livetime
-    epoch = epoch_livetime[10:40]
+    # Sectored counts kept for sets 2 and 3
+    epoch = all_frame_epochs[20:40]
 
     dataset = xr.Dataset(
         {
             "livetime_counter": xr.DataArray(
                 np.arange(60),
                 dims=["epoch_livetime"],
-                coords={"epoch_livetime": epoch_livetime},
+                coords={"epoch_livetime": all_frame_epochs},
             )
         },
-        coords={"epoch": epoch, "epoch_livetime": epoch_livetime},
+        coords={"epoch": epoch, "epoch_livetime": all_frame_epochs},
     )
 
     # Call the function
-    trimmed = subset_livetime(dataset)
+    trimmed = subset_livetime(dataset, all_frame_epochs, frame_set_ids)
 
-    # The trimmed livetime should match the slice from index 0 to 29 (inclusive)
-    expected_indices = slice(0, 30)
-    expected_livetime = dataset.isel(epoch_livetime=expected_indices)
+    # The livetime should come from the previous sets (sets 1 and 2)
+    expected_livetime = dataset.isel(epoch_livetime=slice(10, 30))
 
     # Validate the result
     np.testing.assert_array_equal(
@@ -174,7 +174,22 @@ def test_subset_livetime():
         trimmed["livetime_counter"].values, expected_livetime.livetime_counter.values
     )
 
-    # Test case 2: epoch is empty, the function should raise a ValueError
+    # Test case 2: Dropped frame in set 1. Set 2 is complete.
+    all_frame_epochs_dropped = np.delete(all_frame_epochs, 14)
+    frame_set_ids_dropped = np.delete(frame_set_ids, 14)
+    dataset_dropped = dataset.sel(epoch_livetime=all_frame_epochs_dropped)
+
+    trimmed = subset_livetime(
+        dataset_dropped, all_frame_epochs_dropped, frame_set_ids_dropped
+    )
+
+    # Set 2 uses the 9 frames from set 1 and set 3 uses the 10 frames from set 2
+    expected_epoch_livetime = np.delete(np.arange(10, 30), 4)
+    np.testing.assert_array_equal(
+        trimmed["epoch_livetime"].values, expected_epoch_livetime
+    )
+
+    # Test case 3: epoch is empty, the function should raise a ValueError
     dataset = xr.Dataset(
         {
             "livetime_counter": ("epoch_livetime", np.array([10, 20, 30])),
@@ -188,60 +203,23 @@ def test_subset_livetime():
         ValueError,
         match="Epoch values are empty. Cannot proceed with livetime subsetting.",
     ):
-        subset_livetime(dataset)
-
-    # Test case 3: Not enough livetime values, the function should raise a ValueError
-    dataset = xr.Dataset(
-        {
-            "livetime_counter": ("epoch_livetime", np.array([10, 20, 30, 40, 50])),
-        },
-        coords={
-            "epoch": np.array([1, 2, 3]),
-            "epoch_livetime": np.array([0, 1, 2, 3, 4]),
-        },
-    )
-    with pytest.raises(
-        ValueError,
-        match="Start index for livetime is less than 10. This indicates that the "
-        "dataset is too small to shift livetime correctly.",
-    ):
-        subset_livetime(dataset)
+        subset_livetime(dataset, np.array([0, 1, 2]), np.array([0, 0, 0]))
 
 
-def test_find_complete_mod10_sets():
-    """Test the find_complete_mod10_sets function."""
+def test_find_mod10_set_ids():
+    """Test the find_mod10_set_ids function."""
 
-    # Test case 1: Valid pattern exists throughout
-    mod_vals = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    expected_indices = np.array([0, 10])
-    result = find_complete_mod10_sets(mod_vals)
-    assert np.array_equal(result, expected_indices), (
-        f"Expected {expected_indices}, got {result}"
-    )
+    # Test with complete sets
+    result = find_mod10_set_ids(np.arange(100, 120))
+    np.testing.assert_array_equal(result, np.repeat([0, 1], 10))
 
-    # Test case 2: No valid pattern
-    mod_vals = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6])
-    expected_indices = np.array([])
-    result = find_complete_mod10_sets(mod_vals)
-    assert np.array_equal(result, expected_indices), (
-        f"Expected {expected_indices}, got {result}"
-    )
+    # Test with dropped frame in the second set
+    result = find_mod10_set_ids(np.delete(np.arange(100, 130), 14))
+    np.testing.assert_array_equal(result, np.repeat([0, 1, 2], [10, 9, 10]))
 
-    # Test case 3: Pattern in the middle
-    mod_vals = np.array([5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4])
-    expected_indices = np.array([5])
-    result = find_complete_mod10_sets(mod_vals)
-    assert np.array_equal(result, expected_indices), (
-        f"Expected {expected_indices}, got {result}"
-    )
-
-    # Test case 4: Empty input
-    mod_vals = np.array([])
-    expected_indices = np.array([])
-    result = find_complete_mod10_sets(mod_vals)
-    assert np.array_equal(result, expected_indices), (
-        f"Expected {expected_indices}, got {result}"
-    )
+    # Test with data starting in the middle of a set
+    result = find_mod10_set_ids(np.arange(105, 120))
+    np.testing.assert_array_equal(result, np.repeat([0, 1], [5, 10]))
 
 
 def test_calculate_uncertainties():
@@ -497,6 +475,75 @@ def test_subset_sectored_counts():
         "complete sectored counts.",
     ):
         subset_sectored_counts(l1a_counts_dataset, packet_date="20100106")
+
+
+def test_subset_sectored_counts_dropped_frame():
+    """Test that a dropped frame in the sectored counts data is handled correctly."""
+    # Create a mock dataset with a dropped frame
+    # Define 4 complete sets
+    hdr_minute_cnt_values = np.arange(100, 140)
+    # Simulate a dropped frame by removing a value in the third set
+    hdr_minute_cnt_values = np.delete(hdr_minute_cnt_values, 25)
+    epoch = np.concatenate(
+        [
+            np.arange(20),  # First 20 are outside the processing date
+            np.arange(
+                316008084684000000, 316008084684000000 + 19
+            ),  # Next 19 are within
+        ]
+    )
+    l1a_counts_dataset = xr.Dataset(
+        {
+            "hdr_minute_cnt": ("epoch", hdr_minute_cnt_values),
+            "h_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+            "he4_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+            "livetime_counter": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+        },
+        coords={"epoch": ("epoch", epoch)},
+    )
+    date = "20100106"
+
+    # Call the subset_sectored_counts function
+    subset_dataset = subset_sectored_counts(l1a_counts_dataset, date)
+
+    # Assert that the dataset has the correct number of epochs
+    # Should be one full set (10) plus a set with a missing frame (9)
+    assert subset_dataset.sizes["epoch"] == 19
+    assert subset_dataset.sizes["epoch_livetime"] == 19
+
+    # Assert that the hdr_minute_cnt values are correct
+    # - the first two sets are skipped because they not in the processing date.
+    # - The third set is included but has a dropped frame, so it should have 9 values.
+    # - The final complete set is included
+    expected_hdr_minute_cnt = hdr_minute_cnt_values[20:]
+    assert np.array_equal(
+        subset_dataset["hdr_minute_cnt"].values, expected_hdr_minute_cnt
+    )
+    # The livetime values should come from the middle two sets.
+    expected_livetime_epoch = epoch[10:29]
+    assert np.array_equal(
+        subset_dataset["epoch_livetime"].values, expected_livetime_epoch
+    )
+
+
+def test_subset_sectored_counts_not_enough_data():
+    """Test that an error is raised when there are not enough sets."""
+    # Create a mock dataset with a dropped frame
+    # Define 1 complete set (not enough to process)
+    hdr_minute_cnt_values = np.arange(100, 110)
+    epoch = np.arange(316008084684000000, 316008084684000000 + 10)
+    l1a_counts_dataset = xr.Dataset(
+        {
+            "hdr_minute_cnt": ("epoch", hdr_minute_cnt_values),
+            "h_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+            "he4_sectored_counts": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+            "livetime_counter": ("epoch", np.arange(len(hdr_minute_cnt_values))),
+        },
+        coords={"epoch": ("epoch", epoch)},
+    )
+    date = "20100106"
+    with pytest.raises(ValueError, match="No data to process"):
+        subset_sectored_counts(l1a_counts_dataset, date)
 
 
 def test_validate_l1a_housekeeping_data(hk_packet_filepath):
