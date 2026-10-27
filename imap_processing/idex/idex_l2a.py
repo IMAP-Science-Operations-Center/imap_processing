@@ -1007,6 +1007,10 @@ def estimate_dust_mass(
     """
     Filter and fit the target or ion grid signals to get the total dust impact charge.
 
+    Fit only when a sample after the first 3 microseconds exceeds 1.5 times the
+    baseline RMS noise. Target excursions must be positive; Ion Grid excursions
+    may have either polarity. Skipped fits return NaN products.
+
     Parameters
     ----------
     low_sampling_time : xarray.DataArray
@@ -1070,9 +1074,7 @@ def estimate_dust_mass(
         amplitude = float("nan")
     if channel_name != "Ion_Grid" and (not np.isfinite(amplitude) or amplitude <= 0.0):
         amplitude = float(np.max(signal) - baseline_mean)
-    if not np.isfinite(amplitude):
-        amplitude = float(np.max(signal))
-    if channel_name != "Ion_Grid" and amplitude <= 0.0:
+    if not np.isfinite(amplitude) or (channel_name != "Ion_Grid" and amplitude <= 0.0):
         amplitude = float(np.max(signal))
 
     rise_time_0 = 0.371  # How fast the signal rises (us)
@@ -1093,6 +1095,15 @@ def estimate_dust_mass(
         [-np.inf, -np.inf, amplitude_lower_bound, positive_min, positive_min],
         [np.inf, np.inf, amplitude_upper_bound, np.inf, np.inf],
     )
+
+    if not _has_low_rate_signal(time, signal, channel_name):
+        return (
+            np.full(5, np.nan),
+            np.nan,
+            np.nan,
+            np.nan,
+            np.full(time.shape, np.nan),
+        )
 
     try:
         with np.errstate(invalid="ignore", over="ignore"):
@@ -1181,6 +1192,44 @@ def fit_impact(
     return constant_offset + np.heaviside(time_since_impact, 0) * (
         amplitude * exponent_1 * exponent_2
     )
+
+
+def _has_low_rate_signal(time: NDArray, signal: NDArray, channel_name: str) -> bool:
+    """
+    Check for a sample above 1.5 times the baseline RMS noise.
+
+    Parameters
+    ----------
+    time : numpy.ndarray
+        Sample times in microseconds.
+    signal : numpy.ndarray
+        Target or Ion Grid waveform in engineering units.
+    channel_name : str
+        Waveform name. Ion Grid permits either polarity; targets require a
+        positive excursion from the baseline.
+
+    Returns
+    -------
+    bool
+        Whether a finite sample after the first 3 microseconds exceeds the
+        threshold. False when no finite baseline samples are available.
+    """
+    finite_time = np.isfinite(time)
+    window_start = float(np.min(time[finite_time], initial=np.inf))
+    noise_window = finite_time & (time < window_start + 3.0)
+    finite_signal = np.isfinite(signal)
+    noise_samples = signal[noise_window & finite_signal]
+    if not noise_samples.size:
+        return False
+
+    # Population RMS matches the baseline statistics; only samples outside that
+    # baseline window can establish the presence of a pulse.
+    noise_mean = float(np.mean(noise_samples))
+    noise_rms = float(np.std(noise_samples, ddof=0))
+    excursions = signal[finite_time & ~noise_window & finite_signal] - noise_mean
+    if channel_name == "Ion_Grid":
+        excursions = np.abs(excursions)
+    return bool(np.any(excursions > 1.5 * noise_rms))
 
 
 def remove_signal_noise(
