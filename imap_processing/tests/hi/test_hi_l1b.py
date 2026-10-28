@@ -329,11 +329,19 @@ def test_de_nominal_bin_and_spin_phase(
     np.testing.assert_array_equal(new_vars["nominal_bin"].values, expected_nominal_bin)
 
 
-@pytest.mark.parametrize("sensor_number", [45, 90])
+@pytest.mark.parametrize(
+    "sensor_number, pointing_lon, expected_lon, expected_lat",
+    [(45, -100.0, 260.0, -30.0), (90, 120.0, 120.0, 15.0)],
+)
 @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
 @mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
 def test_compute_hae_coordinates(
-    mock_instrument_pointing, mock_any_good_de, sensor_number
+    mock_instrument_pointing,
+    mock_any_good_de,
+    sensor_number,
+    pointing_lon,
+    expected_lon,
+    expected_lat,
 ):
     """Test coverage for compute_hae_coordinates function."""
 
@@ -344,9 +352,10 @@ def test_compute_hae_coordinates(
 
         The function signature matches the signature of `instrument_pointing`.
         The output is the same type and shape as what `instrument_pointing` returns
-        but is filled with values that match the instrument sensor number.
+        (longitude, latitude) with distinct values so a lat/lon swap is detected.
         """
-        return np.full((et.size, 2), 45 if "45" in inst_frame.name else 90)
+        assert str(sensor_number) in inst_frame.name
+        return np.tile([pointing_lon, expected_lat], (et.size, 1))
 
     mock_instrument_pointing.side_effect = side_effect_func
 
@@ -363,10 +372,10 @@ def test_compute_hae_coordinates(
     new_vars = compute_hae_coordinates(fake_dataset)
     assert "hae_latitude" in new_vars
     assert new_vars["hae_latitude"].shape == fake_dataset.event_met.shape
-    np.testing.assert_allclose(new_vars["hae_latitude"].values, sensor_number)
+    np.testing.assert_allclose(new_vars["hae_latitude"].values, expected_lat)
     assert "hae_longitude" in new_vars
     assert new_vars["hae_longitude"].shape == fake_dataset.event_met.shape
-    np.testing.assert_allclose(new_vars["hae_longitude"].values, sensor_number)
+    np.testing.assert_allclose(new_vars["hae_longitude"].values, expected_lon)
 
 
 @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
