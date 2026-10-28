@@ -126,7 +126,7 @@ hi_esa_step: &hi_esa_step
   FILLVAL: 255
   FORMAT: I2
   LABLAXIS: ESA step
-  VALIDMAX: 16
+  VALIDMAX: 15
   VALIDMIN: 0
   VAR_NOTES: >
     ESA (electrostatic analyzer) stepping number is 4-bit integer value that indicates
@@ -184,6 +184,7 @@ hi_de_event_met:
   CATDESC: Mission Elapsed Time (MET) in seconds of Direct Event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Direct Event MET
+  FORMAT: F16.6
   LABLAXIS: DE MET
   UNITS: seconds
   VAR_TYPE: support_data
@@ -325,7 +326,7 @@ hi_de_coincidence_type:
   FORMAT: I2
   LABLAXIS: Type
   VALIDMAX: 15
-  VALIDMIN: 0
+  VALIDMIN: 1
   VAR_NOTES: >
     A 4-bit quantity, representable as a hexadecimal digit,
     made up of the ORed quantities: (A hit? 8:0) | (B hit? 4:0)
@@ -347,7 +348,7 @@ hi_de_esa_energy_step:
 default_l1b_tof: &default_l1b_tof
   <<: *default_int32
   DEPEND_0: event_met
-  FORMAT: I3
+  FORMAT: I4
   LABLAXIS: Time of Flight
   UNITS: ns
   VALIDMAX: 512
@@ -378,7 +379,7 @@ hi_de_spin_phase:
   CATDESC: Floating point spin phase
   DEPEND_0: event_met
   FIELDNAM: Spin Phase
-  FORMAT: F4.3
+  FORMAT: F7.5
   LABLAXIS: Spin Phase
   VALIDMAX: 1
   VALIDMIN: 0
@@ -388,18 +389,18 @@ hi_de_hae_latitude:
   CATDESC: Look direction HAE latitude
   DEPEND_0: event_met
   FIELDNAM: Ecliptic Latitude
-  FORMAT: F5.2
+  FORMAT: F6.2
   LABLAXIS: Lat
   UNITS: deg
-  VALIDMAX: 180
-  VALIDMIN: -180
+  VALIDMAX: 90
+  VALIDMIN: -90
 
 hi_de_hae_longitude:
   <<: *default_float32
   CATDESC: Look direction HAE longitude
   DEPEND_0: event_met
   FIELDNAM: Ecliptic Longitude
-  FORMAT: F5.2
+  FORMAT: F7.2
   LABLAXIS: Lon
   UNITS: deg
   VALIDMAX: 360
@@ -432,6 +433,7 @@ hi_de_esa_step_met:
   <<: *default_float64
   CATDESC: Mission Elapsed Time (MET) in seconds of when the ESA was stepped
   FIELDNAM: ESA Start MET
+  FORMAT: F14.3
   LABLAXIS: ESA Start MET
   UNITS: seconds
   VAR_TYPE: support_data
@@ -598,7 +600,7 @@ hi_pset_exposure_times:
   DEPEND_2: spin_angle_bin
   DISPLAY_TYPE: stack_plot
   FIELDNAM: Bin exposure times
-  FORMAT: F6.2
+  FORMAT: E10.3
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: spin_bin_label
   UNITS: sec
@@ -667,6 +669,7 @@ hi_goodtimes_met:
   CATDESC: Mission Elapsed Time for each 8-spin histogram packet
   DEPEND_0: epoch
   FIELDNAM: MET
+  FORMAT: F14.3
   LABLAXIS: MET
   UNITS: s
   VALIDMAX: 1.7976931348623157e+308
