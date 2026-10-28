@@ -506,7 +506,7 @@ hi_pset_geometric_factor:
 hi_pset_calibration_prod:
   CATDESC: Coincidence types are combined into various calibration products
   FIELDNAM: Calibration product number
-  FILLVAL: 65535
+  FILLVAL: 255
   FORMAT: I1
   LABLAXIS: Calibration Prod
   MONOTON: INCREASE
@@ -521,7 +521,7 @@ hi_pset_spin_angle_bin:
   CATDESC: 0.1 degree spin angle bins
   FIELDNAM: Spin angle bin index
   FILLVAL: 65535
-  FORMAT: I3
+  FORMAT: I4
   LABLAXIS: Bin Index
   MONOTON: INCREASE
   SCALETYP: linear
@@ -543,7 +543,7 @@ hi_pset_despun_z:
   CATDESC: Unit vector corresponding to Despun Pointing Frame z-axis in HAE Ecliptic coordinates
   DISPLAY_TYPE: no_plot
   FIELDNAM: Despun Frame z-axis in HAE coordinates
-  FORMAT: F5.3
+  FORMAT: F6.3
   LABL_PTR_1: label_vector_HAE
   UNITS: " "
   VALIDMAX: 1
@@ -557,11 +557,11 @@ hi_pset_hae_latitude:
   DEPEND_1: spin_angle_bin
   DISPLAY_TYPE: no_plot
   FIELDNAM: HAE Latitude
-  FORMAT: F5.2
+  FORMAT: F6.2
   LABLAXIS: Latitude
   UNITS: deg
-  VALIDMAX: 180
-  VALIDMIN: 0
+  VALIDMAX: 90
+  VALIDMIN: -90
 
 hi_pset_hae_longitude:
   <<: *default_float32
@@ -570,8 +570,8 @@ hi_pset_hae_longitude:
   DEPEND_1: spin_angle_bin
   DISPLAY_TYPE: no_plot
   FIELDNAM: HAE Longitude
-  FORMAT: F5.2
-  LABLAXIS: Latitude
+  FORMAT: F6.2
+  LABLAXIS: Longitude
   UNITS: deg
   VALIDMAX: 360
   VALIDMIN: 0
@@ -612,7 +612,7 @@ hi_pset_background_rates:
   DEPEND_3: spin_angle_bin
   DISPLAY_TYPE: stack_plot
   FIELDNAM: Background count rates
-  FORMAT: F4.2
+  FORMAT: E12.5
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: calibration_prod_label
   LABL_PTR_3: spin_bin_label
@@ -627,7 +627,7 @@ hi_pset_background_rates_uncertainty:
   DEPEND_3: spin_angle_bin
   DISPLAY_TYPE: stack_plot
   FIELDNAM: Background count rate uncertainties
-  FORMAT: F4.2
+  FORMAT: E12.5
   LABL_PTR_1: esa_energy_step_label
   LABL_PTR_2: calibration_prod_label
   LABL_PTR_3: spin_bin_label
