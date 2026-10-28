@@ -10,7 +10,6 @@ Paradigms for developing this module:
 """
 
 import logging
-import typing
 from enum import IntEnum
 
 import numpy as np
@@ -457,9 +456,10 @@ def instrument_pointing(
     """
     Compute the instrument pointing at the specified times.
 
-    By default, the coordinates returned are (Longitude, Latitude) coordinates in
-    the reference frame `to_frame`. Cartesian coordinates can be returned if
-    desired by setting `cartesian=True`.
+    By default, the coordinates returned are (Longitude, Latitude) coordinates, in
+    degrees, in the reference frame `to_frame`. Longitude is in the range [0, 360)
+    and latitude is in the range [-90, 90]. Cartesian coordinates can be returned
+    if desired by setting `cartesian=True`.
 
     Parameters
     ----------
@@ -476,14 +476,13 @@ def instrument_pointing(
     Returns
     -------
     pointing : np.ndarray
-        The instrument pointing at the specified times.
+        The instrument pointing at the specified times. Shape is (..., 2) for
+        (Longitude, Latitude) or (..., 3) if `cartesian=True`.
     """
     pointing = frame_transform(et, BORESIGHT_LOOKUP[instrument], instrument, to_frame)
     if cartesian:
         return pointing
-    if isinstance(et, typing.Collection):
-        return np.rad2deg([spiceypy.reclat(vec)[1:] for vec in pointing])
-    return np.rad2deg(spiceypy.reclat(pointing)[1:])
+    return cartesian_to_spherical(pointing, degrees=True)[..., 1:3]
 
 
 def basis_vectors(
