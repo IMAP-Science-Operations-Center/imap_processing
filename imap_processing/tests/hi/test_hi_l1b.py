@@ -330,8 +330,8 @@ def test_de_nominal_bin_and_spin_phase(
 
 
 @pytest.mark.parametrize(
-    "sensor_number, pointing_lon, expected_lon, expected_lat",
-    [(45, -100.0, 260.0, -30.0), (90, 120.0, 120.0, 15.0)],
+    "sensor_number, expected_lon, expected_lat",
+    [(45, 260.0, -30.0), (90, 120.0, 15.0)],
 )
 @mock.patch("imap_processing.hi.hi_l1b.any_good_direct_events", return_value=True)
 @mock.patch("imap_processing.hi.hi_l1b.instrument_pointing")
@@ -339,7 +339,6 @@ def test_compute_hae_coordinates(
     mock_instrument_pointing,
     mock_any_good_de,
     sensor_number,
-    pointing_lon,
     expected_lon,
     expected_lat,
 ):
@@ -355,7 +354,7 @@ def test_compute_hae_coordinates(
         (longitude, latitude) with distinct values so a lat/lon swap is detected.
         """
         assert str(sensor_number) in inst_frame.name
-        return np.tile([pointing_lon, expected_lat], (et.size, 1))
+        return np.tile([expected_lon, expected_lat], (et.size, 1))
 
     mock_instrument_pointing.side_effect = side_effect_func
 
