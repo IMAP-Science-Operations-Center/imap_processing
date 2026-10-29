@@ -13,7 +13,6 @@ from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex import idex_constants
 from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES
 from imap_processing.idex.idex_l2a import (
-    BaselineNoiseTime,
     _mask_non_science_derived_estimates,
     _mask_saturated_derived_estimates,
     analyze_peaks,
@@ -26,6 +25,7 @@ from imap_processing.idex.idex_l2a import (
     chi_square,
     estimate_dust_mass,
     fit_impact,
+    idex_l2a,
     invert_rise_time_to_velocity,
     load_calibration_files,
     log_smooth_powerlaw,
@@ -33,6 +33,68 @@ from imap_processing.idex.idex_l2a import (
     sine_fit,
     time_to_mass,
 )
+from imap_processing.idex.idex_utils import calculate_baseline_and_rms
+
+
+@pytest.mark.parametrize("stored_statistics", [True, False])
+def test_l2a_uses_per_event_baselines(l1b_dataset, stored_statistics):
+    """L2a forwards each baseline once and computes missing legacy fields in bulk."""
+    dataset = l1b_dataset.isel(epoch=slice(0, 2)).copy(deep=True)
+    expected_baselines = {
+        channel: dataset[f"{channel.lower()}_baseline"].values.copy()
+        for channel in ("Target_Low", "Target_High", "Ion_Grid")
+    }
+    if not stored_statistics:
+        dataset = dataset.drop_vars(
+            [name for name in dataset if name.endswith(("_baseline", "_rms"))]
+        )
+
+    def fit_waveform(time, signal, remove_noise, waveform_name, baseline_mean):
+        return (
+            np.array([0.0, baseline_mean, 1.0, 0.371, 37.1]),
+            1.0,
+            0.0,
+            0.0,
+            np.zeros_like(signal),
+        )
+
+    with (
+        mock.patch(
+            "imap_processing.idex.idex_l2a.load_calibration_files",
+            return_value=(
+                np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28]),
+                np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40]),
+            ),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.time_to_mass",
+            return_value=(None, None, np.zeros_like(dataset.TOF_High)),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.analyze_peaks",
+            return_value=(np.zeros((2, 3)), np.ones(2), np.zeros(2), np.zeros(2)),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.estimate_dust_mass",
+            side_effect=fit_waveform,
+        ) as fit,
+        mock.patch(
+            "imap_processing.idex.idex_l2a.calculate_baseline_and_rms",
+            wraps=calculate_baseline_and_rms,
+        ) as calculate,
+    ):
+        result = idex_l2a(dataset, {})
+
+    assert calculate.call_count == (0 if stored_statistics else 4)
+    assert fit.call_count == 6
+    for channel, expected in expected_baselines.items():
+        supplied = [
+            call.args[4] for call in fit.call_args_list if call.args[3] == channel
+        ]
+        np.testing.assert_allclose(supplied, expected)
+        np.testing.assert_allclose(
+            result[f"{channel.lower()}_fit_parameters"][:, 1], expected
+        )
 
 
 def test_non_science_derived_estimates_are_nan() -> None:
@@ -357,15 +419,15 @@ def test_calculate_snr():
     """Tests the functionality of calculate_snr()."""
     step = 0.5
     max_tof = 10
-    time = np.arange(BaselineNoiseTime.START, 5, step)
+    time = np.arange(-7, 5, step)
 
-    # Create a baseline noise array with an std of 1 and mean of 1
-    baseline_noise = np.asarray([0, 0, 1, 2, 2])
+    # The first 3 microseconds have a mean of 1 and population RMS noise of 1.
+    baseline_noise = np.asarray([0, 2, 0, 2, 0, 2])
     signal_length = len(time) - len(baseline_noise)
     tof_signal = np.full(int(signal_length), max_tof)
 
     tof = np.tile(np.append(baseline_noise, tof_signal), (3, 1))
-    time = np.tile(time, (3, 1))
+    time = np.tile(time, (3, 1)) + np.array([0, 10, 20])[:, None]
 
     snr = calculate_snr(tof, time)
 
@@ -375,15 +437,37 @@ def test_calculate_snr():
 
 def test_calculate_snr_warning(caplog):
     """Tests that calculate_snr() throws warning if no baseline noise is found."""
-    time = np.tile(np.arange(10), (3, 1))
+    time = np.full((3, 10), np.nan)
     tof = np.ones_like(time)
 
     with caplog.at_level("WARNING"):
-        calculate_snr(tof, time)
+        snr = calculate_snr(tof, time)
+    assert np.all(np.isnan(snr))
     assert any(
         "Unable to find baseline noise" in message
         for message in caplog.text.splitlines()
     )
+
+
+def test_calculate_snr_reuses_statistics():
+    tof = xr.DataArray([[0.0, 11.0], [0.0, 22.0]], dims=("epoch", "sample"))
+    time = xr.zeros_like(tof)
+    with mock.patch(
+        "imap_processing.idex.idex_l2a.calculate_baseline_and_rms",
+        side_effect=AssertionError("L1b statistics must not be recalculated"),
+    ):
+        snr = calculate_snr(tof, time, np.array([3.0, 6.0]), np.array([2.0, 4.0]))
+
+    np.testing.assert_allclose(snr, [4.0, 4.0])
+
+
+def test_calculate_snr_zero_rms():
+    tof = xr.DataArray([[1.0, 1.0, 1.0, 2.0], [1.0, 1.0, 1.0, 1.0]])
+    time = xr.DataArray(np.tile(np.arange(4), (2, 1)))
+
+    snr = calculate_snr(tof, time)
+
+    np.testing.assert_array_equal(snr, [np.inf, np.nan])
 
 
 def test_analyze_peaks_warning(caplog):
@@ -684,20 +768,10 @@ def test_estimate_dust_mass_logs_baseline_warning(caplog):
     """
     Test that estimate_dust_mass() logs a warning if no baseline is found.
     """
-    time = xr.DataArray(np.linspace(-60, 60, 16))
+    time = xr.DataArray(np.full(16, np.nan))
     signal = xr.DataArray(np.linspace(0, 1, 16))
-    original_any = np.any
-
-    def fake_any(arr):
-        fake_any.calls += 1
-        if fake_any.calls == 1:
-            return False
-        return original_any(arr)
-
-    fake_any.calls = 0
 
     with (
-        mock.patch("imap_processing.idex.idex_l2a.np.any", side_effect=fake_any),
         mock.patch(
             "imap_processing.idex.idex_l2a.curve_fit",
             return_value=(np.array([0.0, 0.0, 1.0, 0.371, 37.1]), None),
@@ -710,6 +784,24 @@ def test_estimate_dust_mass_logs_baseline_warning(caplog):
         "Unable to find baseline noise" in message
         for message in caplog.text.splitlines()
     )
+
+
+def test_estimate_dust_mass_reuses_baseline():
+    time = xr.DataArray(np.arange(-6.0, 6.0))
+    signal = xr.DataArray(np.arange(12.0))
+    with (
+        mock.patch(
+            "imap_processing.idex.idex_l2a.calculate_baseline_and_rms",
+            side_effect=AssertionError("L1b baseline must not be recalculated"),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.curve_fit",
+            return_value=(np.array([0.0, 7.0, 10.0, 0.371, 37.1]), None),
+        ) as fit,
+    ):
+        estimate_dust_mass(time, signal, baseline_mean=7.0)
+
+    assert fit.call_args.kwargs["p0"][1] == 7.0
 
 
 def test_estimate_dust_mass_remove_noise_logs_debug(caplog):

@@ -1,10 +1,61 @@
 """Contains helper functions to support IDEX processing."""
 
+import logging
+
+import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy.typing import NDArray
 
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
 from imap_processing.idex.idex_constants import IDEX_10_DAY_RANGES_PATH
+
+logger = logging.getLogger(__name__)
+
+
+def calculate_baseline_and_rms(
+    signal: NDArray, time: NDArray
+) -> tuple[NDArray, NDArray]:
+    """
+    Calculate the mean baseline and RMS noise in the first 3 microseconds.
+
+    Parameters
+    ----------
+    signal : numpy.ndarray
+        Waveform samples in engineering units, with samples on the last axis.
+    time : numpy.ndarray
+        Corresponding sample times in microseconds. Each record uses the half-open
+        interval from its earliest finite time to that time plus 3 microseconds.
+
+    Returns
+    -------
+    baseline : numpy.ndarray
+        Mean of finite samples in the window, or NaN if none are available.
+    rms : numpy.ndarray
+        Root mean square deviation from the baseline (population standard
+        deviation, ddof=0), in the waveform's units. NaN for an empty window.
+    """
+    signal = np.asarray(signal, dtype=float)
+    time = np.asarray(time, dtype=float)
+    finite_time = np.isfinite(time)
+    start = np.min(
+        np.where(finite_time, time, np.inf), axis=-1, keepdims=True, initial=np.inf
+    )
+    mask = finite_time & (time < start + 3.0) & np.isfinite(signal)
+    count = np.count_nonzero(mask, axis=-1)
+    baseline = np.full(signal.shape[:-1], np.nan)
+    np.divide(
+        np.sum(np.where(mask, signal, 0.0), axis=-1),
+        count,
+        out=baseline,
+        where=count > 0,
+    )
+    residual = np.where(mask, signal - np.expand_dims(baseline, -1), 0.0)
+    variance = np.full_like(baseline, np.nan)
+    np.divide(np.sum(residual**2, axis=-1), count, out=variance, where=count > 0)
+    if np.any(count == 0):
+        logger.warning("Unable to find baseline noise in the first 3 microseconds.")
+    return baseline, np.sqrt(variance)
 
 
 def get_idex_attrs(data_level: str) -> ImapCdfAttributes:
