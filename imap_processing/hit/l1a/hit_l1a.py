@@ -343,46 +343,51 @@ def add_cdf_attributes(
     return dataset
 
 
-def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
+def find_mod10_set_ids(hdr_minute_cnt: np.ndarray) -> np.ndarray:
     """
-    Find start indices where mod values match [0,1,2,3,4,5,6,7,8,9] pattern.
+    Assign a set id to each frame of sectored counts.
+
+    A set is nominally 10 frames (10 minutes) with mod 10 values 0-9. A new set
+    starts wherever the mod 10 value decreases. Sets can be incomplete, e.g. 9
+    frames, if a frame was dropped.
 
     Parameters
     ----------
-    mod_vals : np.ndarray
-        1D array of mod 10 values from the hdr_minute_cnt field in the L1A counts data.
+    hdr_minute_cnt : numpy.ndarray
+        The header minute count data.
 
     Returns
     -------
     np.ndarray
-        Indices in mod_vals where the complete pattern [0, 1, ..., 9] starts.
+        Set id for each frame in the dataset, starting at 0.
     """
-    # The pattern to match is an array from 0-9
-    window_size = 10
+    # Identify 10-minute intervals of sectored counts
+    # by using the mod 10 values of the header minute counts.
+    # Mod 10 determines the species and energy bin the data belongs
+    # to. A mapping of mod 10 values to species and energy bins is
+    # provided in l0/constants.py for reference.
+    mod_10: np.ndarray = hdr_minute_cnt % 10
 
-    if mod_vals.size < window_size:
-        logger.warning(
-            "Mod 10 array is smaller than the required window size for "
-            "pattern matching."
-        )
-        return np.array([], dtype=int)
-    # Use sliding windows to find pattern matches
-    sw_view = np.lib.stride_tricks.sliding_window_view(mod_vals, window_size)
-    matches = np.all(sw_view == np.arange(window_size), axis=1)
-    return np.where(matches)[0]
+    # Assign frame a set ID
+    # E.g. if we have 0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9
+    # The set_ids would be [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1]
+    # A set can be incomplete if a frame was dropped so we can not just look for
+    # complete sets [0-9].
+    ids: np.ndarray = np.cumsum(np.diff(mod_10, prepend=0) < 0)
+    return ids
 
 
 def subset_sectored_counts(
     sectored_counts_dataset: xr.Dataset, packet_date: str
 ) -> xr.Dataset:
     """
-    Subset data for complete sets of sectored counts and corresponding livetime values.
+    Subset data for sets of sectored counts and corresponding livetime values.
 
     A set of sectored data starts with hydrogen and ends with iron and correspond to
-    the mod 10 values 0-9. The livetime values from the previous 10 minutes are used
+    the mod 10 values 0-9. The livetime values from the previous set are used
     to calculate the rates for each set since those counts are transmitted 10 minutes
-    after they were collected. Therefore, only complete sets of sectored counts where
-    livetime from the previous 10 minutes are available are included in the output.
+    after they were collected. Sets with a dropped frame are kept. The first set is
+    only used for the livetime values of the next set.
 
     Parameters
     ----------
@@ -395,62 +400,55 @@ def subset_sectored_counts(
     Returns
     -------
     xarray.Dataset
-        A dataset of complete sectored counts and corresponding livetime values
+        A dataset of sectored counts and corresponding livetime values
         for the processing day.
     """
     # Modify livetime_counter to use a new epoch coordinate
     # that is aligned with the original epoch dimension. This
     # ensures that livetime doesn't get filtered when the original
-    # epoch dimension is filtered for complete sets.
+    # epoch dimension is filtered for sets.
     sectored_counts_dataset = update_livetime_coord(sectored_counts_dataset)
 
-    # Identify 10-minute intervals of complete sectored counts
-    # by using the mod 10 values of the header minute counts.
-    # Mod 10 determines the species and energy bin the data belongs
-    # to. A mapping of mod 10 values to species and energy bins is
-    # provided in l0/constants.py for reference.
-    bin_size = 10
-    mod_10: np.ndarray = sectored_counts_dataset.hdr_minute_cnt.values % 10
-    start_indices = find_complete_mod10_sets(mod_10)
-
-    # Filter out start indices that are less than or equal to the bin size
-    # since the previous 10 minutes are needed for calculating rates
+    # Get set id for each frame
+    # The first set is set -1 and is only used for livetime values.
+    frame_set_ids: np.ndarray = (
+        find_mod10_set_ids(sectored_counts_dataset.hdr_minute_cnt.values) - 1
+    )
+    start_indices = np.flatnonzero(np.diff(frame_set_ids) > 0) + 1
     if start_indices.size == 0:
         raise ValueError(
-            "No data to process - valid start indices not found for "
-            "complete sectored counts."
+            "No data to process - valid start indices not found for sectored counts."
         )
-    else:
-        start_indices = start_indices[start_indices >= bin_size]
 
-    # Subset data for complete sets of sectored counts.
-    # Each set of sectored counts is 10 minutes long, so we take the indices
-    # starting from the start indices and extending to the bin size of 10.
-    # This creates a 1D array of indices that correspond to the complete
+    # Subset data for sets of sectored counts.
+    # Each set of sectored counts is generally expected to be 10 minutes long,
+    # but we can have incomplete sets where a frame was dropped so we take the indices
+    # starting from the first start index to the end.
+    # This creates a 1D array of indices that correspond to the
     # sets of sectored counts which is used to filter the L1A dataset and
     # create the L1B sectored rates dataset.
-    data_indices = np.concatenate(
-        [np.arange(idx, idx + bin_size) for idx in start_indices]
+    complete_sectored_counts_dataset = sectored_counts_dataset.isel(
+        epoch=slice(start_indices[0], None)
     )
-    complete_sectored_counts_dataset = sectored_counts_dataset.isel(epoch=data_indices)
 
-    epoch_per_complete_set: np.ndarray = np.repeat(
-        [
-            complete_sectored_counts_dataset.epoch[idx : idx + bin_size].mean().item()
-            for idx in range(0, len(complete_sectored_counts_dataset.epoch), 10)
-        ],
-        bin_size,
-    )
+    filtered_frame_epochs = complete_sectored_counts_dataset.epoch.values
+    filtered_frame_set_ids = frame_set_ids[start_indices[0] :]
+
+    # Get the mean epoch of each set
+    set_counts = np.unique(filtered_frame_set_ids, return_counts=True)[1]
+    set_sums = np.bincount(filtered_frame_set_ids, weights=filtered_frame_epochs)
+    mean_epoch_per_set: np.ndarray = np.repeat(set_sums / set_counts, set_counts)
 
     # Filter dataset for data in the processing day
-
-    # Trim the sectored data to epoch_per_complete_set values in the processing day
+    # Trim the sectored data to epoch_per_set values in the processing day
     filtered_dataset = filter_dataset_to_processing_day(
-        complete_sectored_counts_dataset, packet_date, epoch_vals=epoch_per_complete_set
+        complete_sectored_counts_dataset, packet_date, epoch_vals=mean_epoch_per_set
     )
 
-    # Trim livetime to the size of the sectored data but shifted 10 minutes earlier.
-    filtered_dataset = subset_livetime(filtered_dataset)
+    # Keep the livetime values from the set before each set of sectored counts
+    filtered_dataset = subset_livetime(
+        filtered_dataset, sectored_counts_dataset.epoch.values, frame_set_ids
+    )
 
     return filtered_dataset
 
@@ -462,7 +460,7 @@ def update_livetime_coord(sectored_dataset: xr.Dataset) -> xr.Dataset:
     Assign a new epoch coordinate to the `livetime_counter` variable.
     This new coordinate is aligned with the original `epoch` dimension,
     ensuring that `livetime_counter` remains unaffected when the original
-    `epoch` dimension is filtered for complete sets in `subset_sectored_counts`
+    `epoch` dimension is filtered for sets in `subset_sectored_counts`
     function.
 
     Parameters
@@ -493,47 +491,46 @@ def update_livetime_coord(sectored_dataset: xr.Dataset) -> xr.Dataset:
     return sectored_dataset
 
 
-def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
+def subset_livetime(
+    dataset: xr.Dataset, all_frame_epochs: np.ndarray, frame_set_ids: np.ndarray
+) -> xr.Dataset:
     """
-    Trim livetime to values shifted 10 minutes earlier than sectored data.
+    Trim livetime to the values from the set before each set of sectored counts.
 
-    This ensures that the livetime values correspond to the sectored counts correctly
-    since sectored data is collected 10 minutes before it's transmitted.
+    Sectored counts are collected over 10 minutes and transmitted over the next
+    10 minutes, so the counts in set k use the livetime values from the frames
+    in set k-1. Livetime is matched by set number rather than by position so
+    that sets with missing frames are paired with the correct livetime values.
 
     Parameters
     ----------
     dataset : xarray.Dataset
         The dataset containing sectored counts and livetime data.
+    all_frame_epochs : np.ndarray
+        Epoch values for all frames, including the set before the first set of
+        sectored counts.
+    frame_set_ids : np.ndarray
+        Set number for each value in `frame_epochs`.
 
     Returns
     -------
     xarray.Dataset
         The updated dataset with trimmed livetime data.
     """
-    # epoch values are per science frame which is 1 minute
-    epoch_vals = dataset["epoch"].values
-    epoch_livetime_vals = dataset["epoch_livetime"].values
-
-    if not epoch_vals.size:
+    if not dataset["epoch"].size:
         raise ValueError(
             "Epoch values are empty. Cannot proceed with livetime subsetting."
         )
-
-    # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
-    start_idx = np.where(epoch_livetime_vals == epoch_vals[0])[0][0]
-    end_idx = np.where(epoch_livetime_vals == epoch_vals[-1])[0][0]
-
-    if start_idx < 10:
-        raise ValueError(
-            "Start index for livetime is less than 10. This indicates that the "
-            "dataset is too small to shift livetime correctly."
-        )
-
-    # Compute shifted indices by 10 minutes
-    start_trimmed = max(start_idx - 10, 0)
-    end_trimmed = max(end_idx - 10, 0)
-
-    return dataset.isel(epoch_livetime=slice(start_trimmed, end_trimmed + 1))
+    # Determine for each frame whether the epoch was kept (in the processing day)
+    kept_epochs = np.isin(all_frame_epochs, dataset["epoch"].values)
+    # get all the kept set ids
+    kept_sets = np.unique(frame_set_ids[kept_epochs])
+    # Livetime values for the set comes from the frames in the previous set
+    livetime_sets = np.isin(frame_set_ids, kept_sets - 1)
+    livetime_ids = np.flatnonzero(
+        np.isin(dataset["epoch_livetime"].values, all_frame_epochs[livetime_sets])
+    )
+    return dataset.isel(epoch_livetime=livetime_ids)
 
 
 def filter_dataset_to_processing_day(

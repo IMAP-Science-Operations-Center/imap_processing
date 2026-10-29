@@ -13,6 +13,7 @@ from imap_processing.hit.hit_utils import (
     get_datasets_by_apid,
     process_housekeeping_data,
 )
+from imap_processing.hit.l1a.hit_l1a import find_mod10_set_ids
 from imap_processing.hit.l1b.constants import (
     FILLVAL_FLOAT32,
     FILLVAL_INT64,
@@ -298,27 +299,57 @@ def calculate_rates(
     return dataset
 
 
-def sum_livetime_10min(livetime: xr.DataArray) -> xr.DataArray:
+def sum_livetime_10min(
+    hdr_minute_cnt: xr.DataArray, livetime: xr.DataArray
+) -> xr.DataArray:
     """
-    Sum livetime values in 10-minute intervals.
+    Sum livetime values over the set before each set of sectored counts.
+
+    In L1A, livetime is subset to the frames of the set before each set of
+    sectored counts, so the livetime set sizes are the sectored counts set sizes
+    shifted one set later. If the previous set is missing frames, the livetime
+    sum is scaled by 10 / (number of livetime frames in the set).
 
     Parameters
     ----------
+    hdr_minute_cnt : xr.DataArray
+        1D array of header minute count values on the epoch dimension.
     livetime : xr.DataArray
-        1D array of livetime values. Shape equals the number of epochs in the dataset.
+        1D array of livetime values on the epoch_livetime dimension.
 
     Returns
     -------
     xr.DataArray
-        Livetime summed over 10-minute intervals. Values repeated for each epoch in the
-        10-minute intervals to match the original livetime array shape.
+        Livetime summed over the previous set for each sectored counts frame,
+        on the epoch dimension. E.g. for sets of 10 frames
         [5,5,5,5,5,5,5,5,5,5, 6,6,6,6,6,6,6,6,6,6, 7,7,7,7,7,7,7,7,7,7].
     """
-    livetime_10min_sum = [
-        livetime[i : i + 10].sum().item() for i in range(0, len(livetime) - 9, 10)
-    ]
-    livetime_expanded: np.ndarray = np.repeat(livetime_10min_sum, 10)
-    return xr.DataArray(livetime_expanded, dims=livetime.dims, coords=livetime.coords)
+    # Set ids for each sectored counts frame
+    counts_set_ids = find_mod10_set_ids(hdr_minute_cnt.values)
+    set_counts = np.bincount(counts_set_ids)
+
+    # Livetime for set k comes from set k-1, so the livetime set sizes are the
+    # counts set sizes shifted one set later. The first set's livetime is the
+    # set before the first set of counts. The first set's size is the remainder counts.
+    first_set_count = len(livetime) - set_counts[:-1].sum()
+    if not 0 < first_set_count <= 10:
+        raise ValueError("Livetime does not line up with the sectored counts sets.")
+    livetime_counts = np.insert(set_counts[:-1], 0, first_set_count)
+    # Once you have the shifted counts, recreate the set ids for each frame.
+    livetime_set_ids: np.ndarray = np.repeat(
+        np.arange(set_counts.size), livetime_counts
+    )
+
+    # Sum livetime for each set and scale for missing frames
+    livetime_sum = np.bincount(livetime_set_ids, weights=livetime.values)
+    livetime_sum = livetime_sum * (10 / livetime_counts)
+
+    # Array with one scaled livetime sum per counts frame
+    return xr.DataArray(
+        livetime_sum[counts_set_ids],
+        dims=hdr_minute_cnt.dims,
+        coords=hdr_minute_cnt.coords,
+    )
 
 
 def process_summed_rates_data(
@@ -433,9 +464,8 @@ def process_sectored_rates_data(
         for var in l1a_counts_dataset.data_vars
         if any(str(var).startswith(f"{p}_") for p in particles)
     ]
-
     # Sum livetime over 10 minute intervals
-    livetime_10min = sum_livetime_10min(livetime)
+    livetime_10min = sum_livetime_10min(l1a_counts_dataset.hdr_minute_cnt, livetime)
 
     # Initialize the L1B dataset with coordinates from the subset L1A dataset
     l1b_sectored_rates_dataset = initialize_l1b_dataset(
