@@ -269,13 +269,17 @@ def test_lo_l1b_de(
     assert output_files[-1]["pivot_angle"].values[0] == 45.0
 
 
+@patch(
+    "imap_processing.lo.l1b.lo_l1b.get_instrument_mounting_az_el",
+    return_value=np.array([330.0, 0.0]),
+)
 @patch("imap_processing.lo.l1b.lo_l1b.get_spin_number", return_value=0)
 @patch(
     "imap_processing.lo.l1b.lo_l1b.get_pointing_times",
     return_value=(473389199, 473472001),
 )
 def test_lo_l1b_histogram_rates(
-    mock_repoint_times, mock_spin_number, l1a_hist, anc_dependencies
+    mock_repoint_times, mock_spin_number, mock_mounting, l1a_hist, anc_dependencies
 ):
     # Arrange
     met = et_to_met(str_to_et(["2025-04-15T02:00:00"]))
