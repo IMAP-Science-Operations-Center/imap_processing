@@ -83,7 +83,6 @@ def l1a_lo_species(
             ]
             + LO_SW_SPECIES_VARIABLE_NAMES
         )
-        print(desired_species_names)
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     elif view_tab_obj.apid == CODICEAPID.COD_LO_IAL:
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
