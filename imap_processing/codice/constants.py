@@ -824,7 +824,6 @@ LO_SW_SPECIES_VARIABLE_NAMES = [
     "oplus6",
     "oplus7",
     "oplus8",
-    "ne",
     "mg",
     "si",
     "fe_loq",
