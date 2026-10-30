@@ -354,6 +354,9 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
             rtol=1e-5,
             err_msg=f"Mismatch in coordinate '{variable}'",
         )
+    # assert that neon is not in the processed data
+    assert "ne" not in processed_data.data_vars
+    assert "unc_ne" not in processed_data.data_vars
     processed_data.attrs["Data_version"] = "002"
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert (
