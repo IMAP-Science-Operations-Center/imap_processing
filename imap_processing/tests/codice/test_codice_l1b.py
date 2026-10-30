@@ -52,6 +52,9 @@ def test_l1b_lo_sw_species(mock_get_file_paths, codice_lut_path):
     l1b_val_data = load_cdf(l1b_val_data)
     processed_data = process_codice_l1b(processed_l1a_file)
     for variable in l1b_val_data.data_vars:
+        if variable in ["ne", "unc_ne"]:
+            # Ne is no longer being processed.
+            continue
         np.testing.assert_allclose(
             processed_data[variable].values,
             l1b_val_data[variable].values,

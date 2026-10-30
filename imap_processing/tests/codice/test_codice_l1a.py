@@ -331,6 +331,9 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
     processed_data = filter_day_boundary_data(processed_data, VALIDATION_FILE_DATE)
     # Compare only the common variables
     for variable in val_data.data_vars:
+        if variable in ["ne", "unc_ne"]:
+            # Ne is no longer being processed.
+            continue
         assert_allclose_fillaware(
             processed_data[variable].values,
             val_data[variable],
