@@ -251,6 +251,18 @@ read from the SCI-LUT, so turning one off is handled - but selecting a
 *different* rate type in flight would require a code change. The same applies to
 the seven Hi aggregated counters.
 
+Ne is not a Lo sunward species product
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The document lists Ne among the sunward solar-wind species. The code drops it:
+``ne`` is not in ``LO_SW_SPECIES_VARIABLE_NAMES`` or
+``LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES``, so ``lo-sw-species`` has 15
+species at L1A/L1B and 13 solar-wind species at L2, for every date. The ``ne``
+slot is still in the telemetry and the SCI-LUT ``species_names``, and some
+SCI-LUT ``desired_species_names`` lists still include it; L1A ignores
+``desired_species_names`` so that every SCI-LUT version produces the same
+variables.
+
 Direct events skip L1B
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -316,9 +328,6 @@ Complete TODO inventory
      - Update the list of datasets that need geometric factors.
    * - ``codice_l2.py:1515``
      - "May not even need L2 files for these products" (the broken pass-through).
-   * - ``constants.py:806``
-     - Read the angular/priority/species variable name lists from the SCI-LUT
-       instead of hard-coding them.
 
 Test coverage
 -------------
