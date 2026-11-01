@@ -2373,29 +2373,22 @@ def make_star_dependencies(n_records: int, lag_ticks: int = 0) -> dict:
 
 
 @pytest.mark.parametrize("lag_ticks", [0, 3277, -3277])
-def test_get_lo_spin_start_phase_offset(lag_ticks, use_fake_spin_data_for_time):
-    """The offset is how far Lo's spin starts lag the spin table's, as an angle."""
-    use_fake_spin_data_for_time(STAR_START_MET)
-    # Start Lo one table spin in, so a negative lag stays inside the spin table
-    spin_data = make_lo_l1a_spin(
-        lag_ticks=lag_ticks, first_spin_met=STAR_START_MET + SPIN_PERIOD
-    )
+def test_get_lo_spin_start_phase_offset(lag_ticks):
+    """Lo starts on the spacecraft spin pulse, whatever Lo's recorded starts say."""
+    spin_data = make_lo_l1a_spin(lag_ticks=lag_ticks)
 
     offset = get_lo_spin_start_phase_offset(spin_data)
 
-    lag_seconds = lag_ticks / LoConstants.SPIN_SUBSEC_PER_SEC
-    np.testing.assert_allclose(offset, 360.0 * lag_seconds / SPIN_PERIOD, atol=1e-6)
+    assert offset == 0.0
 
 
-def test_get_lo_spin_start_phase_offset_without_spin_start_fields(caplog):
+def test_get_lo_spin_start_phase_offset_without_spin_start_fields():
     """A spin product without Lo's per-spin start times gives an offset of 0."""
     spin_data = make_lo_l1a_spin().drop_vars(["start_sec_spin", "start_subsec_spin"])
 
-    with caplog.at_level(logging.WARNING):
-        offset = get_lo_spin_start_phase_offset(spin_data)
+    offset = get_lo_spin_start_phase_offset(spin_data)
 
     assert offset == 0.0
-    assert "start_sec_spin" in caplog.text
 
 
 class TestL1bStarSpinStartOffset:
@@ -2440,14 +2433,14 @@ class TestL1bStarSpinStartOffset:
     def test_spin_angles_include_spin_start_offset(
         self, lag_ticks, l1b_star_setup, attr_mgr_l1b
     ):
-        """The first star sample sits at azimuth + spin-start offset + half a bin."""
+        """The first star sample sits at azimuth + half a bin, whatever Lo's lag."""
         l1b_star_setup()
         sci_dependencies = make_star_dependencies(n_records=64, lag_ticks=lag_ticks)
 
         l1b_star_ds = l1b_star(sci_dependencies, attr_mgr_l1b)
 
-        lag_seconds = lag_ticks / LoConstants.SPIN_SUBSEC_PER_SEC
-        expected_offset = 360.0 * lag_seconds / SPIN_PERIOD
+        # Lo starts on the spacecraft spin pulse, so its recorded lag is ignored
+        expected_offset = 0.0
         assert l1b_star_ds.attrs["spin_start_offset_deg"] == pytest.approx(
             expected_offset, abs=1e-6
         )
