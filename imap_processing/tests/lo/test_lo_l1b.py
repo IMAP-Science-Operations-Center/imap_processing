@@ -2373,9 +2373,13 @@ def make_star_dependencies(n_records: int, lag_ticks: int = 0) -> dict:
 
 
 @pytest.mark.parametrize("lag_ticks", [0, 3277, -3277])
-def test_get_lo_spin_start_phase_offset(lag_ticks):
+def test_get_lo_spin_start_phase_offset(lag_ticks, use_fake_spin_data_for_time):
     """Lo starts on the spacecraft spin pulse, whatever Lo's recorded starts say."""
-    spin_data = make_lo_l1a_spin(lag_ticks=lag_ticks)
+    use_fake_spin_data_for_time(STAR_START_MET)
+    # Start Lo one table spin in, so a negative lag stays inside the spin table
+    spin_data = make_lo_l1a_spin(
+        lag_ticks=lag_ticks, first_spin_met=STAR_START_MET + SPIN_PERIOD
+    )
 
     offset = get_lo_spin_start_phase_offset(spin_data)
 
@@ -2389,6 +2393,46 @@ def test_get_lo_spin_start_phase_offset_without_spin_start_fields():
     offset = get_lo_spin_start_phase_offset(spin_data)
 
     assert offset == 0.0
+
+
+@pytest.mark.parametrize("lag_ticks", [0, 3277, -3277])
+@pytest.mark.parametrize("correction_us", [0, 43_000, 98_000])
+@pytest.mark.parametrize("use_corrected", [True, False])
+def test_get_lo_spin_start_phase_offset_with_spin_start_correction(
+    lag_ticks,
+    correction_us,
+    use_corrected,
+    generate_spin_data,
+    use_test_spin_data_csv,
+    tmp_path,
+    monkeypatch,
+):
+    """
+    Lo starts on the spacecraft spin pulse: the original spin start.
+
+    In the corrected spin table, that pulse comes `correction_us` before spin
+    phase 0, so the offset is minus the correction as an angle. In the original
+    spin table it is 0. Lo's recorded spin starts don't matter either way.
+    """
+    spin_df = generate_spin_data(STAR_START_MET, spin_period=SPIN_PERIOD)
+    # The corrected spin starts come `correction_us` after the original ones
+    spin_df["spin_start_subsec_sclk_corr"] = (
+        spin_df["spin_start_subsec_sclk"] + correction_us
+    )
+    spin_csv = tmp_path / "corrected_spin_data.spin.csv"
+    spin_df.to_csv(spin_csv, index=False)
+    use_test_spin_data_csv([spin_csv])
+    monkeypatch.setattr(
+        "imap_processing.lo.l1b.lo_l1b.USE_CORRECTED_SPIN_START", use_corrected
+    )
+    spin_data = make_lo_l1a_spin(
+        lag_ticks=lag_ticks, first_spin_met=STAR_START_MET + SPIN_PERIOD
+    )
+
+    offset = get_lo_spin_start_phase_offset(spin_data)
+
+    expected = -360.0 * correction_us / 1e6 / SPIN_PERIOD if use_corrected else 0.0
+    np.testing.assert_allclose(offset, expected, atol=1e-6)
 
 
 class TestL1bStarSpinStartOffset:

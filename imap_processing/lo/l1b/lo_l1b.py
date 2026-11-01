@@ -47,6 +47,10 @@ from imap_processing.spice.time import (
 
 logger = logging.getLogger(__name__)
 
+# If False, use the original spin start times from the spin table,
+# ignoring the ACS spin start corrections (the spin table's _corr columns)
+USE_CORRECTED_SPIN_START = True
+
 # -------------------------------------------------------------------
 # Centralized field definitions to avoid repetition across functions
 # -------------------------------------------------------------------
@@ -583,7 +587,9 @@ def set_spin_cycle(
     l1b_de : xarray.Dataset
         The L1B DE dataset with the spin cycle added for each direct event.
     """
-    spin_start_num = get_spin_number(pointing_start_met)
+    spin_start_num = get_spin_number(
+        pointing_start_met, use_corrected_spin_start=USE_CORRECTED_SPIN_START
+    )
     counts = l1a_de["de_count"].values
     # split the esa_steps into ASC groups
     de_asc_groups = np.split(l1a_de["esa_step"].values, np.cumsum(counts)[:-1])
@@ -654,7 +660,11 @@ def set_spin_cycle_from_spin_data(
     closest_start_acq_per_asc = acq_start.isel(epoch=science_to_spin_indices)
 
     # compute spin start number for each remaining ASC
-    spin_start_num_per_asc = np.atleast_1d(get_spin_number(closest_start_acq_per_asc))
+    spin_start_num_per_asc = np.atleast_1d(
+        get_spin_number(
+            closest_start_acq_per_asc, use_corrected_spin_start=USE_CORRECTED_SPIN_START
+        )
+    )
     spin_start_num_per_asc = spin_start_num_per_asc[:, None]  # (n_valid, 1)
 
     logical_src = l1a_science.attrs.get("Logical_source", "")
@@ -814,9 +824,9 @@ def get_spin_start_times(
     """
     # Get the actual spin start times from the spin data
     # Use the individual spin start times rather than calculating from ASC averages
-    spin_start_times = interpolate_spin_data(l1a_de["met"].values)[
-        "spin_start_met"
-    ].values
+    spin_start_times = interpolate_spin_data(
+        l1a_de["met"].values, use_corrected_spin_start=USE_CORRECTED_SPIN_START
+    )["spin_start_met"].values
     spin_start_times = np.repeat(spin_start_times, l1a_de["de_count"].values)
 
     return spin_start_times
@@ -1363,7 +1373,7 @@ def create_badtimes_dataset() -> xr.Dataset:
     """
     logger.info("Creating badtimes dataset")
     try:
-        spin_df = get_spin_data()
+        spin_df = get_spin_data(use_corrected_spin_start=USE_CORRECTED_SPIN_START)
     except ValueError:
         logger.warning("No spin data found. Skipping badtimes dataset creation.")
         # Return an empty dataset with the expected badtimes fields (zero-length)
@@ -1688,7 +1698,8 @@ def set_spin_angle(
 
     where the spin-start offset is the spacecraft spin angle at which Lo starts
     each spin (see ``get_lo_spin_start_phase_offset``). Lo is assumed to start
-    on the spacecraft spin pulse, so this offset is 0.
+    on the spacecraft spin pulse, so with the corrected spin table this offset
+    is the ACS spin start correction, and with the original one it is 0.
 
     Parameters
     ----------
@@ -2348,21 +2359,81 @@ def get_lo_spin_start_phase_offset(spin_data: xr.Dataset) -> float:
     """
     Get the spacecraft spin angle at which Lo starts each spin.
 
-    Lo is assumed to start each spin on the spacecraft spin pulse, which is the
-    (corrected) spin start in the spin table, i.e. spacecraft spin phase 0. Lo's
-    own recorded spin start times in ``spin_data`` are not used.
+    Lo is assumed to start each spin on the spacecraft spin pulse, which fires at
+    the original (uncorrected) spin start time of the spin table. The spin phase
+    of those pulses is evaluated in the spin table used by the rest of L1B (per
+    ``USE_CORRECTED_SPIN_START``): with the corrected spin starts it is the ACS
+    spin start correction as an angle, and with the original ones it is 0. Lo's
+    own recorded spin start times only select which spins to use. This returns
+    the circular mean over all those spins that the spin table flags as valid.
 
     Parameters
     ----------
     spin_data : xr.Dataset
-        The L1A Spin dataset. Unused.
+        The L1A Spin dataset, with start_sec_spin and start_subsec_spin.
 
     Returns
     -------
     offset : float
-        Spin angle [degrees] of Lo's spin start: always 0.0.
+        Spin angle [degrees] of Lo's spin start, in (-180, 180]. 0.0 if the spin
+        product has no spin start fields, or no spin pulse can be matched to the
+        spin table.
     """
-    return 0.0
+    spin_fields = ["start_sec_spin", "start_subsec_spin", "valid_phase_spin"]
+    missing = [field for field in spin_fields if field not in spin_data]
+    if missing:
+        logger.warning(f"Spin data lacks {missing}; using spin start offset 0.")
+        return 0.0
+
+    start_met = (
+        spin_data["start_sec_spin"].values
+        + spin_data["start_subsec_spin"].values / c.SPIN_SUBSEC_PER_SEC
+    ).ravel()
+    start_met = start_met[(spin_data["valid_phase_spin"].values.ravel() == 1)]
+    start_met = start_met[start_met > 0]
+    if start_met.size == 0:
+        logger.warning("No valid Lo spin starts; using spin start offset 0.")
+        return 0.0
+
+    # The spacecraft spin pulses (original spin starts) within Lo's spin starts.
+    # interpolate_spin_data raises on times outside the spin table, and checks
+    # against both the original and the corrected spin starts when the original
+    # ones are used, so keep to the span both cover.
+    spin_table = get_spin_data(use_corrected_spin_start=False)
+    table_start = max(
+        spin_table[f"spin_start_met{suffix}"].values[0] for suffix in ("", "_corr")
+    )
+    table_end = min(
+        spin_table[f"spin_start_met{suffix}"].values[-1]
+        + spin_table[f"actual_spin_period{suffix}"].values[-1]
+        for suffix in ("", "_corr")
+    )
+    sc_pulses = spin_table["spin_start_met"].values
+    sc_pulses = sc_pulses[
+        (sc_pulses >= max(start_met.min(), table_start))
+        & (sc_pulses <= start_met.max())
+        & (sc_pulses < table_end)
+    ]
+    if sc_pulses.size == 0:
+        logger.warning("No spacecraft spin pulses within Lo's spins; using offset 0.")
+        return 0.0
+
+    # sc_spin_phase is NaN where the spin table flags the phase as invalid
+    phase = interpolate_spin_data(
+        sc_pulses, use_corrected_spin_start=USE_CORRECTED_SPIN_START
+    )["sc_spin_phase"].values
+    phase = phase[np.isfinite(phase)]
+    if phase.size == 0:
+        logger.warning("No valid spin-table phase at the spin pulses; using offset 0.")
+        return 0.0
+
+    # Circular mean
+    offset = float(np.degrees(np.angle(np.mean(np.exp(2j * np.pi * phase)))))
+    logger.info(
+        f"Lo spin start offset from spin table: {offset:.4f} deg over "
+        f"{phase.size} spins (USE_CORRECTED_SPIN_START={USE_CORRECTED_SPIN_START})"
+    )
+    return offset
 
 
 def get_sampling_cadence_from_nhk(l1b_nhk: xr.Dataset) -> float:
