@@ -6,6 +6,8 @@ from decimal import Decimal
 import numpy as np
 import xarray as xr
 
+from imap_processing.hit.l0.decom_hit import decompress_rates_16_to_32
+from imap_processing.hit.l1b.hit_l1b import livetime_fraction_calculation
 from imap_processing.ialirt.utils.grouping import (
     _populate_instrument_header_items,
     find_groups,
@@ -85,13 +87,21 @@ def create_l1(
     fast_rate_2 : xr.DataArray
         Fast rate 2 DataArray.
     slow_rate : xr.DataArray
-        Slow rate DataArray.
+        Slow rate DataArray. Values are compressed 16-bit rates and are
+        decompressed here.
 
     Returns
     -------
     l1 : dict
         Dictionary containing parsed L0 packet data.
     """
+    # Slow rates are compressed onboard with the same 16-bit algorithm used for
+    # the science rates (HIT Algorithm Document Sec. 5.1), confirmed by the HIT
+    # team. Decompress them before use.
+    slow_rate_decompressed = [
+        decompress_rates_16_to_32(int(value)) for value in slow_rate.data
+    ]
+
     fast_rate_1_dict = {
         prefix: value
         for prefix, value in zip(
@@ -107,13 +117,44 @@ def create_l1(
     slow_rate_dict = {
         prefix: value
         for prefix, value in zip(
-            HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"], slow_rate.data, strict=False
+            HIT_PREFIX_TO_RATE_TYPE["SLOW_RATE"],
+            slow_rate_decompressed,
+            strict=False,
         )
     }
 
     l1 = {**fast_rate_1_dict, **fast_rate_2_dict, **slow_rate_dict}
 
     return l1
+
+
+def calculate_livetime_fraction(l1: dict) -> float:
+    """
+    Calculate the livetime fraction from the I-ALiRT livetime counter.
+
+    The livetime counter (ERATE_1, slow rate subcom 40) is the same LIVE_TIME
+    counter used by HIT science processing, so the same conversion
+    (HIT Algorithm Document Sec. 6.2, Eq. 8) is applied.
+
+    If ERATE_1 through ERATE_5 are all zero, no livetime was reported for the
+    group (e.g. before the ERATES were populated in I-ALiRT on 2026-05-18, or
+    the first group after a HIT restart) and NaN is returned.
+
+    Parameters
+    ----------
+    l1 : dict
+        Decompressed L1 rates for one group, as returned by ``create_l1``.
+
+    Returns
+    -------
+    livetime_fraction : float
+        Livetime fraction, or NaN if no livetime was reported.
+    """
+    if not any(l1[f"ERATE_{i}"] for i in range(1, 6)):
+        return np.nan
+
+    livetime = livetime_fraction_calculation(xr.DataArray([l1["ERATE_1"]]))
+    return float(livetime.values[0])
 
 
 def process_hit(xarray_data: xr.Dataset) -> list[dict]:
