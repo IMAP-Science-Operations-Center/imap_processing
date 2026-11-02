@@ -1007,7 +1007,7 @@ def estimate_dust_mass(
     """
     Filter and fit the target or ion grid signals to get the total dust impact charge.
 
-    Fit only when a sample after the first 3 microseconds exceeds 3.5 times the
+    Fit only when a sample after the first 3 microseconds exceeds 4 times the
     baseline RMS noise. Target excursions must be positive; Ion Grid excursions
     may have either polarity. Skipped fits return NaN products.
 
@@ -1196,7 +1196,7 @@ def fit_impact(
 
 def _has_low_rate_signal(time: NDArray, signal: NDArray, channel_name: str) -> bool:
     """
-    Check for a sample above 3.5 times the baseline RMS noise.
+    Check for a sample above 4 times the baseline RMS noise.
 
     Parameters
     ----------
@@ -1229,7 +1229,7 @@ def _has_low_rate_signal(time: NDArray, signal: NDArray, channel_name: str) -> b
     excursions = signal[finite_time & ~noise_window & finite_signal] - noise_mean
     if channel_name == "Ion_Grid":
         excursions = np.abs(excursions)
-    return bool(np.any(excursions > 3.5 * noise_rms))
+    return bool(np.any(excursions > 4.0 * noise_rms))
 
 
 def remove_signal_noise(
