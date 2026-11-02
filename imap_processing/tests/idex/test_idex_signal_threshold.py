@@ -14,10 +14,13 @@ from imap_processing.idex.idex_l2a import (
 
 
 @pytest.mark.parametrize("waveform", ["Target_High", "Target_Low", "Ion_Grid"])
-@pytest.mark.parametrize("excursion", [0.0, 1.49, 1.5, 1.51, -1.49, -1.5, -1.51])
+@pytest.mark.parametrize(
+    "excursion",
+    [0.0, 1.5, 3.375, 3.49, 3.5, 3.51, 3.88, -1.5, -3.375, -3.49, -3.5, -3.51, -3.88],
+)
 @pytest.mark.parametrize("pulse_index", [6, -1])
 def test_low_rate_fit_requires_sample_above_noise(waveform, excursion, pulse_index):
-    """One sample must strictly exceed 1.5 sigma, with channel-specific polarity."""
+    """One sample must strictly exceed 3.5 sigma, with channel-specific polarity."""
     time = xr.DataArray(np.arange(-6.0, 6.0, 0.5))
     signal = np.full(time.size, 10.0)
     # The first 3 microseconds have baseline 10 and population sigma 1.
@@ -31,7 +34,7 @@ def test_low_rate_fit_requires_sample_above_noise(waveform, excursion, pulse_ind
     ) as optimizer:
         result = estimate_dust_mass(time, target)
 
-    should_fit = abs(excursion) > 1.5 if waveform == "Ion_Grid" else excursion > 1.5
+    should_fit = abs(excursion) > 3.5 if waveform == "Ion_Grid" else excursion > 3.5
     if should_fit:
         optimizer.assert_called_once()
         np.testing.assert_array_equal(result[0], parameters)
@@ -67,9 +70,11 @@ def test_low_rate_fit_zero_noise(waveform, excursion):
 @pytest.mark.parametrize("waveform", ["Target_High", "Target_Low", "Ion_Grid"])
 def test_low_rate_fit_does_not_count_baseline_excursions(waveform):
     """An excursion confined to the noise window is not evidence of a pulse."""
-    time = xr.DataArray(np.arange(-6.0, 6.0, 0.5))
-    signal = np.full(time.size, 4.0 / 6.0)
-    signal[:6] = [0.0, 0.0, 0.0, 0.0, 0.0, 4.0]
+    time = xr.DataArray(np.arange(60) / 5.0 - 6.0)
+    signal = np.full(time.size, 4.0 / 15.0)
+    # The baseline outlier exceeds 3.5 sigma but must not trigger a fit.
+    signal[:15] = 0.0
+    signal[14] = 4.0
     with mock.patch("imap_processing.idex.idex_l2a.curve_fit") as optimizer:
         result = estimate_dust_mass(time, xr.DataArray(signal), waveform_name=waveform)
 
@@ -107,8 +112,8 @@ def test_low_rate_signal_gate_is_per_event(waveform):
     time = xr.DataArray(np.arange(-6.0, 6.0, 0.5), dims="sample")
     signal = np.zeros((2, time.size))
     signal[:, :6] = [-1.0, 1.0, -1.0, 1.0, -1.0, 1.0]
-    signal[0, -1] = 1.5
-    signal[1, -1] = -2.0 if waveform == "Ion_Grid" else 2.0
+    signal[0, -1] = 3.5
+    signal[1, -1] = -4.0 if waveform == "Ion_Grid" else 4.0
     with mock.patch(
         "imap_processing.idex.idex_l2a.curve_fit",
         return_value=(np.array([0.0, 0.0, 2.0, 0.371, 37.1]), None),
