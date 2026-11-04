@@ -89,8 +89,11 @@ def hi_goodtimes(
     l1b_de_datasets : list[xr.Dataset]
         L1B DE datasets for surrounding pointings. Typically, includes
         current plus 4 preceding and 4 following pointings (9 total).
-        Statistical filters 0 and 1 use all datasets; other filters use
-        only the current pointing.
+        Statistical filter 0 uses all datasets. Statistical filter 1 uses
+        the current pointing plus the surrounding pointings whose gain state
+        matches a gain_config_id in the cal-prod config (each pointing's
+        events are qualified against its own matched gain config). Other
+        filters use only the current pointing.
     l1b_hk : xr.Dataset
         L1B housekeeping dataset containing DRF status.
     l1a_diagfee : xr.Dataset
@@ -254,28 +257,10 @@ def _apply_goodtimes_filters(
     stats = goodtimes_ds.goodtimes.get_cull_statistics()
     logger.info(f"Initial good bins: {stats['good_bins']}/{stats['total_bins']}")
 
-    # Pre-compute qualified event masks for each dataset
-    # These masks check BOTH coincidence_type AND TOF windows
-    for l1b_de in l1b_de_datasets:
-        ccsds_index = l1b_de["ccsds_index"].values
-
-        # Handle invalid events (FILLVAL trigger_id) to avoid IndexError
-        # For pointings with no valid events, trigger_id will be at FILLVAL
-        trigger_id_fillval = l1b_de["trigger_id"].attrs.get("FILLVAL", 65535)
-        valid_events = l1b_de["trigger_id"].values != trigger_id_fillval
-
-        # Initialize with -1 (won't match any config row since ESA energy steps > 0)
-        esa_energy_steps: np.ndarray = np.full(len(ccsds_index), -1, dtype=np.int32)
-        if np.any(valid_events):
-            esa_energy_steps[valid_events] = l1b_de["esa_energy_step"].values[
-                ccsds_index[valid_events]
-            ]
-
-        l1b_de["qualified_mask"] = xr.DataArray(
-            compute_qualified_event_mask(l1b_de, cal_product_config, esa_energy_steps),
-            dims=["event_met"],
-        )
-    logger.info("Pre-computed qualified event masks for all datasets")
+    # Pre-compute qualified event masks for each dataset, using each
+    # pointing's own matched gain config. These masks check BOTH
+    # coincidence_type AND TOF windows.
+    matched_indices = _add_qualified_event_masks(l1b_de_datasets, cal_product_config)
 
     # === Apply culling filters ===
 
@@ -309,11 +294,18 @@ def _apply_goodtimes_filters(
     mark_statistical_filter_0(goodtimes_ds, l1b_de_datasets, current_index)
 
     # 6. Statistical Filter 1 - isotropic count rate increases
+    # Surrounding pointings that match no gain config have no qualified
+    # events and are excluded so they don't bias the per-ESA medians low. This
+    # is not expected to occur and would indicate a problem with commanding or
+    # an instrumental anomaly.
+    # The current pointing is always kept (if it is unmatched it has already
+    # been fully culled by mark_unmatched_gain_config).
     logger.info("Applying filter: mark_statistical_filter_1")
+    filter_1_indices = sorted(set(matched_indices) | {current_index})
     mark_statistical_filter_1(
         goodtimes_ds,
-        l1b_de_datasets,
-        current_index,
+        [l1b_de_datasets[i] for i in filter_1_indices],
+        filter_1_indices.index(current_index),
     )
 
     # 7. Statistical Filter 2 - short-lived event pulses
@@ -322,6 +314,97 @@ def _apply_goodtimes_filters(
         goodtimes_ds,
         current_l1b_de,
     )
+
+
+def _get_gain_match_values(l1b_de: xr.Dataset) -> dict[str, float]:
+    """
+    Get a pointing's gain match values from its L1B DE global attributes.
+
+    Parameters
+    ----------
+    l1b_de : xarray.Dataset
+        L1B Direct Event data with the gain match global attributes set by
+        hi_l1b.de_gain_test_filter().
+
+    Returns
+    -------
+    dict[str, float]
+        Mapping of CalibrationProductConfig.GAIN_MATCH_FIELDS field names to
+        the pointing's values. A missing attribute is returned as NaN.
+    """
+    return {
+        field: float(l1b_de.attrs.get(field, np.nan))
+        for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
+    }
+
+
+def _add_qualified_event_masks(
+    l1b_de_datasets: list[xr.Dataset],
+    cal_product_config: pd.DataFrame,
+) -> list[int]:
+    """
+    Add a "qualified_mask" variable to each L1B DE dataset.
+
+    Each pointing's events are qualified against only the calibration product
+    rows of the gain config that pointing ran (selected with
+    CalibrationProductConfig.select_gain_config() from the pointing's gain
+    match attributes), so coincidence/TOF windows of other gain configs never
+    qualify its events. A pointing that matches no single gain config gets an
+    all-False mask.
+
+    Parameters
+    ----------
+    l1b_de_datasets : list[xarray.Dataset]
+        L1B DE datasets (current and surrounding pointings). Modified in place.
+    cal_product_config : pandas.DataFrame
+        Full (multi-gain-config) calibration product configuration. Use
+        CalibrationProductConfig.from_csv() to load.
+
+    Returns
+    -------
+    list[int]
+        Indices into l1b_de_datasets of the pointings that matched a gain
+        config.
+    """
+    matched_indices = []
+    for i, l1b_de in enumerate(l1b_de_datasets):
+        ccsds_index = l1b_de["ccsds_index"].values
+        n_events = len(ccsds_index)
+
+        gain_config_df = cal_product_config.cal_prod_config.select_gain_config(
+            _get_gain_match_values(l1b_de)
+        )
+        if gain_config_df is None:
+            logger.warning(
+                f"Pointing {l1b_de.attrs.get('Repointing')} matches no single "
+                f"gain_config_id; it has no qualified events."
+            )
+            qualified_mask: np.ndarray = np.zeros(n_events, dtype=bool)
+        else:
+            matched_indices.append(i)
+            # Handle invalid events (FILLVAL trigger_id) to avoid IndexError
+            # For pointings with no valid events, trigger_id will be at FILLVAL
+            trigger_id_fillval = l1b_de["trigger_id"].attrs.get("FILLVAL", 65535)
+            valid_events = l1b_de["trigger_id"].values != trigger_id_fillval
+
+            # Initialize with -1 (won't match any config row since ESA energy
+            # steps > 0)
+            esa_energy_steps: np.ndarray = np.full(n_events, -1, dtype=np.int32)
+            if np.any(valid_events):
+                esa_energy_steps[valid_events] = l1b_de["esa_energy_step"].values[
+                    ccsds_index[valid_events]
+                ]
+            qualified_mask = compute_qualified_event_mask(
+                l1b_de, gain_config_df, esa_energy_steps
+            )
+
+        l1b_de["qualified_mask"] = xr.DataArray(qualified_mask, dims=["event_met"])
+
+    logger.info(
+        f"Pre-computed qualified event masks for all datasets; "
+        f"{len(matched_indices)}/{len(l1b_de_datasets)} matched a gain config"
+    )
+    return matched_indices
 
 
 def create_goodtimes_dataset(l1b_de: xr.Dataset) -> xr.Dataset:
@@ -1077,10 +1160,7 @@ def mark_unmatched_gain_config(
     """
     logger.info("Running mark_unmatched_gain_config culling")
 
-    hv_deltas = {
-        field: float(l1b_de.attrs.get(field, np.nan))
-        for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
-    }
+    hv_deltas = _get_gain_match_values(l1b_de)
     gain_config_id = cal_product_config.cal_prod_config.match_gain_config_id(hv_deltas)
     if gain_config_id is not None:
         logger.info(f"Pointing gain state matches gain_config_id={gain_config_id}")
@@ -2273,7 +2353,8 @@ def mark_statistical_filter_1(
     ------
     ValueError
         If current_index is out of range or if fewer than min_pointings
-        datasets are provided.
+        datasets are provided (e.g. because too many surrounding Pointings
+        matched no gain config and were excluded by the caller).
 
     Notes
     -----

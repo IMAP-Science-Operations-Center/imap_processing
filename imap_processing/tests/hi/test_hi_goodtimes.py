@@ -10,6 +10,7 @@ import xarray as xr
 from imap_processing.hi.hi_goodtimes import (
     INTERVAL_DTYPE,
     CullCode,
+    _add_qualified_event_masks,
     _add_sweep_indices,
     _apply_goodtimes_filters,
     _build_per_sweep_datasets,
@@ -4417,6 +4418,10 @@ class TestApplyGoodtimesFilters:
             patch(
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv"
             ) as mock_cal_load,
+            patch(
+                "imap_processing.hi.hi_goodtimes._add_qualified_event_masks",
+                return_value=list(range(9)),
+            ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
@@ -4431,7 +4436,7 @@ class TestApplyGoodtimesFilters:
 
             _apply_goodtimes_filters(
                 mock_goodtimes,
-                [mock_l1b_de],
+                [mock_l1b_de] * 9,
                 current_index=0,
                 l1b_hk=mock_hk,
                 l1a_diagfee=MagicMock(),
@@ -4456,6 +4461,10 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
+            patch(
+                "imap_processing.hi.hi_goodtimes._add_qualified_event_masks",
+                return_value=list(range(9)),
+            ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage") as mock_f0,
             patch(
                 "imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"
@@ -4478,7 +4487,7 @@ class TestApplyGoodtimesFilters:
         ):
             _apply_goodtimes_filters(
                 mock_goodtimes,
-                [mock_l1b_de],
+                [mock_l1b_de] * 9,
                 current_index=0,
                 l1b_hk=mock_hk,
                 l1a_diagfee=MagicMock(),
@@ -4511,6 +4520,10 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
+            patch(
+                "imap_processing.hi.hi_goodtimes._add_qualified_event_masks",
+                return_value=list(range(9)),
+            ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
@@ -4525,7 +4538,7 @@ class TestApplyGoodtimesFilters:
             with pytest.raises(ValueError, match="filter 0 error"):
                 _apply_goodtimes_filters(
                     mock_goodtimes,
-                    [mock_l1b_de],
+                    [mock_l1b_de] * 9,
                     current_index=0,
                     l1b_hk=mock_hk,
                     l1a_diagfee=MagicMock(),
@@ -4548,6 +4561,10 @@ class TestApplyGoodtimesFilters:
                 "imap_processing.hi.utils.CalibrationProductConfig.from_csv",
                 return_value=mock_cal,
             ),
+            patch(
+                "imap_processing.hi.hi_goodtimes._add_qualified_event_masks",
+                return_value=list(range(9)),
+            ),
             patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
             patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
             patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
@@ -4563,7 +4580,7 @@ class TestApplyGoodtimesFilters:
             with pytest.raises(ValueError, match="filter 1 error"):
                 _apply_goodtimes_filters(
                     mock_goodtimes,
-                    [mock_l1b_de],
+                    [mock_l1b_de] * 9,
                     current_index=0,
                     l1b_hk=mock_hk,
                     l1a_diagfee=MagicMock(),
@@ -4964,3 +4981,172 @@ class TestMarkUnmatchedGainConfig:
             cull_code=CullCode.DRF,
         )
         assert np.all(goodtimes["cull_flags"].values == CullCode.DRF)
+
+
+# HV deltas within tolerance of the second gain config added by
+# two_gain_cal_config below.
+GAIN_1_HV_DELTAS = {
+    "mcp_delta_v": 500.0,
+    "cem_a_delta_v": 1000.0,
+    "cem_b_delta_v": 1000.0,
+    "tof_v": -5000.0,
+}
+
+
+@pytest.fixture
+def two_gain_cal_config(hi_test_cal_prod_config_path):
+    """
+    Cal-prod config with two gain configs whose AB TOF windows don't overlap.
+
+    gain_config_id=0 is the test file as-is (tof_ab window 15-55 ns).
+    gain_config_id=1 has tof_ab window 60-100 ns and matches GAIN_1_HV_DELTAS.
+    """
+    config_0 = CalibrationProductConfig.from_csv(hi_test_cal_prod_config_path)
+    config_1 = config_0.rename(index={0: 1}, level="gain_config_id")
+    config_1["tof_ab_low"] = 60
+    config_1["tof_ab_high"] = 100
+    for field, value in GAIN_1_HV_DELTAS.items():
+        config_1[field] = value
+        config_1[f"{field}_tol"] = 50.0
+    return pd.concat([config_0, config_1])
+
+
+def _qualified_mask_l1b_de(hv_deltas, repointing="repoint00001"):
+    """
+    Build a minimal L1B DE dataset for qualified-mask tests.
+
+    Four ABC1C2 events at ESA energy step 1. Events 0 and 1 have tof_ab inside
+    only gain config 0's window, events 2 and 3 inside only gain config 1's.
+    """
+    n_events = 4
+    ds = xr.Dataset(
+        {
+            "ccsds_index": (["event_met"], np.zeros(n_events, dtype=np.int64)),
+            "trigger_id": (["event_met"], np.ones(n_events, dtype=np.uint16)),
+            "coincidence_type": (["event_met"], np.full(n_events, 15)),
+            "tof_ab": (["event_met"], np.array([30, 40, 70, 80])),
+            "tof_ac1": (["event_met"], np.full(n_events, 30)),
+            "tof_bc1": (["event_met"], np.full(n_events, 0)),
+            "tof_c1c2": (["event_met"], np.full(n_events, 10)),
+            "esa_energy_step": (["epoch"], np.array([1])),
+        },
+        coords={"event_met": np.arange(n_events, dtype=float)},
+        attrs={"Repointing": repointing, **hv_deltas},
+    )
+    ds["trigger_id"].attrs["FILLVAL"] = 65535
+    for tof_var in ["tof_ab", "tof_ac1", "tof_bc1", "tof_c1c2"]:
+        ds[tof_var].attrs["FILLVAL"] = -9999
+    return ds
+
+
+class TestAddQualifiedEventMasks:
+    """Tests for _add_qualified_event_masks."""
+
+    def test_uses_each_pointings_gain_config(self, two_gain_cal_config):
+        """Events qualify only by the TOF windows of their pointing's gain config."""
+        datasets = [
+            _qualified_mask_l1b_de(NOMINAL_HV_DELTAS, "repoint00001"),
+            _qualified_mask_l1b_de(GAIN_1_HV_DELTAS, "repoint00002"),
+        ]
+        matched = _add_qualified_event_masks(datasets, two_gain_cal_config)
+
+        assert matched == [0, 1]
+        np.testing.assert_array_equal(
+            datasets[0]["qualified_mask"].values, [True, True, False, False]
+        )
+        np.testing.assert_array_equal(
+            datasets[1]["qualified_mask"].values, [False, False, True, True]
+        )
+
+    def test_unmatched_pointing_has_no_qualified_events(self, two_gain_cal_config):
+        """A pointing matching no gain config gets an all-False mask."""
+        unmatched = dict(NOMINAL_HV_DELTAS, tof_v=0.0)
+        datasets = [
+            _qualified_mask_l1b_de(NOMINAL_HV_DELTAS, "repoint00001"),
+            _qualified_mask_l1b_de(unmatched, "repoint00002"),
+            _qualified_mask_l1b_de({}, "repoint00003"),  # missing attributes
+        ]
+        matched = _add_qualified_event_masks(datasets, two_gain_cal_config)
+
+        assert matched == [0]
+        assert datasets[0]["qualified_mask"].values.any()
+        for ds in datasets[1:]:
+            assert ds["qualified_mask"].dims == ("event_met",)
+            assert not ds["qualified_mask"].values.any()
+
+    def test_invalid_trigger_id_events_not_qualified(self, two_gain_cal_config):
+        """Events with FILLVAL trigger_id never qualify."""
+        ds = _qualified_mask_l1b_de(NOMINAL_HV_DELTAS)
+        ds["trigger_id"].values[0] = 65535
+        _add_qualified_event_masks([ds], two_gain_cal_config)
+        np.testing.assert_array_equal(
+            ds["qualified_mask"].values, [False, True, False, False]
+        )
+
+
+class TestApplyGoodtimesFiltersGainMatching:
+    """Tests for how _apply_goodtimes_filters handles unmatched pointings."""
+
+    @staticmethod
+    def _run(matched_indices, current_index, n_datasets=9):
+        mock_goodtimes = MagicMock()
+        mock_goodtimes.goodtimes.get_cull_statistics.return_value = {
+            "good_bins": 100,
+            "total_bins": 100,
+        }
+        datasets = [MagicMock(name=f"ds{i}") for i in range(n_datasets)]
+        with (
+            patch("imap_processing.hi.utils.CalibrationProductConfig.from_csv"),
+            patch(
+                "imap_processing.hi.hi_goodtimes._add_qualified_event_masks",
+                return_value=matched_indices,
+            ),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_voltage"),
+            patch("imap_processing.hi.hi_goodtimes.mark_unmatched_gain_config"),
+            patch("imap_processing.hi.hi_goodtimes.mark_incomplete_spin_sets"),
+            patch("imap_processing.hi.hi_goodtimes.mark_drf_times"),
+            patch("imap_processing.hi.hi_goodtimes.mark_bad_tdc_cal"),
+            patch("imap_processing.hi.hi_goodtimes.mark_overflow_packets"),
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_0"
+            ) as mock_f0,
+            patch(
+                "imap_processing.hi.hi_goodtimes.mark_statistical_filter_1"
+            ) as mock_f1,
+            patch("imap_processing.hi.hi_goodtimes.mark_statistical_filter_2"),
+        ):
+            _apply_goodtimes_filters(
+                mock_goodtimes,
+                datasets,
+                current_index=current_index,
+                l1b_hk=MagicMock(),
+                l1a_diagfee=MagicMock(),
+                cal_product_config_path=MagicMock(),
+            )
+        return datasets, mock_f0, mock_f1
+
+    def test_filter_1_excludes_unmatched_surrounding_pointings(self):
+        """Unmatched surrounding pointings are dropped from filter 1's set."""
+        datasets, mock_f0, mock_f1 = self._run([0, 2, 4, 5, 8], current_index=4)
+
+        # Filter 0 does not use qualified masks and still sees all pointings
+        assert mock_f0.call_args.args[1] is datasets
+        _, f1_datasets, f1_current_index = mock_f1.call_args.args
+        assert f1_datasets == [datasets[i] for i in [0, 2, 4, 5, 8]]
+        assert f1_current_index == 2
+
+    def test_filter_1_keeps_unmatched_current_pointing(self):
+        """The current pointing stays in filter 1's set even when unmatched."""
+        datasets, _, mock_f1 = self._run([0, 1, 2, 6, 7], current_index=4)
+
+        _, f1_datasets, f1_current_index = mock_f1.call_args.args
+        assert f1_datasets == [datasets[i] for i in [0, 1, 2, 4, 6, 7]]
+        assert f1_datasets[f1_current_index] is datasets[4]
+
+    def test_filter_1_gets_reduced_set_when_few_matched(self):
+        """Filter 1 receives the reduced set and enforces the minimum itself."""
+        datasets, _, mock_f1 = self._run([4, 5], current_index=4)
+
+        _, f1_datasets, f1_current_index = mock_f1.call_args.args
+        assert f1_datasets == [datasets[4], datasets[5]]
+        assert f1_current_index == 0
