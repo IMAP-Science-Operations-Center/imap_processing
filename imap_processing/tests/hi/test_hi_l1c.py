@@ -71,7 +71,9 @@ def test_hi_l1c(
 
 @pytest.mark.external_kernel
 @pytest.mark.external_test_data
+@pytest.mark.parametrize("gain_matched", [True, False])
 def test_generate_pset_dataset(
+    gain_matched,
     hi_l1b_de_dataset,
     hi_goodtimes_dataset,
     hi_test_cal_prod_config_path,
@@ -87,6 +89,9 @@ def test_generate_pset_dataset(
     # placeholders so add_pset_geometric_factor() and pset_counts() have
     # something to look up.
     l1b_dataset.attrs.update(NOMINAL_HV_DELTAS)
+    if not gain_matched:
+        # HV deltas matching no gain_config_id in the test cal-prod config
+        l1b_dataset.attrs.update({field: 0.0 for field in NOMINAL_HV_DELTAS})
     l1b_met = l1b_dataset["ccsds_met"].values[0]
     # Set repoint start and end times.
     seconds_per_day = 24 * 60 * 60
@@ -110,15 +115,30 @@ def test_generate_pset_dataset(
     np.testing.assert_array_equal(l1c_dataset.hae_latitude.data.shape, (1, 3600))
     np.testing.assert_array_equal(l1c_dataset.hae_longitude.data.shape, (1, 3600))
     np.testing.assert_array_equal(l1c_dataset.exposure_times.data.shape, (1, 9, 3600))
+    n_cal_prods = 2 if gain_matched else 1
     for var in [
         "counts",
         "background_rates",
         "background_rates_uncertainty",
     ]:
-        np.testing.assert_array_equal(l1c_dataset[var].data.shape, (1, 9, 2, 3600))
+        np.testing.assert_array_equal(
+            l1c_dataset[var].data.shape, (1, 9, n_cal_prods, 3600)
+        )
+    if gain_matched:
+        assert l1c_dataset.attrs["gain_config_id"] == 0
+    else:
+        assert np.isnan(l1c_dataset.attrs["gain_config_id"])
+        np.testing.assert_array_equal(l1c_dataset["calibration_prod"].values, [255])
+        assert np.all(l1c_dataset["counts"].values == 0)
 
-    # Test ISTP compliance by writing CDF
-    write_cdf(l1c_dataset)
+    # Test ISTP compliance by writing CDF, and that the gain_config_id global
+    # attribute survives the round trip
+    cdf_path = write_cdf(l1c_dataset)
+    round_trip_id = load_cdf(cdf_path).attrs["gain_config_id"]
+    if gain_matched:
+        assert round_trip_id == 0
+    else:
+        assert np.isnan(round_trip_id)
 
 
 @mock.patch("imap_processing.hi.hi_l1c.pset_backgrounds")
@@ -219,6 +239,127 @@ def _make_pset_ds_for_geometric_factor(esa_energy_steps, calibration_prods):
             "spin_angle_bin": xr.DataArray(np.arange(5), dims=["spin_angle_bin"]),
         }
     )
+
+
+# Two gain configurations whose calibration products differ, to verify that
+# a PSET's calibration_prod coordinate holds only its matched gain
+# configuration's products.
+_TWO_GAIN_CONFIG_CSV = """\
+gain_config_id,calibration_prod,esa_energy_step,geometric_factor,coincidence_type_list,tof_ab_low,tof_ab_high,tof_ac1_low,tof_ac1_high,tof_bc1_low,tof_bc1_high,tof_c1c2_low,tof_c1c2_high,mcp_delta_v,mcp_delta_v_tol,cem_a_delta_v,cem_a_delta_v_tol,cem_b_delta_v,cem_b_delta_v_tol,tof_v,tof_v_tol
+0,0,1,0.00055,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,875.0,75.0,2150.0,150.0,2150.0,150.0,-8000.0,50.0
+0,0,2,0.00085,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+0,1,1,0.00055,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+0,1,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+1,0,1,0.00066,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,500.0,50.0,1000.0,100.0,1000.0,100.0,-4000.0,50.0
+1,0,2,0.00099,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+"""
+
+
+@pytest.mark.parametrize(
+    "hv_deltas, expected_gain_config_id, expected_cal_prods",
+    [
+        (NOMINAL_HV_DELTAS, 0, [0, 1]),
+        (
+            {
+                "mcp_delta_v": 500.0,
+                "cem_a_delta_v": 1000.0,
+                "cem_b_delta_v": 1000.0,
+                "tof_v": -4000.0,
+            },
+            1,
+            [0],
+        ),
+        (
+            {
+                "mcp_delta_v": 0.0,
+                "cem_a_delta_v": 0.0,
+                "cem_b_delta_v": 0.0,
+                "tof_v": 0.0,
+            },
+            None,
+            [255],
+        ),
+    ],
+)
+@mock.patch("imap_processing.hi.hi_l1c.pset_backgrounds", return_value={})
+@mock.patch("imap_processing.hi.hi_l1c.pset_exposure")
+@mock.patch("imap_processing.hi.hi_l1c.pset_counts", return_value={})
+@mock.patch("imap_processing.hi.hi_l1c.pset_geometry", return_value={})
+@mock.patch(
+    "imap_processing.hi.hi_l1c.get_pointing_times",
+    return_value=(482372065.0, 482374065.0),
+)
+def test_generate_pset_dataset_gain_config(
+    mock_get_pointing_times,
+    mock_pset_geometry,
+    mock_pset_counts,
+    mock_pset_exposure,
+    mock_pset_backgrounds,
+    hv_deltas,
+    expected_gain_config_id,
+    expected_cal_prods,
+    hi_test_background_config_path,
+    tmp_path,
+):
+    """Test generate_pset_dataset records the matched gain_config_id and
+    builds the calibration_prod coordinate from that gain configuration's
+    products only (a single FILLVAL entry if the pointing matched no gain
+    config)."""
+    cal_prod_path = tmp_path / "imap_hi_90sensor-cal-prod_20240101_v001.csv"
+    cal_prod_path.write_text(_TWO_GAIN_CONFIG_CSV)
+    n_energy_steps = 2
+    mock_l1b_dataset = xr.Dataset(
+        coords={"epoch": xr.DataArray(np.arange(6), dims=["epoch"])},
+        data_vars={
+            "ccsds_met": xr.DataArray(np.full(6, 482373065.0), dims=["epoch"]),
+            "esa_energy_step": xr.DataArray(
+                np.arange(n_energy_steps + 1).repeat(2), attrs={"FILLVAL": 255}
+            ),
+        },
+        attrs={
+            "Logical_file_id": "imap_hi_l1b_90sensor-de_20250415_v999",
+            "Logical_source": "imap_hi_l1b_90sensor-de",
+            **hv_deltas,
+        },
+    )
+    mock_pset_exposure.return_value = {
+        "exposure_times": xr.DataArray(
+            np.ones((1, n_energy_steps, 3600), dtype=np.float32),
+            dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+        )
+    }
+
+    pset = hi_l1c.generate_pset_dataset(
+        mock_l1b_dataset, cal_prod_path, xr.Dataset(), hi_test_background_config_path
+    )
+
+    np.testing.assert_array_equal(pset["calibration_prod"].values, expected_cal_prods)
+    np.testing.assert_array_equal(
+        pset["calibration_prod_label"].values, np.array(expected_cal_prods).astype(str)
+    )
+    if expected_gain_config_id is None:
+        assert np.isnan(pset.attrs["gain_config_id"])
+    else:
+        assert pset.attrs["gain_config_id"] == expected_gain_config_id
+    mock_pset_backgrounds.assert_called_once()
+    # The gain_config_df passed to pset_counts is the matched config's rows
+    gain_config_df = mock_pset_counts.call_args[0][1]
+    if expected_gain_config_id is None:
+        assert gain_config_df is None
+        assert (
+            pset["calibration_prod"].values[0]
+            == (pset["calibration_prod"].attrs["FILLVAL"])
+        )
+        fillval = np.float32(pset["geometric_factor"].attrs["FILLVAL"])
+        assert np.all(pset["geometric_factor"].values == fillval)
+    else:
+        assert gain_config_df.index.names == ["calibration_prod", "esa_energy_step"]
+        expected_gf = 0.00066 if expected_gain_config_id == 1 else 0.00055
+        np.testing.assert_allclose(
+            pset["geometric_factor"].sel(esa_energy_step=1, calibration_prod=0),
+            [expected_gf],
+            rtol=1e-6,
+        )
 
 
 def test_add_pset_geometric_factor_matching_gain_state(hi_test_cal_prod_config_path):
@@ -994,6 +1135,42 @@ def test_compute_background_counts_missing_cal_prod_raises_error(
 
 
 @mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_unmatched_gain_config_returns_fillval(
+    mock_compute_background_counts,
+):
+    """Test pset_backgrounds returns FILLVAL for a fill calibration_prod."""
+    n_energy = 2
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(
+            np.arange(n_energy) + 1, dims=["esa_energy_step"]
+        ),
+        "calibration_prod": xr.DataArray(
+            np.array([255], dtype=np.uint8),
+            dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
+    }
+    # Nonzero exposure so the early return is not the zero-exposure one
+    exposure_times = xr.DataArray(
+        np.ones((1, n_energy, n_spin_bins), dtype=np.float32),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+
+    result = hi_l1c.pset_backgrounds(
+        pset_coords, pd.DataFrame(), xr.Dataset(), xr.Dataset(), exposure_times
+    )
+
+    mock_compute_background_counts.assert_not_called()
+    for var in ["background_rates", "background_rates_uncertainty"]:
+        assert result[var].shape == (1, n_energy, 1, n_spin_bins)
+        fillval = np.float32(result[var].attrs["FILLVAL"])
+        assert np.all(result[var].values == fillval)
+
+
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
 def test_pset_backgrounds_cal_prod_mismatch_raises_error(
     mock_compute_background_counts,
 ):
@@ -1014,6 +1191,7 @@ def test_pset_backgrounds_cal_prod_mismatch_raises_error(
         "calibration_prod": xr.DataArray(
             np.array([0, 1], dtype=np.int64),
             dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
         ),
         "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
     }
@@ -1103,6 +1281,7 @@ def test_pset_backgrounds_esa_energy_step_mismatch_raises_error(
         "calibration_prod": xr.DataArray(
             np.array([0], dtype=np.int64),
             dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
         ),
         "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
     }
@@ -1185,6 +1364,7 @@ def test_pset_backgrounds_applies_offset_correction(mock_compute_background_coun
         "calibration_prod": xr.DataArray(
             np.array([0], dtype=np.int64),
             dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
         ),
         "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
     }
@@ -1274,6 +1454,7 @@ def test_pset_backgrounds_offset_does_not_go_negative(mock_compute_background_co
         "calibration_prod": xr.DataArray(
             np.array([0], dtype=np.int64),
             dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
         ),
         "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
     }
@@ -1368,6 +1549,7 @@ def test_pset_backgrounds_uncertainty_includes_constant_terms(
         "calibration_prod": xr.DataArray(
             np.array([0], dtype=np.int64),
             dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
         ),
         "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
     }
@@ -1464,6 +1646,7 @@ def test_pset_backgrounds_esa_7_8_9_extra_uncertainty(mock_compute_background_co
         "calibration_prod": xr.DataArray(
             np.array([0], dtype=np.int64),
             dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
         ),
         "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
     }

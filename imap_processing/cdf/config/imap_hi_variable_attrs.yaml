@@ -509,7 +509,7 @@ hi_pset_calibration_prod:
   CATDESC: Coincidence types are combined into various calibration products
   FIELDNAM: Calibration product number
   FILLVAL: 255
-  FORMAT: I1
+  FORMAT: I3
   LABLAXIS: Calibration Prod
   MONOTON: INCREASE
   SCALETYP: linear
