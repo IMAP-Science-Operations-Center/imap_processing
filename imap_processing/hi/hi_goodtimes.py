@@ -1398,10 +1398,12 @@ def mark_overflow_packets(
         - ccsds_index: Index mapping each event to its packet
         - coincidence_type: Coincidence type bitmap for each event
         - event_met: MET timestamp for each event
+        - gain match global attributes set by hi_l1b.de_gain_test_filter()
     config_df : pandas.DataFrame
         Calibration product configuration DataFrame with coincidence_type_values
         column containing tuples of valid coincidence type integers for each
         calibration product. Use CalibrationProductConfig.from_csv() to load.
+        Only the rows of the pointing's matched gain config are used.
     cull_code : int, optional
         Cull code to use for marking bad times (default: CullCode.LOOSE).
 
@@ -1411,10 +1413,19 @@ def mark_overflow_packets(
     for MET timestamps with overflow packets containing qualified final events.
 
     The check for qualified events uses the coincidence_type_values from the
-    calibration product configuration, which defines which coincidence types
-    are considered valid for science analysis.
+    pointing's matched gain config in the calibration product configuration,
+    which defines which coincidence types are considered valid for science
+    analysis. If the pointing matches no gain config, nothing is marked here;
+    mark_unmatched_gain_config() culls the whole pointing in that case.
     """
     logger.info("Running mark_overflow_packets culling")
+
+    gain_config_df = config_df.cal_prod_config.select_gain_config(
+        _get_gain_match_values(l1b_de)
+    )
+    if gain_config_df is None:
+        logger.info("Pointing matches no gain config; skipping overflow check")
+        return
 
     ccsds_indices = l1b_de["ccsds_index"].values
     coincidence_types = l1b_de["coincidence_type"].values
@@ -1443,7 +1454,7 @@ def mark_overflow_packets(
 
     # Build set of all valid coincidence types from calibration products
     all_valid_coin_types = set()
-    for coin_types in config_df["coincidence_type_values"]:
+    for coin_types in gain_config_df["coincidence_type_values"]:
         all_valid_coin_types.update(coin_types)
 
     # Find the last event index for each packet (vectorized)

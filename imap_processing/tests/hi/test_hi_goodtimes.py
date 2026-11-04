@@ -46,6 +46,14 @@ NOMINAL_HV_DELTAS = {
     "cem_b_delta_v": 2150.0,
     "tof_v": -8000.0,
 }
+# HV deltas within tolerance of the second gain config used in the
+# two-gain-config tests (two_gain_cal_config, overflow packet tests).
+GAIN_1_HV_DELTAS = {
+    "mcp_delta_v": 500.0,
+    "cem_a_delta_v": 1000.0,
+    "cem_b_delta_v": 1000.0,
+    "tof_v": -5000.0,
+}
 
 
 @pytest.fixture
@@ -1838,10 +1846,14 @@ class TestMarkOverflowPackets:
             "tof_c1c2_low": [0, 0],
             "tof_c1c2_high": [100, 100],
         }
+        for field, value in NOMINAL_HV_DELTAS.items():
+            data[field] = [value, value]
+            data[f"{field}_tol"] = [1.0, 1.0]
         df = pd.DataFrame(
             data,
             index=pd.MultiIndex.from_tuples(
-                [(1, 1), (2, 1)], names=["calibration_prod", "esa_energy_step"]
+                [(0, 1, 1), (0, 2, 1)],
+                names=["gain_config_id", "calibration_prod", "esa_energy_step"],
             ),
         )
         # Add coincidence_type_values column (converted from strings to ints)
@@ -1880,6 +1892,7 @@ class TestMarkOverflowPackets:
                 ),
             },
             coords={"event_met": np.linspace(1000.0, 1010.0, n_events)},
+            attrs=NOMINAL_HV_DELTAS,
         )
 
         mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
@@ -1902,6 +1915,7 @@ class TestMarkOverflowPackets:
                 ),
             },
             coords={"event_met": event_mets},
+            attrs=NOMINAL_HV_DELTAS,
         )
 
         mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
@@ -1925,6 +1939,7 @@ class TestMarkOverflowPackets:
                 ),
             },
             coords={"event_met": event_mets},
+            attrs=NOMINAL_HV_DELTAS,
         )
 
         mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
@@ -1964,6 +1979,7 @@ class TestMarkOverflowPackets:
                 "coincidence_type": (["event_met"], coincidence_types),
             },
             coords={"event_met": event_mets},
+            attrs=NOMINAL_HV_DELTAS,
         )
 
         mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
@@ -1981,6 +1997,7 @@ class TestMarkOverflowPackets:
                 "coincidence_type": (["event_met"], np.array([], dtype=np.uint8)),
             },
             coords={"event_met": np.array([])},
+            attrs=NOMINAL_HV_DELTAS,
         )
 
         # Should not raise, just return without culling
@@ -2000,6 +2017,7 @@ class TestMarkOverflowPackets:
                 ),
             },
             coords={"event_met": event_mets},
+            attrs=NOMINAL_HV_DELTAS,
         )
 
         custom_cull = 5
@@ -2025,12 +2043,56 @@ class TestMarkOverflowPackets:
                 "coincidence_type": (["event_met"], coincidence_types),
             },
             coords={"event_met": event_mets},
+            attrs=NOMINAL_HV_DELTAS,
         )
 
         mark_overflow_packets(mock_goodtimes, l1b_de, mock_config_df)
 
         # Should be culled because the final event (last in list) is qualified
         assert np.sum(mock_goodtimes["cull_flags"].values > 0) > 0
+
+    @staticmethod
+    def _full_packet_l1b_de(final_coincidence_type, hv_deltas):
+        n_events = 664
+        coincidence_types = np.full(n_events, 3, dtype=np.uint8)
+        coincidence_types[-1] = final_coincidence_type
+        return xr.Dataset(
+            {
+                "ccsds_index": (["event_met"], np.zeros(n_events, dtype=np.uint16)),
+                "coincidence_type": (["event_met"], coincidence_types),
+            },
+            coords={"event_met": np.linspace(1005.0, 1006.0, n_events)},
+            attrs=hv_deltas,
+        )
+
+    def test_uses_pointings_gain_config(self, mock_goodtimes, mock_config_df):
+        """Only the matched gain config's coincidence types qualify."""
+        # gain_config_id=1 qualifies only coincidence type 8 (A)
+        other = mock_config_df.rename(index={0: 1}, level="gain_config_id")
+        other["coincidence_type_list"] = [("A",), ("A",)]
+        for field, value in GAIN_1_HV_DELTAS.items():
+            other[field] = value
+        config = pd.concat([mock_config_df, other])
+
+        # Type 8 is only in gain config 1, so a gain-0 pointing is not culled
+        mark_overflow_packets(
+            mock_goodtimes, self._full_packet_l1b_de(8, NOMINAL_HV_DELTAS), config
+        )
+        assert np.all(mock_goodtimes["cull_flags"].values == 0)
+
+        # ...but a gain-1 pointing is
+        mark_overflow_packets(
+            mock_goodtimes, self._full_packet_l1b_de(8, GAIN_1_HV_DELTAS), config
+        )
+        assert np.all(mock_goodtimes["cull_flags"].values[0, :] == CullCode.OVERFLOW)
+
+    def test_unmatched_gain_config_skipped(self, mock_goodtimes, mock_config_df):
+        """A pointing matching no gain config is not marked by this filter."""
+        unmatched = dict(NOMINAL_HV_DELTAS, tof_v=0.0)
+        mark_overflow_packets(
+            mock_goodtimes, self._full_packet_l1b_de(15, unmatched), mock_config_df
+        )
+        assert np.all(mock_goodtimes["cull_flags"].values == 0)
 
 
 class TestGetSweepIndices:
@@ -4981,16 +5043,6 @@ class TestMarkUnmatchedGainConfig:
             cull_code=CullCode.DRF,
         )
         assert np.all(goodtimes["cull_flags"].values == CullCode.DRF)
-
-
-# HV deltas within tolerance of the second gain config added by
-# two_gain_cal_config below.
-GAIN_1_HV_DELTAS = {
-    "mcp_delta_v": 500.0,
-    "cem_a_delta_v": 1000.0,
-    "cem_b_delta_v": 1000.0,
-    "tof_v": -5000.0,
-}
 
 
 @pytest.fixture
