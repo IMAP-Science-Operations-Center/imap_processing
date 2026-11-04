@@ -687,7 +687,9 @@ def pset_backgrounds(
         The PSET coordinates from the xarray.Dataset.
     background_config_df : pandas.DataFrame
         Background configuration DataFrame with MultiIndex
-        (calibration_prod, background_index, esa_energy_step).
+        (calibration_prod, background_index, esa_energy_step). Must contain
+        every calibration_prod in pset_coords and may contain others, which
+        are ignored.
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
     goodtimes_ds : xarray.Dataset
@@ -742,15 +744,19 @@ def pset_backgrounds(
     # Config now has dims: (calibration_prod, background_index, esa_energy_step)
     config_ds = background_config_df.to_xarray()
 
-    # Validate calibration products match (compare values, not DataArray metadata)
-    if not np.array_equal(
-        config_ds["calibration_prod"].values, pset_coords["calibration_prod"].values
-    ):
+    # Backgrounds are independent of gain configuration, so the background
+    # config may define more calibration products than this PSET (which holds
+    # only its matched gain configuration's products). Require every PSET
+    # calibration product to be present, then select just those.
+    pset_cal_prods = pset_coords["calibration_prod"].values
+    missing_cal_prods = np.setdiff1d(pset_cal_prods, config_ds["calibration_prod"])
+    if missing_cal_prods.size > 0:
         raise ValueError(
-            f"Calibration products in pset_coords and background_config_df "
-            f"do not match. pset_coords: {pset_coords['calibration_prod'].values}, "
+            f"Calibration products in pset_coords are missing from "
+            f"background_config_df. pset_coords: {pset_cal_prods}, "
             f"background_config_df: {config_ds['calibration_prod'].values}"
         )
+    config_ds = config_ds.sel(calibration_prod=pset_cal_prods)
 
     # Validate ESA energy steps match (compare values, not DataArray metadata)
     if not np.array_equal(

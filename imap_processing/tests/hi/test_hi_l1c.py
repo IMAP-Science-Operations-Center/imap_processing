@@ -1171,6 +1171,62 @@ def test_pset_backgrounds_unmatched_gain_config_returns_fillval(
 
 
 @mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
+def test_pset_backgrounds_cal_prod_subset_of_background_config(
+    mock_compute_background_counts, hi_test_background_config_path
+):
+    """Test pset_backgrounds when the PSET has fewer cal prods than the config.
+
+    Backgrounds are gain-independent, so the background config defines every
+    calibration product while a PSET holds only its matched gain config's.
+    """
+    background_df = utils.BackgroundConfig.from_csv(hi_test_background_config_path)
+    assert background_df.index.unique(level="calibration_prod").tolist() == [0, 1]
+    esa_steps = background_df.index.unique(level="esa_energy_step").values
+    background_indices = background_df.index.unique(level="background_index").values
+    n_spin_bins = 3600
+    pset_coords = {
+        "epoch": xr.DataArray(np.array([0], dtype=np.int64), dims=["epoch"]),
+        "esa_energy_step": xr.DataArray(esa_steps, dims=["esa_energy_step"]),
+        "calibration_prod": xr.DataArray(
+            np.array([0], dtype=np.uint8),
+            dims=["calibration_prod"],
+            attrs={"FILLVAL": 255},
+        ),
+        "spin_angle_bin": xr.DataArray(np.arange(n_spin_bins), dims=["spin_angle_bin"]),
+    }
+    exposure_times = xr.DataArray(
+        np.ones((1, len(esa_steps), n_spin_bins), dtype=np.float32),
+        dims=["epoch", "esa_energy_step", "spin_angle_bin"],
+    )
+    mock_compute_background_counts.return_value = xr.DataArray(
+        np.full((1, 1, len(background_indices)), 1000.0),
+        dims=["epoch", "calibration_prod", "background_index"],
+        coords={
+            "epoch": pset_coords["epoch"],
+            "calibration_prod": [0],
+            "background_index": background_indices,
+        },
+    )
+
+    result = hi_l1c.pset_backgrounds(
+        pset_coords, background_df, xr.Dataset(), xr.Dataset(), exposure_times
+    )
+
+    # Same result as passing a config pre-filtered to the PSET's cal prods
+    expected = hi_l1c.pset_backgrounds(
+        pset_coords,
+        background_df.loc[[0]],
+        xr.Dataset(),
+        xr.Dataset(),
+        exposure_times,
+    )
+    for var in ["background_rates", "background_rates_uncertainty"]:
+        assert result[var].shape == (1, len(esa_steps), 1, n_spin_bins)
+        assert np.all(np.isfinite(result[var].values))
+        np.testing.assert_array_equal(result[var].values, expected[var].values)
+
+
+@mock.patch("imap_processing.hi.hi_l1c._compute_background_counts")
 def test_pset_backgrounds_cal_prod_mismatch_raises_error(
     mock_compute_background_counts,
 ):
@@ -1250,8 +1306,8 @@ def test_pset_backgrounds_cal_prod_mismatch_raises_error(
     # Verify that pset_backgrounds raises ValueError with expected message
     with pytest.raises(
         ValueError,
-        match="Calibration products in pset_coords and "
-        "background_config_df do not match",
+        match="Calibration products in pset_coords are missing from "
+        "background_config_df",
     ):
         hi_l1c.pset_backgrounds(
             pset_coords,
