@@ -184,7 +184,7 @@ hi_de_event_met:
   CATDESC: Mission Elapsed Time (MET) in seconds of Direct Event
   DISPLAY_TYPE: no_plot
   FIELDNAM: Direct Event MET
-  FORMAT: F16.6
+  FORMAT: F17.6
   LABLAXIS: DE MET
   UNITS: seconds
   VAR_TYPE: support_data
@@ -400,7 +400,7 @@ hi_de_hae_longitude:
   CATDESC: Look direction HAE longitude
   DEPEND_0: event_met
   FIELDNAM: Ecliptic Longitude
-  FORMAT: F7.2
+  FORMAT: F6.2
   LABLAXIS: Lon
   UNITS: deg
   VALIDMAX: 360
