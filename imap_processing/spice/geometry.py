@@ -456,9 +456,9 @@ def instrument_pointing(
     """
     Compute the instrument pointing at the specified times.
 
-    By default, the coordinates returned are (Longitude, Latitude) coordinates, in
-    degrees, in the reference frame `to_frame`. Longitude is in the range [0, 360)
-    and latitude is in the range [-90, 90]. Cartesian coordinates can be returned
+    By default, the coordinates returned are (Longitude, Latitude), in degrees, in
+    the reference frame `to_frame`. Longitude is in the range [0, 360) and
+    latitude is in the range [-90, 90]. Cartesian coordinates can be returned
     if desired by setting `cartesian=True`.
 
     Parameters
