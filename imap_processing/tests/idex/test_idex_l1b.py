@@ -26,6 +26,7 @@ from imap_processing.idex.idex_l1b import (
 from imap_processing.idex.idex_utils import get_idex_attrs
 from imap_processing.spice.time import ttj2000ns_to_met
 from imap_processing.tests.idex import conftest
+from imap_processing.utils import convert_raw_to_eu
 
 
 @pytest.fixture
@@ -151,6 +152,53 @@ def test_unpack_instrument_settings():
 
     assert np.all(unpacked_dict["test_var0"] == 2)
     assert np.all(unpacked_dict["test_var1"] == 4)
+
+
+@pytest.mark.parametrize("temperature_var", ["temperature_1", "temperature_2"])
+def test_processor_board_temperature_conversion(temperature_var):
+    """Check the piecewise polynomial conversion of the processor board temps."""
+    # DN values on either side of each segment boundary, plus the range ends
+    dn = np.array([0, 2063, 2064, 3853, 3854, 4051, 4052, 4095], dtype=np.uint32)
+    segment_coeffs = [
+        [
+            162.8276,
+            -0.2668687,
+            0.0003323794,
+            -2.43153e-07,
+            9.034532e-11,
+            -1.327735e-14,
+        ],
+        [
+            714.2124,
+            -1.194011,
+            0.0008599094,
+            -3.145266e-07,
+            5.745416e-11,
+            -4.208231e-15,
+        ],
+        [136881.2, -105.4644, 0.02710281, -2.323543e-06],
+        [-100809.9, 50.03809, -0.00621209],
+    ]
+    # Each pair of DN values falls in one segment
+    expected = np.concatenate(
+        [
+            np.polyval(coeffs[::-1], dn[2 * i : 2 * i + 2])
+            for i, coeffs in enumerate(segment_coeffs)
+        ]
+    )
+
+    test_ds = xr.Dataset({temperature_var: xr.DataArray(dn, dims="epoch")})
+    converted = convert_raw_to_eu(
+        test_ds,
+        conversion_table_path=f"{imap_module_directory}/idex/"
+        f"idex_variable_unpacking_and_eu_conversion.csv",
+        packet_name="IDEX_SCI",
+    )
+
+    assert converted[temperature_var].dtype == np.float64
+    np.testing.assert_allclose(converted[temperature_var].data, expected)
+    # Upper segments are below zero and must not wrap around
+    assert np.all(converted[temperature_var].data[3:] < 0)
 
 
 def test_get_trigger_settings_success(decom_test_data_sci):
