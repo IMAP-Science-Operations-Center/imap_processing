@@ -22,10 +22,13 @@ def calculate_baseline_and_rms(
     Parameters
     ----------
     signal : numpy.ndarray
-        Waveform samples in engineering units, with samples on the last axis.
+        Waveform samples in engineering units. Shape is (samples,) for one event
+        or (events, samples) for multiple events; each row is one event.
     time : numpy.ndarray
-        Corresponding sample times in microseconds. Each record uses the half-open
-        interval from its earliest finite time to that time plus 3 microseconds.
+        Corresponding sample times in microseconds, with shape (samples,) for a
+        shared time axis or (events, samples) for event-specific times. Each event
+        uses the half-open interval from its earliest finite time to that time
+        plus 3 microseconds.
 
     Returns
     -------
@@ -38,11 +41,19 @@ def calculate_baseline_and_rms(
     signal = np.asarray(signal, dtype=float)
     time = np.asarray(time, dtype=float)
     finite_time = np.isfinite(time)
+    # Ignore invalid times when locating each event's start. Keep the sample axis
+    # so the start broadcasts against that event's sample times.
     start = np.min(
         np.where(finite_time, time, np.inf), axis=-1, keepdims=True, initial=np.inf
     )
+    # Use only finite samples in [start, start + 3 microseconds). An event with
+    # no finite times has start=inf and contributes no samples.
     mask = finite_time & (time < start + 3.0) & np.isfinite(signal)
     count = np.count_nonzero(mask, axis=-1)
+    if np.any(count == 0):
+        logger.warning("Unable to find baseline noise in the first 3 microseconds.")
+    # Masked sums exclude invalid samples; guarded division leaves empty events
+    # as NaN rather than dividing by zero.
     baseline = np.full(signal.shape[:-1], np.nan)
     np.divide(
         np.sum(np.where(mask, signal, 0.0), axis=-1),
@@ -50,11 +61,10 @@ def calculate_baseline_and_rms(
         out=baseline,
         where=count > 0,
     )
+    # Center each event on its own baseline and use the population variance.
     residual = np.where(mask, signal - np.expand_dims(baseline, -1), 0.0)
     variance = np.full_like(baseline, np.nan)
     np.divide(np.sum(residual**2, axis=-1), count, out=variance, where=count > 0)
-    if np.any(count == 0):
-        logger.warning("Unable to find baseline noise in the first 3 microseconds.")
     return baseline, np.sqrt(variance)
 
 

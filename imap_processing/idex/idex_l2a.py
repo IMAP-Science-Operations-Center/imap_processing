@@ -17,7 +17,6 @@ Examples
 """
 
 import logging
-from enum import IntEnum
 
 import numpy as np
 import pandas as pd
@@ -39,24 +38,6 @@ from imap_processing.idex.idex_utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-class BaselineNoiseTime(IntEnum):
-    """
-    Legacy TOF baseline window, retained for compatibility.
-
-    L1b statistics and L2a processing now use the first 3 microseconds instead.
-
-    Attributes
-    ----------
-    START: int
-         Beginning of the baseline noise window.
-    STOP: int
-        End of the baseline noise window.
-    """
-
-    START = -7
-    STOP = -5
 
 
 def load_calibration_files(ancillary_files: dict) -> tuple[NDArray, NDArray]:
@@ -100,7 +81,8 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     Parameters
     ----------
     l1b_dataset : xarray.Dataset
-        IDEX L1a dataset to process.
+        IDEX L1b dataset to process, including the per-event waveform baseline
+        and RMS statistics.
     ancillary_files : dict
         Ancillary files containing calibration coefficients needed to estimate
         velocity and mass of the dust particles.
@@ -137,8 +119,8 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     snr = calculate_snr(
         tof_high,
         hs_time,
-        l1b_dataset.get("tof_high_baseline"),
-        l1b_dataset.get("tof_high_rms"),
+        l1b_dataset["tof_high_baseline"],
+        l1b_dataset["tof_high_rms"],
     )
     # Find peaks for each event. The peaks represent a TOF of an ion.
     # Peaks_2d is a list of variable-length arrays
@@ -205,13 +187,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             l2a_dataset[flag_name].attrs = idex_attrs.get_variable_attributes(flag_name)
 
     for waveform in ["Target_Low", "Target_High", "Ion_Grid"]:
-        baseline = l1b_dataset.get(f"{waveform.lower()}_baseline")
-        if baseline is None:
-            # Older L1b products do not contain the event-level statistics.
-            baseline_values, _ = calculate_baseline_and_rms(
-                l1b_dataset[waveform].data, ls_time.data
-            )
-            baseline = xr.DataArray(baseline_values, dims="epoch")
+        baseline = l1b_dataset[f"{waveform.lower()}_baseline"]
         # Get the dust mass estimates and fit results
         fit_results = xr.apply_ufunc(
             estimate_dust_mass,
@@ -824,7 +800,7 @@ def calculate_snr(
         The high sampling time array.
     baseline : xarray.DataArray or numpy.ndarray or None
         Per-event L1b mean baseline. Calculated from the first 3 microseconds
-        when baseline or rms is omitted, for compatibility with older products.
+        when baseline or rms is omitted in standalone calls.
     rms : xarray.DataArray or numpy.ndarray or None
         Per-event L1b baseline-subtracted RMS noise (ddof=0).
 
@@ -1040,7 +1016,7 @@ def estimate_dust_mass(
         Channel name used to select channel-specific fit bounds.
     baseline_mean : float or None
         L1b mean baseline used to initialize the fit. Calculated from the first
-        3 microseconds when omitted, for compatibility with older products.
+        3 microseconds when omitted in standalone calls.
 
     Returns
     -------

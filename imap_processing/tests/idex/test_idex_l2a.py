@@ -36,18 +36,26 @@ from imap_processing.idex.idex_l2a import (
 from imap_processing.idex.idex_utils import calculate_baseline_and_rms
 
 
-@pytest.mark.parametrize("stored_statistics", [True, False])
-def test_l2a_uses_per_event_baselines(l1b_dataset, stored_statistics):
-    """L2a forwards each baseline once and computes missing legacy fields in bulk."""
+@pytest.mark.parametrize(
+    "missing_statistic",
+    [
+        None,
+        "tof_high_baseline",
+        "tof_high_rms",
+        "target_low_baseline",
+        "target_high_baseline",
+        "ion_grid_baseline",
+    ],
+)
+def test_l2a_uses_required_l1b_statistics(l1b_dataset, missing_statistic):
+    """L2a uses stored statistics and rejects inputs missing required fields."""
     dataset = l1b_dataset.isel(epoch=slice(0, 2)).copy(deep=True)
     expected_baselines = {
         channel: dataset[f"{channel.lower()}_baseline"].values.copy()
         for channel in ("Target_Low", "Target_High", "Ion_Grid")
     }
-    if not stored_statistics:
-        dataset = dataset.drop_vars(
-            [name for name in dataset if name.endswith(("_baseline", "_rms"))]
-        )
+    if missing_statistic is not None:
+        dataset = dataset.drop_vars(missing_statistic)
 
     def fit_waveform(time, signal, remove_noise, waveform_name, baseline_mean):
         return (
@@ -83,9 +91,15 @@ def test_l2a_uses_per_event_baselines(l1b_dataset, stored_statistics):
             wraps=calculate_baseline_and_rms,
         ) as calculate,
     ):
-        result = idex_l2a(dataset, {})
+        if missing_statistic is not None:
+            with pytest.raises(KeyError, match=missing_statistic):
+                idex_l2a(dataset, {})
+        else:
+            result = idex_l2a(dataset, {})
 
-    assert calculate.call_count == (0 if stored_statistics else 4)
+    calculate.assert_not_called()
+    if missing_statistic is not None:
+        return
     assert fit.call_count == 6
     for channel, expected in expected_baselines.items():
         supplied = [
