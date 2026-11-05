@@ -360,6 +360,8 @@ def test_filter_dataset_to_processing_day():
 def test_subset_sectored_counts():
     """Test the subset_sectored_counts function."""
 
+    epoch_start = 316008084684000000
+
     def create_l1a_counts_dataset(hdr_minute_cnt_values):
         """Helper to create L1A counts dataset."""
         return xr.Dataset(
@@ -371,27 +373,34 @@ def test_subset_sectored_counts():
             },
             coords={
                 "epoch": np.arange(
-                    316008084684000000, 316008084684000000 + len(hdr_minute_cnt_values)
+                    epoch_start, epoch_start + len(hdr_minute_cnt_values)
                 ),
             },
         )
 
-    def validate_subset(l1a_counts_dataset):
+    def validate_subset(l1a_counts_dataset, expected_epoch, expected_livetime):
         """Helper to validate the subset results."""
         # Define the packet date
         packet_date = "20100106"
         subset_dataset = subset_sectored_counts(l1a_counts_dataset, packet_date)
-        assert subset_dataset.sizes["epoch"] == 10
-        assert subset_dataset.sizes["epoch_livetime"] == 10
-        assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
-        assert np.all(
-            subset_dataset["epoch_livetime"].values
-            == subset_dataset["epoch"].values - 10
-        ), "epoch_livetime values are not shifted by 10 from epoch values"
+        np.testing.assert_array_equal(
+            subset_dataset["epoch"].values,
+            expected_epoch,
+            err_msg="epoch values are incorrect.",
+        )
+        np.testing.assert_array_equal(
+            subset_dataset["epoch_livetime"].values,
+            expected_livetime,
+            err_msg="epoch_livetime values are incorrect.",
+        )
 
     # Test with partial data at the start and end of the dataset
+    # Sets: [0-4] [5-14] [15-24] [25-29]
+    # Counts are every set but the first; livetime is every set but the last.
     l1a_counts_dataset = create_l1a_counts_dataset(np.arange(105, 135))
-    validate_subset(l1a_counts_dataset)
+    expected_epoch = epoch_start + np.arange(5, 30)
+    expected_livetime = epoch_start + np.arange(0, 25)
+    validate_subset(l1a_counts_dataset, expected_epoch, expected_livetime)
 
     # Test with partial data in the middle of the dataset
     l1a_counts_dataset = create_l1a_counts_dataset(
@@ -428,7 +437,10 @@ def test_subset_sectored_counts():
             139,
         ]
     )
-    validate_subset(l1a_counts_dataset)
+    # Sets: [0-9] [10-14] [15-19] [20-29]
+    expected_epoch = epoch_start + np.arange(10, 30)
+    expected_livetime = epoch_start + np.arange(0, 20)
+    validate_subset(l1a_counts_dataset, expected_epoch, expected_livetime)
 
     # Test with partial data at the start, middle, and end of the dataset
     l1a_counts_dataset = create_l1a_counts_dataset(
@@ -465,16 +477,17 @@ def test_subset_sectored_counts():
             141,
         ]
     )
-    validate_subset(l1a_counts_dataset)
+    # Sets: [0-4] [5-14] [15-17] [18-27] [28-29]
+    expected_epoch = epoch_start + np.arange(5, 30)
+    expected_livetime = epoch_start + np.arange(0, 28)
+    validate_subset(l1a_counts_dataset, expected_epoch, expected_livetime)
 
-    # Test with only partial data in the dataset
+    # Test with only partial data in the dataset (every other frame dropped)
+    # Sets: [0-4] [5-9] [10-14] [15-19] [20-24] [25-29]
     l1a_counts_dataset = create_l1a_counts_dataset(np.arange(100, 160, 2))
-    with pytest.raises(
-        ValueError,
-        match="No data to process - valid start indices not found for "
-        "complete sectored counts.",
-    ):
-        subset_sectored_counts(l1a_counts_dataset, packet_date="20100106")
+    expected_epoch = epoch_start + np.arange(5, 30)
+    expected_livetime = epoch_start + np.arange(0, 25)
+    validate_subset(l1a_counts_dataset, expected_epoch, expected_livetime)
 
 
 def test_subset_sectored_counts_dropped_frame():
@@ -656,13 +669,13 @@ def test_validate_l1a_counts_data(sci_packet_filepath, validation_data):
 
     # Copy the validation data for sectored data validation.
     # The first complete set of sectored data with sufficient livetime
-    # data available is from index 17 to -4. Slice the validation data.
-    sectored_validation_data = validation_data.iloc[17:-4].copy().reset_index(drop=True)
+    # data available is from index 7 to the end. Slice the validation data.
+    sectored_validation_data = validation_data.iloc[7:].copy().reset_index(drop=True)
 
-    # The corresponding livetime values for the sectored data is from index 7 to -14
+    # The corresponding livetime values for the sectored data is from index 0 to -4
     # (i.e. 10 minutes before the first complete set of sectored data).
     livetime_validation_data = (
-        validation_data[["livetime_counter"]].iloc[7:-14].copy().reset_index(drop=True)
+        validation_data[["livetime_counter"]].iloc[0:-4].copy().reset_index(drop=True)
     )
 
     # NOTE: slicing indices are specific to the sci_sample_raw.csv validation file

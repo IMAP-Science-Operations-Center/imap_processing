@@ -481,6 +481,8 @@ def process_sectored_rates_data(
             "fe_energy_mean",
         ],
     )
+    # Keep the header minute count so sets of sectored data can be identified in L2
+    l1b_sectored_rates_dataset["hdr_minute_cnt"] = l1a_counts_dataset["hdr_minute_cnt"]
 
     # Dictionary to store variable rename mappings for L1B dataset
     rename_map = {}

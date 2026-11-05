@@ -142,7 +142,9 @@ def test_sum_livetime_10min_3_complete_sets():
         livetime_values, dims=["epoch"], coords={"epoch": np.arange(30)}
     )
     # Create a sample hdr_minute_cnt array that has 3 complete sets
-    hdr_minute_cnt = xr.DataArray(np.arange(10, 40))
+    hdr_minute_cnt = xr.DataArray(
+        np.arange(10, 40), dims="epoch", coords={"epoch": np.arange(30)}
+    )
     # Expected result: sum of every 10 values repeated 10 times
     expected_values = np.repeat(
         [sum(livetime_values[i : i + 10]) for i in range(0, 30, 10)], 10
@@ -165,9 +167,10 @@ def test_sum_livetime_10min_incomplete_set():
         livetime_values, dims=["epoch"], coords={"epoch": np.arange(29)}
     )
     # Create a sample hdr_minute_cnt array
-    hdr_minute_cnt = xr.DataArray(np.arange(10, 40))
+    hdr_minute_cnt = xr.DataArray(np.arange(10, 40), dims="epoch")
     # Drop the third frame to simulate an incomplete set
-    hdr_minute_cnt = np.delete(hdr_minute_cnt, 3)
+    hdr_minute_cnt = hdr_minute_cnt.drop_isel(epoch=3)
+    hdr_minute_cnt = hdr_minute_cnt.assign_coords({"epoch": np.arange(29)})
     # Expected result: sum of every 10 values (one) repeated 10 times except for
     # the second set. Since the first set had a dropped frame, and the second
     # set's livetime comes from the first set that livetime sum should be scaled
