@@ -367,6 +367,8 @@ def find_mod10_set_ids(hdr_minute_cnt: np.ndarray) -> np.ndarray:
     # A set can be incomplete if a frame was dropped so we can not just look for
     # complete sets [0-9].
     ids: np.ndarray = np.cumsum(np.diff(mod_10, prepend=0) < 0)
+    # TODO group by id and check if any epochs are greater than 10 mins apart.
+    #   This means that 2 different sets were incorrectly identified as 1.
     return ids
 
 

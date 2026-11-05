@@ -814,13 +814,13 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
     hr_minute_count = macropixel_dataset.hdr_minute_cnt.values
     set_ids = find_mod10_set_ids(hr_minute_count)
     set_starts = np.flatnonzero(np.diff(set_ids, prepend=-1))
-    # Use the first record in each 10-record group as the output template.
+    # Use the first record in each set as the output template.
     transformed_dataset = macropixel_dataset.isel(
         epoch=set_starts,
     ).copy(deep=True)
 
-    # Each minute in a 10-record group contains one species/energy combination,
-    # ordered as described by species_energy. Track that minute's packet offset.
+    # Each minute in a set contains one species/energy combination and every
+    # other species/energy is a fill value.
     for species, _ in species_energy:
         energy_dim = f"{species}_energy_mean"
         # Gather the intensity and uncertainty variables that share this
@@ -832,14 +832,12 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
         ]
 
         for var in species_variables:
-            # get the non fill value at each epoch
+            # Replace fill vals with nans so the skipna works.
             da = macropixel_dataset[var]
-            da = xr.where(
-                da == -1e31, np.nan, da
-            )  # Replace fill vals with nans so the skipna works.
-            # Group by set_ids and take the first record in each group, skipping NaN
-            # values. (There will only be one row that isn't nonzero so taking
-            # the first is safe).
+            da = xr.where(da == FILLVAL_FLOAT32, np.nan, da)
+            # Group by set_ids and take the first non NaN value in each group.
+            # (There will only be one row that isn't fill so taking the first is
+            # safe). If a frame was dropped, that value stays as fill.
             transformed_dataset[var].values = (
                 da.groupby(xr.DataArray(set_ids, dims="epoch"))
                 .first(skipna=True)
@@ -849,7 +847,7 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
 
     minute_cadence_epochs = macropixel_dataset["epoch"].values
     nanoseconds_per_10_min = SECONDS_PER_10_MIN * 1_000_000_000
-    # header minute count gives the minutes past the set start.
+    # The header minute count mod 10 gives the minutes past the set start.
     # Convert this to nanoseconds.
     nanoseconds_since_set_start = (hr_minute_count % 10) * 60 * 1_000_000_000
     nanoseconds_per_5_min = nanoseconds_per_10_min // 2
@@ -868,4 +866,5 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
         dims=["epoch"],
     )
 
-    return transformed_dataset
+    # hdr_minute_cnt was only needed to find the sets, so drop it from the L2 product
+    return transformed_dataset.drop_vars("hdr_minute_cnt")
