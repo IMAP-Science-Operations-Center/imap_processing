@@ -505,7 +505,9 @@ class ProcessInstrument(ABC):
         """
         Upload data products to the IMAP SDC.
 
-        If a 503 SlowDown error is reported from the Upload API, a retry will be made
+        An upload that S3 throttles with a 503 SlowDown, or whose connection drops,
+        is retried, and the process exits with the retry exit code if it keeps
+        failing.
 
         Parameters
         ----------
@@ -528,16 +530,22 @@ class ProcessInstrument(ABC):
 
                     except IMAPDataAccessError as e:
                         message = str(e)
+                        throttled = "503" in message and "SlowDown" in message
+                        # The file may have been stored before the connection
+                        # dropped, in which case the retry skips it as existing
+                        connection_dropped = "Connection aborted" in message
 
                         if "FileAlreadyExists" in message and "409" in message:
                             logger.warning(
                                 "Skipping upload of existing file, %s", filename
                             )
                             break
-                        elif "503" in message and "SlowDown" in message:
+                        elif throttled or connection_dropped:
                             if attempt < max_retries - 1:
                                 logger.warning(
-                                    "Upload busy. Waiting 5 seconds before retrying..."
+                                    "Upload failed: %s. Waiting 5 seconds before "
+                                    "retrying...",
+                                    message,
                                 )
                                 sleep(5)
                                 continue
