@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from scipy.optimize import curve_fit
 from scipy.stats import exponnorm
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
@@ -26,6 +27,7 @@ from imap_processing.idex.idex_l2a import (
     chi_square,
     estimate_dust_mass,
     fit_impact,
+    idex_l2a,
     invert_rise_time_to_velocity,
     load_calibration_files,
     log_smooth_powerlaw,
@@ -33,6 +35,136 @@ from imap_processing.idex.idex_l2a import (
     sine_fit,
     time_to_mass,
 )
+
+
+@pytest.mark.parametrize("waveform", ["Target_Low", "Target_High", "Ion_Grid"])
+def test_estimate_dust_mass_skips_saturated_waveform(waveform):
+    time = xr.DataArray(np.arange(8, dtype=float))
+    signal = xr.DataArray(np.full(8, 4095), name=waveform)
+
+    with mock.patch("imap_processing.idex.idex_l2a.curve_fit") as optimizer:
+        parameters, charge, chisqr, redchi, fitted = estimate_dust_mass(
+            time, signal, waveform_name=waveform, saturation_flag=1
+        )
+
+    optimizer.assert_not_called()
+    assert parameters.shape == (5,)
+    assert fitted.shape == signal.shape
+    for value in (parameters, charge, chisqr, redchi, fitted):
+        assert np.all(np.isnan(value))
+
+
+@pytest.mark.parametrize("saturation", ["mixed", "all", "none"])
+def test_l2a_fits_only_unsaturated_waveforms(saturation):
+    """Saturation skips the optimizer per channel without removing any events."""
+    n_events = 6
+    high_dim = "time_high_sample_rate_index"
+    low_dim = "time_low_sample_rate_index"
+    high_time = np.linspace(-8.0, 8.0, 33)
+    low_time = np.linspace(-10.0, 40.0, 64)
+    tof = exponnorm.pdf(high_time, 1.0, 0.0, 0.5) + 0.001 * np.cos(np.arange(33))
+    low_signal = fit_impact(low_time, 0.0, 1.0, 10.0, 0.371, 37.1)
+    dataset = xr.Dataset(
+        {
+            "time_high_sample_rate": (
+                ("epoch", high_dim),
+                np.tile(high_time, (n_events, 1)),
+            ),
+            "time_low_sample_rate": (
+                ("epoch", low_dim),
+                np.tile(low_time, (n_events, 1)),
+            ),
+        },
+        coords={"epoch": np.arange(n_events, dtype=np.int64)},
+        attrs={"Logical_source": "imap_idex_l1b_sci-10days"},
+    )
+    for flag in ALL_FLAG_NAMES:
+        dataset[flag] = xr.DataArray(np.zeros(n_events, dtype=np.uint8), dims="epoch")
+    dataset["science_event_flag"][:] = 1
+    flags = {
+        "TOF_High": [0, 0, 0, 0, 1, 1],
+        "Target_Low": [0, 0, 1, 0, 1, 0],
+        "Target_High": [0, 1, 0, 0, 1, 0],
+        "Ion_Grid": [0, 0, 0, 1, 1, 0],
+    }
+    for channel, mixed_flags in flags.items():
+        values = (
+            mixed_flags
+            if saturation == "mixed"
+            else np.full(n_events, int(saturation == "all"))
+        )
+        dataset[f"{channel.lower()}_saturation_flag"][:] = values
+        is_tof = channel == "TOF_High"
+        samples = np.tile(tof if is_tof else low_signal, (n_events, 1))
+        # Any optimizer call receiving these flagged records must fail this test.
+        samples[np.asarray(values) == 1, samples.shape[1] // 2] = 999.0
+        dataset[channel] = xr.DataArray(
+            samples, dims=("epoch", high_dim if is_tof else low_dim)
+        )
+    original = dataset.copy(deep=True)
+    fit_calls = []
+
+    def fit_unsaturated(function, time, signal, *args, **kwargs):
+        assert not np.any(signal == 999.0), "Saturated samples reached the optimizer"
+        fit_calls.append(function)
+        return curve_fit(function, time, signal, *args, **kwargs)
+
+    with (
+        mock.patch(
+            "imap_processing.idex.idex_l2a.load_calibration_files",
+            return_value=(
+                np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28]),
+                np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40]),
+            ),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.time_to_mass",
+            return_value=(
+                np.ones(n_events),
+                np.zeros(n_events),
+                np.ones_like(dataset.TOF_High),
+            ),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.curve_fit", side_effect=fit_unsaturated
+        ),
+    ):
+        result = idex_l2a(dataset, {})
+
+    expected_low_fits = 0
+    for channel in ("Target_Low", "Target_High", "Ion_Grid"):
+        prefix = channel.lower()
+        saturated = dataset[f"{prefix}_saturation_flag"].values == 1
+        expected_low_fits += np.count_nonzero(~saturated)
+        for suffix in (
+            "fit_parameters",
+            "fit_results",
+            "impact_charge",
+            "chi_squared",
+            "reduced_chi_squared",
+            "velocity_estimate",
+            "dust_mass_estimate",
+        ):
+            assert np.all(np.isnan(result[f"{prefix}_{suffix}"].values[saturated]))
+        if np.any(~saturated):
+            np.testing.assert_allclose(
+                result[f"{prefix}_fit_parameters"].values[~saturated],
+                np.tile(
+                    [0.0, 1.0, 10.0, 0.371, 37.1], (np.count_nonzero(~saturated), 1)
+                ),
+                atol=1e-8,
+            )
+            np.testing.assert_allclose(
+                result[f"{prefix}_fit_results"].values[~saturated],
+                np.tile(low_signal, (np.count_nonzero(~saturated), 1)),
+                atol=1e-8,
+            )
+    assert fit_calls.count(fit_impact) == expected_low_fits
+    assert fit_calls.count(exponnorm.pdf) == np.count_nonzero(
+        dataset.tof_high_saturation_flag.values == 0
+    )
+    np.testing.assert_array_equal(result.epoch, dataset.epoch)
+    xr.testing.assert_identical(dataset, original)
 
 
 def test_non_science_derived_estimates_are_nan() -> None:
@@ -152,6 +284,19 @@ def test_l2a_logical_source_and_cdf(l2a_dataset: xr.Dataset, l1b_dataset: xr.Dat
         np.testing.assert_array_equal(
             l2a_dataset[flag_name].values, l1b_dataset[flag_name].values
         )
+
+    for channel in ("target_low", "target_high", "ion_grid"):
+        saturated = l1b_dataset[f"{channel}_saturation_flag"].values == 1
+        for suffix in (
+            "fit_parameters",
+            "fit_results",
+            "impact_charge",
+            "chi_squared",
+            "reduced_chi_squared",
+        ):
+            name = f"{channel}_{suffix}"
+            assert np.all(np.isnan(l2a_dataset[name].values[saturated]))
+            assert np.all(np.isnan(ds[name].values[saturated]))
 
     with cdflib.CDF(file_name) as cdf_file:
         assert cdf_file.varattsget("mass_index")["CATDESC"] == (

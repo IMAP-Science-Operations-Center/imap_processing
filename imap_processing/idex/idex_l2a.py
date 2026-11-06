@@ -91,6 +91,9 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     The TOF peaks are fitted to EMG curves to determine total intensity, max amplitude,
     and signal quality.
 
+    Saturated waveforms are not fitted. Their fit products contain NaN values;
+    unsaturated channels in the same event are processed independently.
+
     Parameters
     ----------
     l1b_dataset : xarray.Dataset
@@ -133,6 +136,9 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     # Peaks_2d is a list of variable-length arrays
     peaks_2d = [find_peaks(tof, prominence=0.01)[0] for tof in tof_high]
     kappa = calculate_kappa(mass_scales, peaks_2d)
+    # Empty peak lists keep saturated TOF waveforms out of the peak fitter.
+    for event in np.flatnonzero(l1b_dataset["tof_high_saturation_flag"].data == 1):
+        peaks_2d[event] = np.array([], dtype=int)
 
     # Analyze peaks for estimating dust composition
     peak_fits_params, area_under_fits, fit_chisqr, fit_redchi = xr.apply_ufunc(
@@ -187,7 +193,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     )
 
     # Preserve event classification and saturation flags for the event-level L2A
-    # products.  Fits remain available for every event, including non-dust events.
+    # products. Unsaturated waveforms are fitted even for non-dust events.
     for flag_name in ALL_FLAG_NAMES:
         if flag_name in l1b_dataset:
             l2a_dataset[flag_name] = l1b_dataset[flag_name].copy()
@@ -199,9 +205,15 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             estimate_dust_mass,
             ls_time,
             l1b_dataset[waveform],
+            False,
+            waveform,
+            l1b_dataset[f"{waveform.lower()}_saturation_flag"],
             input_core_dims=[
                 ["time_low_sample_rate_index"],
                 ["time_low_sample_rate_index"],
+                [],
+                [],
+                [],
             ],
             output_core_dims=[
                 ["target_fit_parameter_index"],
@@ -213,7 +225,6 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             vectorize=True,
             output_dtypes=[np.float64] * 6,
             keep_attrs=True,
-            kwargs={"waveform_name": waveform},
         )
         # Calculate mass and velocity estimates
         if waveform == "Ion_Grid":
@@ -393,7 +404,7 @@ def _mask_non_science_derived_estimates(l2a_dataset: xr.Dataset) -> None:
 def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
     """Mask fitted charges and derived estimates for saturated waveforms.
 
-    Fit parameters remain available for diagnostics. Impact charge, velocity,
+    Saturated waveforms are skipped during fitting. Impact charge, velocity,
     and mass estimates are not scientifically valid when their source waveform
     is saturated.
 
@@ -1003,6 +1014,7 @@ def estimate_dust_mass(
     target_signal: xr.DataArray,
     remove_noise: bool = False,
     waveform_name: str = "",
+    saturation_flag: int = 0,
 ) -> tuple[NDArray, float, float, float, NDArray]:
     """
     Filter and fit the target or ion grid signals to get the total dust impact charge.
@@ -1018,6 +1030,9 @@ def estimate_dust_mass(
         signal.
     waveform_name : str
         Channel name used to select channel-specific fit bounds.
+    saturation_flag : int
+        Waveform saturation flag from L1b. A value of 1 skips fitting and returns
+        NaN fit parameters, charge, chi-square values, and fitted samples.
 
     Returns
     -------
@@ -1035,6 +1050,14 @@ def estimate_dust_mass(
     result : numpy.ndarray
         The model values evaluated at each time point.
     """
+    if saturation_flag == 1:
+        return (
+            np.full(5, np.nan),
+            np.nan,
+            np.nan,
+            np.nan,
+            np.full(target_signal.shape, np.nan),
+        )
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
     # window_start = float(np.min(time))
