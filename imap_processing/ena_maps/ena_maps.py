@@ -1031,12 +1031,15 @@ class AbstractSkyMap(ABC):
                     dims=output_dims,
                 )
 
-                # Make coordinates for the map data array if they don't exist
+                # Copy the PSET's coordinates for dims the map doesn't have coords
+                # for yet. Dims without a PSET coordinate stay coordinate-less, so
+                # they keep being combined by position.
                 self.data_1d.coords.update(
                     {
                         dim: pointing_set.data[dim]
                         for dim in self.data_1d[value_key].dims
                         if dim not in self.data_1d.coords
+                        and dim in pointing_set.data.coords
                     }
                 )
 
@@ -1250,13 +1253,15 @@ class AbstractSkyMap(ABC):
 
         pset_labels = pset_data.coords[dim].values
         map_labels = map_var.coords[dim].values
-        if np.array_equal(pset_labels, map_labels):
-            return None
+        # Check before the equality shortcut, so duplicates are caught even when
+        # the map's labels were copied from this PSET.
         if len(np.unique(pset_labels)) != pset_size:
             raise ValueError(
                 f"PSET coordinate '{dim}' of '{value_key}' has duplicate labels: "
                 f"{pset_labels.tolist()}."
             )
+        if np.array_equal(pset_labels, map_labels):
+            return None
         positions = map_var.indexes[dim].get_indexer(pset_labels)
         if np.any(positions < 0):
             # Print labels with tolist() so floats show at full precision

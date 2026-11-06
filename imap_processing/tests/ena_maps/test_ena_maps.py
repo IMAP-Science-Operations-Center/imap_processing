@@ -2441,13 +2441,56 @@ class TestProjectByCoordinateLabel:
         with pytest.raises(ValueError, match="do not match the non-spatial dims"):
             sky_map.project_pset_values_to_map(pset, ["counts"])
 
-    def test_duplicate_labels_raise(self, mock_frame_transform_az_el):
+    @pytest.mark.parametrize("pre_initialize", [False, True])
+    def test_duplicate_labels_raise(self, mock_frame_transform_az_el, pre_initialize):
+        """Duplicate labels raise, including when they match the map's labels."""
         self._identity(mock_frame_transform_az_el)
         sky_map = make_sky_map("rectangular")
-        pre_initialize_map_var(sky_map)
+        if pre_initialize:
+            pre_initialize_map_var(sky_map)
         pset = make_labeled_rect_pset(esa_steps=[2, 2])
         with pytest.raises(ValueError, match="duplicate labels"):
             sky_map.project_pset_values_to_map(pset, ["counts"])
+
+    def test_duplicate_labels_matching_map_raise(self, mock_frame_transform_az_el):
+        """Identical duplicate labels on PSET and map don't take the fast path."""
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.data_1d["counts"] = xr.DataArray(
+            np.zeros((1, 2, 2, 2, sky_map.num_points)),
+            dims=(*NON_SPATIAL_DIMS, CoordNames.GENERIC_PIXEL.value),
+            coords={"esa_energy_step": [2, 2]},
+        )
+        pset = make_labeled_rect_pset(esa_steps=[2, 2])
+        with pytest.raises(ValueError, match="duplicate labels"):
+            sky_map.project_pset_values_to_map(pset, ["counts"])
+
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    def test_coordinate_less_dim_stays_positional(
+        self, mock_frame_transform_az_el, method
+    ):
+        """A map dim created from a PSET without coords gets no artificial labels."""
+        self._identity(mock_frame_transform_az_el)
+        pset_a = make_labeled_rect_pset(seed=1)
+        pset_a.data = pset_a.data.drop_vars("calibration_prod")
+        # Labels that differ from the 0..N-1 positions of the first PSET
+        pset_b = make_labeled_rect_pset(cal_prods=[20, 10], seed=2)
+
+        sky_map = make_sky_map("rectangular")
+        sky_map.project_pset_values_to_map(pset_a, ["counts"], method)
+        assert "calibration_prod" not in sky_map.data_1d.coords
+        sky_map.project_pset_values_to_map(pset_b, ["counts"], method)
+
+        single_maps = []
+        for pset in (pset_a, pset_b):
+            single_map = make_sky_map("rectangular")
+            single_map.project_pset_values_to_map(pset, ["counts"], method)
+            single_maps.append(single_map.data_1d["counts"].values)
+        np.testing.assert_array_equal(
+            sky_map.data_1d["counts"].values, single_maps[0] + single_maps[1]
+        )
 
     def test_pre_initialized_without_pixel_dim_raises(self, mock_frame_transform_az_el):
         self._identity(mock_frame_transform_az_el)
