@@ -1749,3 +1749,51 @@ class TestUnsupported:
                 anc_dependencies,
                 "l090-enansnbs-h-sf-nsp-full-hae-nside8-3mo",
             )
+
+
+class TestHistogramSpinAngle:
+    """The map reads the spin angle of each bin from the histogram rates."""
+
+    @staticmethod
+    def make_map(pointing, anc_dependencies):
+        """The full-spin map of one pointing, with the sky pointing mocked."""
+        with patch(
+            "imap_processing.lo.l1c.lo_l1c.frame_transform_az_el",
+            side_effect=identity_pointing,
+        ):
+            (dataset,) = lo_l2(
+                as_dependencies(pointing), anc_dependencies, FULL_DESCRIPTOR
+            )
+        return dataset
+
+    @staticmethod
+    def with_spin_angle(pointing, spin_angle):
+        """The pointing, with its histogram rates carrying the given spin angles."""
+        histrates = pointing["histrates"].copy()
+        histrates["spin_angle"] = ("spin_bin_6", spin_angle)
+        return {**pointing, "histrates": histrates}
+
+    def test_nominal_spin_angle_matches_fallback(self, one_pointing, anc_dependencies):
+        """Spin angles equal to the nominal ones give the map made without them."""
+        without = self.make_map(one_pointing, anc_dependencies)
+        nominal = self.make_map(
+            self.with_spin_angle(one_pointing, _dps_spin_angles()), anc_dependencies
+        )
+
+        np.testing.assert_array_equal(
+            nominal["ena_count"].values, without["ena_count"].values
+        )
+
+    def test_spin_angle_moves_the_counts(self, one_pointing, anc_dependencies):
+        """Spin angles one map pixel (6 deg) further on move the counts with them."""
+        without = self.make_map(one_pointing, anc_dependencies)
+        shifted = self.make_map(
+            self.with_spin_angle(one_pointing, np.mod(_dps_spin_angles() + 6.0, 360.0)),
+            anc_dependencies,
+        )
+
+        # The mocked pointing makes the spin angle the map longitude
+        np.testing.assert_array_equal(
+            shifted["ena_count"].values,
+            np.roll(without["ena_count"].values, 1, axis=2),
+        )
