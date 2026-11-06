@@ -911,7 +911,7 @@ class AbstractSkyMap(ABC):
         """
         return self.az_el_points.shape[0]
 
-    def project_pset_values_to_map(  # noqa: PLR0912
+    def project_pset_values_to_map(
         self,
         pointing_set: PointingSet,
         value_keys: list[str] | None = None,
@@ -945,7 +945,7 @@ class AbstractSkyMap(ABC):
         ----------
         pointing_set : PointingSet
             The pointing set containing the values to project to the map.
-        value_keys : list[tuple[str, IndexMatchMethod]] | None
+        value_keys : list[str] | None
             The keys of the values in the PointingSet to project to the map.
             Ex.: ["counts", "flux"]
             data_vars named each key must be present, and of the same dimensionality in
@@ -1007,9 +1007,6 @@ class AbstractSkyMap(ABC):
         dim_positions: dict[str, NDArray | None] = {}
 
         for value_key in value_keys:
-            if value_key not in pointing_set.data.data_vars:
-                raise ValueError(f"Value key {value_key} not found in pointing set.")
-
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # stack them into a single coordinate to match the raveled indices
@@ -1240,9 +1237,14 @@ class AbstractSkyMap(ABC):
         )
         if not label_matched:
             if pset_size != map_size:
+                reason = (
+                    "the epoch dim is always combined by position"
+                    if dim == CoordNames.TIME.value
+                    else "no coordinate on the map variable or PSET"
+                )
                 raise ValueError(
-                    f"Cannot combine dim '{dim}' of '{value_key}' by position: "
-                    f"PSET size {pset_size} != map size {map_size}."
+                    f"Cannot combine dim '{dim}' of '{value_key}' by position "
+                    f"({reason}): PSET size {pset_size} != map size {map_size}."
                 )
             return None
 
@@ -1253,14 +1255,16 @@ class AbstractSkyMap(ABC):
         if len(np.unique(pset_labels)) != pset_size:
             raise ValueError(
                 f"PSET coordinate '{dim}' of '{value_key}' has duplicate labels: "
-                f"{pset_labels}."
+                f"{pset_labels.tolist()}."
             )
         positions = map_var.indexes[dim].get_indexer(pset_labels)
         if np.any(positions < 0):
+            # Print labels with tolist() so floats show at full precision
             raise ValueError(
                 f"PSET coordinate '{dim}' of '{value_key}' has labels "
-                f"{pset_labels[positions < 0]} not found in the map coordinate "
-                f"values {map_labels}."
+                f"{pset_labels[positions < 0].tolist()} not found in the map "
+                f"coordinate values {map_labels.tolist()} (labels are matched "
+                f"exactly)."
             )
         return positions
 

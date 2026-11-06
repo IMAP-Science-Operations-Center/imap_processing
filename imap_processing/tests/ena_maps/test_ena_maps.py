@@ -2387,6 +2387,24 @@ class TestProjectByCoordinateLabel:
         with pytest.raises(ValueError, match="not found in the map coordinate"):
             sky_map.project_pset_values_to_map(pset, ["counts"], method)
 
+    def test_float_label_mismatch_message_shows_full_precision(
+        self, mock_frame_transform_az_el
+    ):
+        """Near-equal float labels raise, and the message shows the difference."""
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.project_pset_values_to_map(make_labeled_rect_pset(), ["counts"])
+        sky_map.data_1d = sky_map.data_1d.assign_coords(
+            esa_energy_step=np.arange(1, 10, dtype=float)
+        )
+        pset = make_labeled_rect_pset()
+        pset.data = pset.data.assign_coords(
+            esa_energy_step=np.arange(1, 10, dtype=float) + 1e-12
+        )
+        with pytest.raises(ValueError, match="matched exactly") as excinfo:
+            sky_map.project_pset_values_to_map(pset, ["counts"])
+        assert "1.000000000001" in str(excinfo.value)
+
     @pytest.mark.parametrize(
         "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
     )
@@ -2400,7 +2418,7 @@ class TestProjectByCoordinateLabel:
 
         pset = make_labeled_rect_pset(gain_config_ids=[1])
         pset.data = pset.data.drop_vars("gain_config_id")
-        with pytest.raises(ValueError, match="by position"):
+        with pytest.raises(ValueError, match="no coordinate on the map variable"):
             sky_map.project_pset_values_to_map(pset, ["counts"], method)
 
     def test_epoch_size_mismatch_raises(self, mock_frame_transform_az_el):
@@ -2411,7 +2429,7 @@ class TestProjectByCoordinateLabel:
             dims=(*NON_SPATIAL_DIMS, CoordNames.GENERIC_PIXEL.value),
             coords={"epoch": [0, 1]},
         )
-        with pytest.raises(ValueError, match="dim 'epoch'"):
+        with pytest.raises(ValueError, match="epoch dim is always combined"):
             sky_map.project_pset_values_to_map(make_labeled_rect_pset(), ["counts"])
 
     def test_missing_dim_raises(self, mock_frame_transform_az_el):
