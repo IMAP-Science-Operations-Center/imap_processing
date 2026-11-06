@@ -1340,16 +1340,29 @@ def test_post_processing(
     ]
 
 
+@pytest.mark.parametrize(
+    "upload_error",
+    [
+        "503 Service Unavailable: "
+        "<title>503 Slow Down</title>"
+        "Code: SlowDown"
+        "Message: Please reduce your request rate.",
+        "('Connection aborted.', "
+        "RemoteDisconnected('Remote end closed connection without response'))",
+    ],
+    ids=["s3_slow_down", "connection_dropped"],
+)
 @mock.patch("imap_processing.cli.sleep")
 @mock.patch("imap_processing.cli.filter_day_boundary_data")
 @mock.patch("imap_processing.cli.swe_l1a")
-def test_post_processing_upload_503_error(
+def test_post_processing_upload_retryable_error(
     mock_swe_l1a,
     mock_filter,
     mock_sleep,
     mock_instrument_dependencies,
+    upload_error,
 ):
-    """Test coverage for post processing when the upload fails with 503 error"""
+    """Test coverage for post processing when retryable upload errors persist"""
 
     mocks = mock_instrument_dependencies
     mocks["mock_download"].return_value = "dependency0"
@@ -1361,12 +1374,9 @@ def test_post_processing_upload_503_error(
     ].return_value = "/path/to/imap_swe_l1a_test_20100105_v001.cdf"
     mocks["mock_query"].return_value = []
 
-    # Mocks a 503 error received from the upload API
+    # Mocks the same retryable error on every upload attempt
     mocks["mock_upload"].side_effect = imap_data_access.io.IMAPDataAccessError(
-        "503 Service Unavailable: "
-        "<title>503 Slow Down</title>"
-        "Code: SlowDown"
-        "Message: Please reduce your request rate."
+        upload_error
     )
 
     test_ds = xr.Dataset()
@@ -1401,6 +1411,30 @@ def test_post_processing_upload_503_error(
         "Upload failed after 3 attempts" in str(call)
         for call in mock_error.call_args_list
     )
+
+
+@mock.patch("imap_processing.cli.sleep")
+def test_upload_products_skips_file_stored_before_connection_dropped(
+    mock_sleep, mock_instrument_dependencies
+):
+    """Test that the retry after a dropped connection skips a file already stored"""
+    mocks = mock_instrument_dependencies
+    mocks["mock_upload"].side_effect = [
+        imap_data_access.io.IMAPDataAccessError(
+            "('Connection aborted.', "
+            "RemoteDisconnected('Remote end closed connection without response'))"
+        ),
+        imap_data_access.io.IMAPDataAccessError(
+            '409 Conflict: {"error": "FileAlreadyExists", '
+            '"message": "The file already exists."}'
+        ),
+    ]
+    instrument = Swe("l1a", "raw", "", "20100105", None, "v001", True)
+
+    instrument.upload_products([Path("imap_swe_l1a_test_20100105_v001.cdf")])
+
+    assert mocks["mock_upload"].call_count == 2
+    assert mock_sleep.call_count == 1
 
 
 @mock.patch("imap_processing.cli.filter_day_boundary_data")
