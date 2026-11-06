@@ -2119,3 +2119,396 @@ class TestAbstractSkyMap:
         # add the values_to_pull_project key to the original json
         original_json["values_to_pull_project"] = []
         assert original_json == output_json
+
+
+# Full non-spatial labels of the map variables in the label-based projection tests
+FULL_GAIN_CONFIG_IDS = [0, 1]
+FULL_CAL_PRODS = [0, 1]
+FULL_ESA_STEPS = list(range(1, 10))
+NON_SPATIAL_DIMS = ("epoch", "gain_config_id", "calibration_prod", "esa_energy_step")
+
+
+def make_labeled_rect_pset(
+    gain_config_ids=FULL_GAIN_CONFIG_IDS,
+    cal_prods=FULL_CAL_PRODS,
+    esa_steps=FULL_ESA_STEPS,
+    epoch=0,
+    seed=0,
+    spacing_deg=30,
+) -> ena_maps.RectangularPointingSet:
+    """Make a small RectangularPointingSet with labeled non-spatial dims."""
+    sky_grid = spatial_utils.AzElSkyGrid(spacing_deg=spacing_deg)
+    longitude = np.sort(sky_grid.az_bin_midpoints)
+    latitude = np.sort(sky_grid.el_bin_midpoints)
+    shape = (
+        1,
+        len(gain_config_ids),
+        len(cal_prods),
+        len(esa_steps),
+        len(longitude),
+        len(latitude),
+    )
+    rng = np.random.default_rng(seed)
+    values = rng.integers(1, 100, size=shape).astype(float)
+    ds = xr.Dataset(
+        {
+            "counts": (
+                (*NON_SPATIAL_DIMS, "longitude", "latitude"),
+                values,
+            ),
+            "exposure_factor": (
+                (*NON_SPATIAL_DIMS, "longitude", "latitude"),
+                values * 10,
+            ),
+            "epoch_delta": (("epoch",), np.array([1_000_000_000])),
+        },
+        coords={
+            "epoch": np.array([epoch], dtype=np.int64),
+            # uint8 PSET labels are combined into int64 map labels
+            "gain_config_id": np.array(gain_config_ids, dtype=np.uint8),
+            "calibration_prod": np.array(cal_prods, dtype=np.uint8),
+            "esa_energy_step": np.array(esa_steps, dtype=np.uint8),
+            "longitude": longitude,
+            "latitude": latitude,
+        },
+    )
+    return ena_maps.RectangularPointingSet(ds)
+
+
+def pad_pset_to_full_labels(
+    pset: ena_maps.RectangularPointingSet,
+) -> ena_maps.RectangularPointingSet:
+    """Zero-fill a PSET to the full, ordered labels (the reference projection)."""
+    padded = pset.data.reindex(
+        gain_config_id=FULL_GAIN_CONFIG_IDS,
+        calibration_prod=FULL_CAL_PRODS,
+        esa_energy_step=FULL_ESA_STEPS,
+        fill_value=0,
+    )
+    return ena_maps.RectangularPointingSet(padded)
+
+
+def make_sky_map(map_type: str) -> ena_maps.AbstractSkyMap:
+    if map_type == "rectangular":
+        return ena_maps.RectangularSkyMap(
+            spacing_deg=30, spice_frame=geometry.SpiceFrame.ECLIPJ2000
+        )
+    return ena_maps.HealpixSkyMap(nside=4, spice_frame=geometry.SpiceFrame.ECLIPJ2000)
+
+
+def pre_initialize_map_var(
+    sky_map: ena_maps.AbstractSkyMap, value_key: str = "counts", epoch: int = 0
+):
+    """Create a zero-filled map variable with the full non-spatial coords."""
+    coords = {
+        "epoch": np.array([epoch], dtype=np.int64),
+        "gain_config_id": np.array(FULL_GAIN_CONFIG_IDS, dtype=np.int64),
+        "calibration_prod": np.array(FULL_CAL_PRODS, dtype=np.int64),
+        "esa_energy_step": np.array(FULL_ESA_STEPS, dtype=np.int64),
+    }
+    sky_map.data_1d[value_key] = xr.DataArray(
+        np.zeros((*[len(c) for c in coords.values()], sky_map.num_points)),
+        dims=(*NON_SPATIAL_DIMS, CoordNames.GENERIC_PIXEL.value),
+        coords=coords,
+    )
+
+
+@mock.patch("imap_processing.spice.geometry.frame_transform_az_el")
+class TestProjectByCoordinateLabel:
+    """Tests that PSET non-spatial dims are combined into a map by label."""
+
+    @staticmethod
+    def _identity(mock_frame_transform_az_el):
+        mock_frame_transform_az_el.side_effect = (
+            lambda et, az_el, from_frame, to_frame, degrees: az_el
+        )
+
+    @pytest.mark.parametrize("map_type", ["rectangular", "healpix"])
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    @pytest.mark.parametrize("use_mask", [False, True])
+    def test_subset_and_reordered_labels_match_padded_reference(
+        self, mock_frame_transform_az_el, map_type, method, use_mask
+    ):
+        """PSET labels that are a reordered subset land only in matching slots."""
+        self._identity(mock_frame_transform_az_el)
+        pset = make_labeled_rect_pset(
+            gain_config_ids=[1], cal_prods=[1, 0], esa_steps=[2, 5, 9]
+        )
+        mask = None
+        if use_mask:
+            mask = np.zeros(pset.num_points, dtype=bool)
+            mask[::3] = True
+
+        labeled_map = make_sky_map(map_type)
+        pre_initialize_map_var(labeled_map)
+        labeled_map.project_pset_values_to_map(
+            pset, ["counts"], index_match_method=method, pset_valid_mask=mask
+        )
+
+        reference_map = make_sky_map(map_type)
+        reference_map.project_pset_values_to_map(
+            pad_pset_to_full_labels(pset),
+            ["counts"],
+            index_match_method=method,
+            pset_valid_mask=mask,
+        )
+
+        result = labeled_map.data_1d["counts"]
+        assert result.sum() > 0
+        np.testing.assert_array_equal(
+            result.values, reference_map.data_1d["counts"].values
+        )
+        # Slots for labels not in the PSET are untouched
+        assert (result.sel(gain_config_id=0) == 0).all()
+        assert (result.sel(esa_energy_step=[1, 3, 4, 6, 7, 8]) == 0).all()
+        # Values land at the matching labels, not by position
+        np.testing.assert_array_equal(
+            result.sel(gain_config_id=1, calibration_prod=0, esa_energy_step=5),
+            reference_map.data_1d["counts"].sel(
+                gain_config_id=1, calibration_prod=0, esa_energy_step=5
+            ),
+        )
+
+    @pytest.mark.parametrize("map_type", ["rectangular", "healpix"])
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    def test_identical_coords_fast_path(
+        self, mock_frame_transform_az_el, map_type, method
+    ):
+        """PSETs with identical coords accumulate positionally across epochs."""
+        self._identity(mock_frame_transform_az_el)
+        pset_a = make_labeled_rect_pset(epoch=0, seed=1)
+        pset_b = make_labeled_rect_pset(epoch=10**9, seed=2)
+
+        sky_map = make_sky_map(map_type)
+        sky_map.project_pset_values_to_map(pset_a, ["counts"], method)
+        sky_map.project_pset_values_to_map(pset_b, ["counts"], method)
+
+        single_maps = []
+        for pset in (pset_a, pset_b):
+            single_map = make_sky_map(map_type)
+            single_map.project_pset_values_to_map(pset, ["counts"], method)
+            single_maps.append(single_map.data_1d["counts"].values)
+
+        result = sky_map.data_1d["counts"]
+        assert result.dims == (*NON_SPATIAL_DIMS, CoordNames.GENERIC_PIXEL.value)
+        # The map keeps the first PSET's epoch label
+        np.testing.assert_array_equal(result["epoch"], [0])
+        np.testing.assert_array_equal(result.values, single_maps[0] + single_maps[1])
+
+    @pytest.mark.parametrize("map_type", ["rectangular", "healpix"])
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    def test_projection_order_independent(
+        self, mock_frame_transform_az_el, map_type, method
+    ):
+        """Projecting A then B gives the same map as B then A."""
+        self._identity(mock_frame_transform_az_el)
+        pset_a = make_labeled_rect_pset(
+            gain_config_ids=[0], esa_steps=[2, 5, 9], epoch=0, seed=1
+        )
+        pset_b = make_labeled_rect_pset(gain_config_ids=[1], epoch=10**9, seed=2)
+
+        results = []
+        for psets in ((pset_a, pset_b), (pset_b, pset_a)):
+            sky_map = make_sky_map(map_type)
+            pre_initialize_map_var(sky_map)
+            for pset in psets:
+                sky_map.project_pset_values_to_map(pset, ["counts"], method)
+            results.append(sky_map.data_1d["counts"].values)
+
+        np.testing.assert_array_equal(results[0], results[1])
+        # Both gain configs received counts
+        assert results[0][:, 0].sum() > 0
+        assert results[0][:, 1].sum() > 0
+
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    @pytest.mark.parametrize("subset", [False, True])
+    def test_pset_dim_order_differs_from_map(
+        self, mock_frame_transform_az_el, method, subset
+    ):
+        """PSET dims in a different order than the map's are moved to map order."""
+        self._identity(mock_frame_transform_az_el)
+        kwargs = {"gain_config_ids": [1], "esa_steps": [2, 5, 9]} if subset else {}
+        pset = make_labeled_rect_pset(**kwargs)
+        mask = np.zeros(pset.num_points, dtype=bool)
+        mask[::2] = True
+
+        reference_map = make_sky_map("rectangular")
+        pre_initialize_map_var(reference_map)
+        reference_map.project_pset_values_to_map(
+            pset, ["counts"], method, pset_valid_mask=mask
+        )
+
+        pset.data["counts"] = pset.data["counts"].transpose(
+            "esa_energy_step", "epoch", "calibration_prod", "gain_config_id", ...
+        )
+        sky_map = make_sky_map("rectangular")
+        pre_initialize_map_var(sky_map)
+        sky_map.project_pset_values_to_map(
+            pset, ["counts"], method, pset_valid_mask=mask
+        )
+
+        assert sky_map.data_1d["counts"].sum() > 0
+        np.testing.assert_array_equal(
+            sky_map.data_1d["counts"].values, reference_map.data_1d["counts"].values
+        )
+
+    def test_new_variable_uses_existing_map_coords(self, mock_frame_transform_az_el):
+        """A variable created after a pre-initialized one takes the map's labels."""
+        self._identity(mock_frame_transform_az_el)
+        pset = make_labeled_rect_pset(gain_config_ids=[1], esa_steps=[2, 5, 9])
+        sky_map = make_sky_map("rectangular")
+        pre_initialize_map_var(sky_map, "counts")
+
+        sky_map.project_pset_values_to_map(pset, ["counts", "exposure_factor"])
+
+        exposure = sky_map.data_1d["exposure_factor"]
+        assert exposure.sizes["gain_config_id"] == len(FULL_GAIN_CONFIG_IDS)
+        assert exposure.sizes["esa_energy_step"] == len(FULL_ESA_STEPS)
+        np.testing.assert_array_equal(
+            exposure.values, sky_map.data_1d["counts"].values * 10
+        )
+
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    def test_label_not_in_map_raises(self, mock_frame_transform_az_el, method):
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        pre_initialize_map_var(sky_map)
+        pset = make_labeled_rect_pset(gain_config_ids=[3])
+        with pytest.raises(ValueError, match="not found in the map coordinate"):
+            sky_map.project_pset_values_to_map(pset, ["counts"], method)
+
+    def test_float_label_mismatch_message_shows_full_precision(
+        self, mock_frame_transform_az_el
+    ):
+        """Near-equal float labels raise, and the message shows the difference."""
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.project_pset_values_to_map(make_labeled_rect_pset(), ["counts"])
+        sky_map.data_1d = sky_map.data_1d.assign_coords(
+            esa_energy_step=np.arange(1, 10, dtype=float)
+        )
+        pset = make_labeled_rect_pset()
+        pset.data = pset.data.assign_coords(
+            esa_energy_step=np.arange(1, 10, dtype=float) + 1e-12
+        )
+        with pytest.raises(ValueError, match="matched exactly") as excinfo:
+            sky_map.project_pset_values_to_map(pset, ["counts"])
+        assert "1.000000000001" in str(excinfo.value)
+
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    def test_size_one_dim_without_labels_raises(
+        self, mock_frame_transform_az_el, method
+    ):
+        """A length-1 dim without coords no longer broadcasts into the map."""
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.project_pset_values_to_map(make_labeled_rect_pset(), ["counts"], method)
+
+        pset = make_labeled_rect_pset(gain_config_ids=[1])
+        pset.data = pset.data.drop_vars("gain_config_id")
+        with pytest.raises(ValueError, match="no coordinate on the map variable"):
+            sky_map.project_pset_values_to_map(pset, ["counts"], method)
+
+    def test_epoch_size_mismatch_raises(self, mock_frame_transform_az_el):
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.data_1d["counts"] = xr.DataArray(
+            np.zeros((2, 2, 2, 9, sky_map.num_points)),
+            dims=(*NON_SPATIAL_DIMS, CoordNames.GENERIC_PIXEL.value),
+            coords={"epoch": [0, 1]},
+        )
+        with pytest.raises(ValueError, match="epoch dim is always combined"):
+            sky_map.project_pset_values_to_map(make_labeled_rect_pset(), ["counts"])
+
+    def test_missing_dim_raises(self, mock_frame_transform_az_el):
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        pre_initialize_map_var(sky_map)
+        pset = make_labeled_rect_pset(gain_config_ids=[1])
+        pset.data = pset.data.squeeze("gain_config_id", drop=True)
+        with pytest.raises(ValueError, match="do not match the non-spatial dims"):
+            sky_map.project_pset_values_to_map(pset, ["counts"])
+
+    @pytest.mark.parametrize("pre_initialize", [False, True])
+    def test_duplicate_labels_raise(self, mock_frame_transform_az_el, pre_initialize):
+        """Duplicate labels raise, including when they match the map's labels."""
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        if pre_initialize:
+            pre_initialize_map_var(sky_map)
+        pset = make_labeled_rect_pset(esa_steps=[2, 2])
+        with pytest.raises(ValueError, match="duplicate labels"):
+            sky_map.project_pset_values_to_map(pset, ["counts"])
+
+    def test_duplicate_labels_matching_map_raise(self, mock_frame_transform_az_el):
+        """Identical duplicate labels on PSET and map don't take the fast path."""
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.data_1d["counts"] = xr.DataArray(
+            np.zeros((1, 2, 2, 2, sky_map.num_points)),
+            dims=(*NON_SPATIAL_DIMS, CoordNames.GENERIC_PIXEL.value),
+            coords={"esa_energy_step": [2, 2]},
+        )
+        pset = make_labeled_rect_pset(esa_steps=[2, 2])
+        with pytest.raises(ValueError, match="duplicate labels"):
+            sky_map.project_pset_values_to_map(pset, ["counts"])
+
+    @pytest.mark.parametrize(
+        "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
+    )
+    def test_coordinate_less_dim_stays_positional(
+        self, mock_frame_transform_az_el, method
+    ):
+        """A map dim created from a PSET without coords gets no artificial labels."""
+        self._identity(mock_frame_transform_az_el)
+        pset_a = make_labeled_rect_pset(seed=1)
+        pset_a.data = pset_a.data.drop_vars("calibration_prod")
+        # Labels that differ from the 0..N-1 positions of the first PSET
+        pset_b = make_labeled_rect_pset(cal_prods=[20, 10], seed=2)
+
+        sky_map = make_sky_map("rectangular")
+        sky_map.project_pset_values_to_map(pset_a, ["counts"], method)
+        assert "calibration_prod" not in sky_map.data_1d.coords
+        sky_map.project_pset_values_to_map(pset_b, ["counts"], method)
+
+        single_maps = []
+        for pset in (pset_a, pset_b):
+            single_map = make_sky_map("rectangular")
+            single_map.project_pset_values_to_map(pset, ["counts"], method)
+            single_maps.append(single_map.data_1d["counts"].values)
+        np.testing.assert_array_equal(
+            sky_map.data_1d["counts"].values, single_maps[0] + single_maps[1]
+        )
+
+    def test_pre_initialized_without_pixel_dim_raises(self, mock_frame_transform_az_el):
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.data_1d["counts"] = xr.DataArray(
+            np.zeros((1, 2, 2, 9)), dims=NON_SPATIAL_DIMS
+        )
+        with pytest.raises(ValueError, match="must be the spatial pixel dim"):
+            sky_map.project_pset_values_to_map(make_labeled_rect_pset(), ["counts"])
+
+    def test_pre_initialized_pixel_dim_not_last_raises(
+        self, mock_frame_transform_az_el
+    ):
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        pre_initialize_map_var(sky_map)
+        sky_map.data_1d["counts"] = sky_map.data_1d["counts"].transpose(
+            CoordNames.GENERIC_PIXEL.value, ...
+        )
+        with pytest.raises(ValueError, match="must be the spatial pixel dim"):
+            sky_map.project_pset_values_to_map(make_labeled_rect_pset(), ["counts"])
