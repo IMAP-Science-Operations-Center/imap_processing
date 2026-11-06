@@ -65,7 +65,6 @@ LO_SW_SPECIES_DISPLAY_NAMES = {
     "oplus6": "O6+",
     "oplus7": "O7+",
     "oplus8": "O8+",
-    "ne": "Ne",
     "mg": "Mg",
     "si": "Si",
     "fe_loq": "Fe LoQ",
