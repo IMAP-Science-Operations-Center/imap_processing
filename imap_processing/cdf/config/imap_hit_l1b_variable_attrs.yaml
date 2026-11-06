@@ -520,6 +520,14 @@ dynamic_threshold_state:
   VALIDMIN: 0
   VAR_TYPE: data
 
+hdr_minute_cnt:
+  <<: *default
+  CATDESC: Raw header minute count per integration
+  DISPLAY_TYPE: no_plot
+  FIELDNAM: Header Minute Count
+  LABLAXIS: Minute count
+  VAR_TYPE: support_data
+
 
 # <=== Standard Rates Data Variable Attributes ===>
 

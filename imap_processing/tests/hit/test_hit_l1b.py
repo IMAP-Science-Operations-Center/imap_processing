@@ -134,14 +134,17 @@ def test_calculate_rates():
     )
 
 
-def test_sum_livetime_10min():
-    """Test the sum_livetime_10min function."""
-    # Create a sample livetime DataArray
+def test_sum_livetime_10min_3_complete_sets():
+    """Test the sum_livetime_10min function with 3 complete sets."""
+    # Create a sample livetime DataArray of 3 complete sets
     livetime_values = np.arange(1, 31)  # 30 epochs with values 1 to 30
     livetime = xr.DataArray(
         livetime_values, dims=["epoch"], coords={"epoch": np.arange(30)}
     )
-
+    # Create a sample hdr_minute_cnt array that has 3 complete sets
+    hdr_minute_cnt = xr.DataArray(
+        np.arange(10, 40), dims="epoch", coords={"epoch": np.arange(30)}
+    )
     # Expected result: sum of every 10 values repeated 10 times
     expected_values = np.repeat(
         [sum(livetime_values[i : i + 10]) for i in range(0, 30, 10)], 10
@@ -149,12 +152,53 @@ def test_sum_livetime_10min():
     expected_livetime = xr.DataArray(
         expected_values, dims=["epoch"], coords={"epoch": np.arange(30)}
     )
-
     # Call the function
-    result = sum_livetime_10min(livetime)
-
+    result = sum_livetime_10min(hdr_minute_cnt, livetime)
     # Assert the result is as expected
     xr.testing.assert_equal(result, expected_livetime)
+
+
+def test_sum_livetime_10min_incomplete_set():
+    """Test the sum_livetime_10min function with an incomplete set."""
+    # Create a sample livetime DataArray of 2 complete and 1 incomplete set
+    livetime_values = np.ones(29)  # 29 epochs all ones so we can check that
+    # the livetime sum scaling was handled correctly.
+    livetime = xr.DataArray(
+        livetime_values, dims=["epoch"], coords={"epoch": np.arange(29)}
+    )
+    # Create a sample hdr_minute_cnt array
+    hdr_minute_cnt = xr.DataArray(np.arange(10, 40), dims="epoch")
+    # Drop the third frame to simulate an incomplete set
+    hdr_minute_cnt = hdr_minute_cnt.drop_isel(epoch=3)
+    hdr_minute_cnt = hdr_minute_cnt.assign_coords({"epoch": np.arange(29)})
+    # Expected result: sum of every 10 values (one) repeated 10 times except for
+    # the second set. Since the first set had a dropped frame, and the second
+    # set's livetime comes from the first set that livetime sum should be scaled
+    # correctly but still have a missing frame.
+    expected_values = np.repeat(np.array([10, 10, 10]), np.array([10, 9, 10]))
+    expected_livetime = xr.DataArray(
+        expected_values, dims=["epoch"], coords={"epoch": np.arange(29)}
+    )
+    # Call the function
+    result = sum_livetime_10min(hdr_minute_cnt, livetime)
+    # Assert the result is as expected
+    xr.testing.assert_equal(result, expected_livetime)
+
+
+def test_sum_livetime_10min_livetime_mismatch():
+    """Test the sum_livetime_10min function when there is a shape mismatch."""
+    # Create a sample livetime DataArray of 2 complete sets
+    livetime_values = np.ones(20)
+    livetime = xr.DataArray(
+        livetime_values, dims=["epoch"], coords={"epoch": np.arange(20)}
+    )
+    # Create a sample hdr_minute_cnt array that conflicts with the livetime array.
+    hdr_minute_cnt = xr.DataArray(np.arange(10, 42))
+    with pytest.raises(
+        ValueError, match="Livetime does not line up with the sectored counts sets."
+    ):
+        # Call the function
+        sum_livetime_10min(hdr_minute_cnt, livetime)
 
 
 def test_process_summed_rates_data(dependencies):

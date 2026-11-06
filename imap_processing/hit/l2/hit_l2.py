@@ -11,6 +11,7 @@ from imap_processing.hit.hit_utils import (
     add_summed_particle_data_to_dataset,
     get_attribute_manager,
 )
+from imap_processing.hit.l1a.hit_l1a import find_mod10_set_ids
 from imap_processing.hit.l2.constants import (
     FILLVAL_FLOAT32,
     N_AZIMUTH,
@@ -810,16 +811,17 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
         ("nemgsi", 2),
         ("fe", 1),
     ]
-
-    # Use the first record in each 10-record group as the output template.
+    hr_minute_count = macropixel_dataset.hdr_minute_cnt.values
+    set_ids = find_mod10_set_ids(hr_minute_count)
+    set_starts = np.flatnonzero(np.diff(set_ids, prepend=-1))
+    # Use the first record in each set as the output template.
     transformed_dataset = macropixel_dataset.isel(
-        epoch=slice(None, None, 10),
+        epoch=set_starts,
     ).copy(deep=True)
 
-    # Each minute in a 10-record group contains one species/energy combination,
-    # ordered as described by species_energy. Track that minute's packet offset.
-    species_i = 0
-    for species, num_energy_levels in species_energy:
+    # Each minute in a set contains one species/energy combination and every
+    # other species/energy is a fill value.
+    for species, _ in species_energy:
         energy_dim = f"{species}_energy_mean"
         # Gather the intensity and uncertainty variables that share this
         # species' energy dimension.
@@ -829,21 +831,34 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
             if macropixel_dataset[var].dims[:2] == ("epoch", energy_dim)
         ]
 
-        for energy_i in range(num_energy_levels):
-            for var in species_variables:
-                # Select this species/energy packet from every 10-record group
-                # and place it in the corresponding output energy plane.
-                data_i = macropixel_dataset[var].values[species_i::10, energy_i]
-                transformed_dataset[var].values[:, energy_i] = data_i
-            species_i += 1
+        for var in species_variables:
+            # Replace fill vals with nans so the skipna works.
+            da = macropixel_dataset[var]
+            da = xr.where(da == FILLVAL_FLOAT32, np.nan, da)
+            # Group by set_ids and take the first non NaN value in each group.
+            # (There will only be one row that isn't fill so taking the first is
+            # safe). If a frame was dropped, that value stays as fill.
+            transformed_dataset[var].values = (
+                da.groupby(xr.DataArray(set_ids, dims="epoch"))
+                .first(skipna=True)
+                .fillna(FILLVAL_FLOAT32)
+                .values
+            )
 
     minute_cadence_epochs = macropixel_dataset["epoch"].values
-    ten_minute_cadence_epochs = minute_cadence_epochs.reshape(-1, 10)
     nanoseconds_per_10_min = SECONDS_PER_10_MIN * 1_000_000_000
+    # The header minute count mod 10 gives the minutes past the set start.
+    # Convert this to nanoseconds.
+    nanoseconds_since_set_start = (hr_minute_count % 10) * 60 * 1_000_000_000
     nanoseconds_per_5_min = nanoseconds_per_10_min // 2
-    start_times = ten_minute_cadence_epochs[:, 0]
-    end_times = ten_minute_cadence_epochs[:, -1]
-    new_epochs = start_times + (end_times - start_times) // 2 - nanoseconds_per_10_min
+    # To find the actual set starts in case of a dropped frame, subtract the time
+    # since the set started. E.g. if the first frame in a set is dropped, the first
+    # remaining frame is not the actual set start time. If the first frame wasn't
+    # dropped, its time since set start is 0.
+    calculated_set_start_times = minute_cadence_epochs - nanoseconds_since_set_start
+    new_epochs = (
+        calculated_set_start_times + nanoseconds_per_5_min - nanoseconds_per_10_min
+    )[set_starts]
 
     transformed_dataset = transformed_dataset.assign_coords(epoch=np.array(new_epochs))
     transformed_dataset["epoch_delta"] = xr.DataArray(
@@ -851,4 +866,5 @@ def transform_to_10_minute_chunks(macropixel_dataset: xr.Dataset) -> xr.Dataset:
         dims=["epoch"],
     )
 
-    return transformed_dataset
+    # hdr_minute_cnt was only needed to find the sets, so drop it from the L2 product
+    return transformed_dataset.drop_vars("hdr_minute_cnt")

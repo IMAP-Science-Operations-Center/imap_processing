@@ -812,20 +812,21 @@ def test_transform_to_10_minute_chunks():
         ("fe", 1),
     ]
 
+    # Like the L1B data, each minute only has data in its own species/energy
+    # slot and every other slot is filled with FILLVAL_FLOAT32.
     data_vars = {}
     slot_for = {}
     species_i = 0
     for species, num_energy_levels in species_energy:
         energy_dim = f"{species}_energy_mean"
-        values = np.array(
-            [[m * 100 + e for e in range(num_energy_levels)] for m in range(n_minutes)],
-            dtype=np.float32,
-        )
-        data_vars[f"{species}_macropixel_intensity"] = (("epoch", energy_dim), values)
+        values = np.full((n_minutes, num_energy_levels), FILLVAL_FLOAT32, np.float32)
         for energy_i in range(num_energy_levels):
             slot_for[(species, energy_i)] = species_i
+            minutes = np.arange(species_i, n_minutes, 10)
+            values[minutes, energy_i] = minutes * 100 + energy_i
             species_i += 1
-
+        data_vars[f"{species}_macropixel_intensity"] = (("epoch", energy_dim), values)
+    data_vars["hdr_minute_cnt"] = ("epoch", np.arange(n_minutes))
     macropixel_dataset = xr.Dataset(data_vars, coords={"epoch": epochs})
 
     result = transform_to_10_minute_chunks(macropixel_dataset)
@@ -839,12 +840,15 @@ def test_transform_to_10_minute_chunks():
     )
     np.testing.assert_array_equal(result["epoch_delta"].values, expected_epoch_delta)
 
-    # Each new epoch is centered on its 10-minute group, then shifted back by
+    # Each new epoch is centered on its 10-minute set, then shifted back by
     # a full 10-minute chunk.
     for chunk in range(n_chunks):
         start = epochs[chunk * 10]
-        end = epochs[chunk * 10 + 9]
-        expected_epoch = start + (end - start) // 2 - SECONDS_PER_10_MIN * 1_000_000_000
+        expected_epoch = (
+            start
+            + SECONDS_PER_10_MIN * 1_000_000_000 // 2
+            - SECONDS_PER_10_MIN * 1_000_000_000
+        )
         assert result["epoch"].values[chunk] == expected_epoch
 
     # Each species/energy variable should pull its value from the minute slot
