@@ -1,10 +1,15 @@
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from imap_processing import imap_module_directory
+from imap_processing.hit.hit_utils import HitAPID, get_datasets_by_apid
+from imap_processing.hit.l0.decom_hit import decom_hit
+from imap_processing.hit.l1b.hit_l1b import livetime_fraction_calculation
 from imap_processing.ialirt.l0.process_hit import (
     HIT_PREFIX_TO_RATE_TYPE,
+    calculate_livetime_fraction,
     create_l1,
     process_hit,
 )
@@ -55,6 +60,38 @@ def xarray_data(binary_packet_path, xtce_hit_path):
 
     xarray_data = packet_file_to_datasets(binary_packet_path, xtce_hit_path)[apid]
     return xarray_data
+
+
+@pytest.fixture
+def hit_ialirt_and_science_20260707():
+    """I-ALiRT packets and HIT science packets covering the same minutes.
+
+    I-ALiRT: 5 one-minute packet files from 2026-07-07 17:54-17:58 UTC.
+    Science: the HIT science frames covering the same time, cut
+    from imap_hit_l0_raw_20260707_v001.0001.pkts.
+    """
+    directory = imap_module_directory / "tests" / "ialirt" / "data" / "l0"
+    xtce = imap_module_directory / "ialirt" / "packet_definitions" / "ialirt.xml"
+    filenames = [
+        "iois_1_packets_2026_188_17_54_04",
+        "iois_1_packets_2026_188_17_55_05",
+        "iois_1_packets_2026_188_17_56_06",
+        "iois_1_packets_2026_188_17_57_07",
+        "iois_1_packets_2026_188_17_58_08",
+    ]
+    ialirt = xr.concat(
+        [
+            packet_file_to_datasets(directory / f, xtce, use_derived_value=False)[478]
+            for f in filenames
+        ],
+        dim="epoch",
+    )
+    science = decom_hit(
+        get_datasets_by_apid(
+            str(directory / "hit_science_20260707_ialirt_overlap.pkts")
+        )[HitAPID.HIT_SCIENCE]
+    )
+    return ialirt, science
 
 
 @pytest.mark.external_test_data
@@ -160,6 +197,12 @@ def test_create_l1(xarray_data):
     assert l1["L4IBHG"] == 2
 
 
+def test_calculate_livetime_fraction_no_livetime():
+    """Tests that a group with all ERATES zero has no livetime."""
+    l1 = {f"ERATE_{i}": 0 for i in range(1, 6)}
+    assert np.isnan(calculate_livetime_fraction(l1))
+
+
 def test_process_hit(xarray_data, caplog):
     """Tests process_hit."""
 
@@ -233,3 +276,57 @@ def test_decom_packets(xarray_data, hit_test_data):
         np.testing.assert_array_equal(
             ccsds_slow_rate.values, flat_test_slow_rate[~np.isnan(flat_test_slow_rate)]
         )
+
+
+@pytest.mark.external_test_data
+def test_ialirt_matches_science(hit_ialirt_and_science_20260707):
+    """Tests I-ALiRT HIT slow rates and livetime against HIT science data.
+
+    Each I-ALiRT group is paired with science frames by start
+    time: the I-ALiRT rates match the frame starting at HIT_MET, and the
+    ERATES match the frame starting one minute earlier.
+    """
+    ialirt, science = hit_ialirt_and_science_20260707
+
+    ialirt["met"] = calculate_time(
+        ialirt["sc_sclk_sec"], ialirt["sc_sclk_sub_sec"], 256
+    )
+    groups = find_groups(ialirt, (0, 59), "hit_subcom", "met")
+
+    # Science frames are 20 packets; start time = sc_tick of the first packet.
+    frame_start = science["sc_tick"].values[::20]
+    science_livetime = livetime_fraction_calculation(science["livetime_counter"])
+
+    n_groups = 0
+    for group in np.unique(groups["group"]):
+        mask = (groups["group"] == group).values
+        if not np.array_equal(groups["hit_subcom"][mask], np.arange(60)):
+            continue
+        n_groups += 1
+        slow_rate = groups["hit_slow_rate"][mask]
+        l1 = create_l1(
+            groups["hit_fast_rate_1"][mask], groups["hit_fast_rate_2"][mask], slow_rate
+        )
+        hit_met = int(groups["hit_met"][mask].values[0])
+        same = int(np.flatnonzero(frame_start == hit_met)[0])
+        # livetime come from 1 minute earlier
+        prev = int(np.flatnonzero(frame_start == hit_met - 60)[0])
+
+        # ERATES and livetime fraction match the previous science minute.
+        assert l1["ERATE_1"] == science["livetime_counter"].values[prev]
+        assert l1["ERATE_2"] == science["num_trig"].values[prev]
+        assert l1["ERATE_3"] == science["num_reject"].values[prev]
+        assert calculate_livetime_fraction(l1) == pytest.approx(
+            float(science_livetime.values[prev])
+        )
+
+        # I-ALiRT rates match the same science minute, within 1 count (the
+        # I-ALiRT values are read just before the minute closes). Rate 3 is
+        # skipped: onboard it duplicates Rate 2 (open question with HIT team).
+        ialirt_rates = np.array([l1[f"IALRT_RATE_{i}"] for i in range(1, 21)])
+        keep = np.arange(20) != 2
+        np.testing.assert_allclose(
+            ialirt_rates[keep], science["ialirtrates"].values[same][keep], atol=1
+        )
+
+    assert n_groups == 4
