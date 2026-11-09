@@ -32,13 +32,13 @@ def test_convert_raw_to_eu(tmp_path):
             ],
             "dn_range_start": [0, 0, 1, dn_cutoff + 1, 0],
             "dn_range_stop": [0, 0, dn_cutoff, 4, 0],
-            "c0": [0, 1, 3, 4, 2],
-            "c1": [0, 1, 3, 4, 2],
-            "c2": [0, 0, 3, 4, 2],
-            "c3": [0, 0, 3, 4, 2],
-            "c5": [0, 1, 3, 4, 2],
-            "c6": [0, 0, 3, 4, 2],
-            "c7": [0, 0, 3, 4, 2],
+            "c0": [0, 1, -3.5, 1.5, 2],
+            "c1": [0, 1, 0.25, -0.75, 2],
+            "c2": [0, 0, 0, 4, 2],
+            "c3": [0, 0, 0, 0, 2],
+            "c5": [0, 1, 0, 0, 2],
+            "c6": [0, 0, 0, 0, 2],
+            "c7": [0, 0, 0, 0, 2],
             "unit": ["a", "b", "d", "d", "c"],
         }
     )
@@ -49,9 +49,11 @@ def test_convert_raw_to_eu(tmp_path):
 
     # Generate a fake dataset for testing
     n_packets = 3
-    field_0 = np.arange(n_packets)
-    field_1 = np.arange(n_packets) + 10
-    field_2 = np.arange(n_packets) + 1
+    field_0 = np.arange(n_packets).astype(
+        np.uint16
+    )  # Use unsigned integer to mock packet data.
+    field_1 = np.arange(n_packets).astype(np.uint16) + 10
+    field_2 = np.arange(n_packets).astype(np.uint16) + 1
     time = np.arange(n_packets) + 1000
     dn_dataset = xr.Dataset(
         data_vars=dict(
