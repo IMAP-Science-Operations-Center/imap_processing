@@ -1156,7 +1156,9 @@ class AbstractSkyMap(ABC):
                 f"Map variable '{value_key}' has dims {map_var.dims}; the last dim "
                 f"must be the spatial pixel dim '{pixel_dim}'."
             )
-        if set(pset_dims) != set(map_dims) or len(pset_dims) != len(map_dims):
+        # Sorted comparison also catches repeated dim names, which xarray allows
+        # at construction (with a warning).
+        if sorted(pset_dims) != sorted(map_dims):
             raise ValueError(
                 f"Non-spatial dims of PSET variable '{value_key}' {pset_dims} do not "
                 f"match the non-spatial dims of the map variable {map_dims}."
@@ -1227,9 +1229,9 @@ class AbstractSkyMap(ABC):
         Raises
         ------
         ValueError
-            If a PSET coordinate label is not in the map variable's coords, if a
-            PSET coordinate has duplicate labels, or if a positionally combined
-            dimension differs in size.
+            If a PSET coordinate label is not in the map variable's coords, if
+            the PSET or map coordinate has duplicate labels, or if a positionally
+            combined dimension differs in size.
         """
         pset_size = pset_data.sizes[dim]
         map_size = map_var.sizes[dim]
@@ -1262,7 +1264,13 @@ class AbstractSkyMap(ABC):
             )
         if np.array_equal(pset_labels, map_labels):
             return None
-        positions = map_var.indexes[dim].get_indexer(pset_labels)
+        map_index = map_var.indexes[dim]
+        if not map_index.is_unique:
+            raise ValueError(
+                f"Map coordinate '{dim}' of '{value_key}' has duplicate labels: "
+                f"{map_labels.tolist()}."
+            )
+        positions = map_index.get_indexer(pset_labels)
         if np.any(positions < 0):
             # Print labels with tolist() so floats show at full precision
             raise ValueError(

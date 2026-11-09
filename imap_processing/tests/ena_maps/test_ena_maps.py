@@ -2465,6 +2465,19 @@ class TestProjectByCoordinateLabel:
         with pytest.raises(ValueError, match="duplicate labels"):
             sky_map.project_pset_values_to_map(pset, ["counts"])
 
+    def test_duplicate_map_labels_raise(self, mock_frame_transform_az_el):
+        """Duplicate labels on a pre-initialized map raise a clear ValueError."""
+        self._identity(mock_frame_transform_az_el)
+        sky_map = make_sky_map("rectangular")
+        sky_map.data_1d["counts"] = xr.DataArray(
+            np.zeros((1, 2, 2, 3, sky_map.num_points)),
+            dims=(*NON_SPATIAL_DIMS, CoordNames.GENERIC_PIXEL.value),
+            coords={"esa_energy_step": [1, 1, 2]},
+        )
+        pset = make_labeled_rect_pset(esa_steps=[2, 1])
+        with pytest.raises(ValueError, match="Map coordinate 'esa_energy_step'"):
+            sky_map.project_pset_values_to_map(pset, ["counts"])
+
     @pytest.mark.parametrize(
         "method", [ena_maps.IndexMatchMethod.PUSH, ena_maps.IndexMatchMethod.PULL]
     )
