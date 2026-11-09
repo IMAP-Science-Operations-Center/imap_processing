@@ -21,6 +21,7 @@ from imap_processing.idex.idex_l2a import (
     calculate_ion_grid_velocity_and_mass,
     calculate_kappa,
     calculate_mass_from_velocity,
+    calculate_max_charge,
     calculate_snr,
     calculate_velocity_and_mass,
     chi_square,
@@ -249,6 +250,117 @@ def test_l2a_fits_only_unsaturated_waveforms(saturation):
     xr.testing.assert_identical(dataset, original)
 
 
+@pytest.mark.parametrize("amplitude", [8.0, -8.0])
+def test_calculate_max_charge_signed_extremum(amplitude):
+    """Equal rise/decay times give a peak excursion of one quarter amplitude."""
+    parameters = np.array([-4.0, 1.0, amplitude, 2.0, 2.0])
+
+    peak_time, peak_charge = calculate_max_charge(parameters)
+
+    assert peak_time == pytest.approx(-4.0 + 2.0 * np.log(2.0))
+    assert peak_charge == pytest.approx(1.0 + amplitude / 4.0)
+
+
+@pytest.mark.parametrize("index", range(5))
+@pytest.mark.parametrize("invalid", [np.nan, np.inf])
+def test_calculate_max_charge_nonfinite_parameters(index, invalid):
+    parameters = np.array([0.0, 1.0, 8.0, 2.0, 2.0])
+    parameters[index] = invalid
+
+    assert np.isnan(calculate_max_charge(parameters)).all()
+
+
+@pytest.mark.parametrize("index", [3, 4])
+@pytest.mark.parametrize("invalid", [0.0, -1.0])
+def test_calculate_max_charge_invalid_time_constants(index, invalid):
+    parameters = np.array([0.0, 1.0, 8.0, 2.0, 2.0])
+    parameters[index] = invalid
+
+    assert np.isnan(calculate_max_charge(parameters)).all()
+
+
+def test_l2a_max_charge_fields_and_cdf(l1b_dataset):
+    """Peak fields preserve sign, mask unavailable/saturated fits, and round-trip."""
+    dataset = l1b_dataset.isel(epoch=slice(0, 4)).copy(deep=True)
+    dataset["science_event_flag"].data = np.array([1, 1, 1, 0], dtype=np.uint8)
+    waveforms = ("target_low", "target_high", "ion_grid")
+    fits = []
+    sample_count = dataset.sizes["time_low_sample_rate_index"]
+    for waveform in waveforms:
+        dataset[f"{waveform}_saturation_flag"].data = np.array(
+            [0, 0, 1, 0], dtype=np.uint8
+        )
+        amplitude = -8.0 if waveform == "ion_grid" else 8.0
+        for event in range(4):
+            parameters = np.array([-4.0 + event, 1.0, amplitude, 2.0, 2.0])
+            if event == 1:
+                fits.append(
+                    (
+                        np.full(5, np.nan),
+                        np.nan,
+                        np.nan,
+                        np.nan,
+                        np.full(sample_count, np.nan),
+                    )
+                )
+            else:
+                fits.append((parameters, 2.0, 0.0, 0.0, np.zeros(sample_count)))
+
+    with (
+        mock.patch(
+            "imap_processing.idex.idex_l2a.load_calibration_files",
+            return_value=(
+                np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28]),
+                np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40]),
+            ),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.time_to_mass",
+            return_value=(None, None, np.zeros_like(dataset.TOF_High)),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.analyze_peaks",
+            return_value=(np.zeros((2, 3)), np.ones(2), np.zeros(2), np.zeros(2)),
+        ),
+        mock.patch(
+            "imap_processing.idex.idex_l2a.estimate_dust_mass", side_effect=fits
+        ),
+    ):
+        result = idex_l2a(dataset, {})
+
+    result.attrs["Data_version"] = "999"
+    cdf_path = write_cdf(result)
+    restored = load_cdf(cdf_path)
+    with cdflib.CDF(cdf_path) as cdf:
+        for waveform in waveforms:
+            expected_charge = -1.0 if waveform == "ion_grid" else 3.0
+            for suffix, expected, units in (
+                (
+                    "max_charge",
+                    [expected_charge, np.nan, np.nan, expected_charge],
+                    "pC",
+                ),
+                (
+                    "max_charge_time",
+                    [
+                        -4.0 + 2.0 * np.log(2.0),
+                        np.nan,
+                        np.nan,
+                        -1.0 + 2.0 * np.log(2.0),
+                    ],
+                    "microseconds",
+                ),
+            ):
+                name = f"{waveform}_{suffix}"
+                assert result[name].dims == ("epoch",)
+                np.testing.assert_allclose(result[name], expected, equal_nan=True)
+                np.testing.assert_allclose(restored[name], expected, equal_nan=True)
+                attrs = cdf.varattsget(name)
+                assert attrs["DEPEND_0"] == "epoch"
+                assert attrs["UNITS"] == units
+                assert attrs["FILLVAL"] == -1.0e31
+
+
 def test_non_science_derived_estimates_are_nan() -> None:
     """Only Science Events retain derived velocity and mass estimates."""
     estimates = {
@@ -273,7 +385,13 @@ def test_saturated_waveform_derived_values_are_nan() -> None:
     data = {
         f"{waveform}_{estimate}": xr.DataArray([1.0, 2.0], dims="epoch")
         for waveform in ("target_low", "target_high", "ion_grid")
-        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate")
+        for estimate in (
+            "impact_charge",
+            "velocity_estimate",
+            "dust_mass_estimate",
+            "max_charge",
+            "max_charge_time",
+        )
     }
     dataset = xr.Dataset(data, coords={"epoch": [0, 1]})
     for waveform in ("target_low", "target_high", "ion_grid"):
@@ -282,7 +400,13 @@ def test_saturated_waveform_derived_values_are_nan() -> None:
     _mask_saturated_derived_estimates(dataset)
 
     for waveform in ("target_low", "target_high", "ion_grid"):
-        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate"):
+        for estimate in (
+            "impact_charge",
+            "velocity_estimate",
+            "dust_mass_estimate",
+            "max_charge",
+            "max_charge_time",
+        ):
             np.testing.assert_array_equal(
                 dataset[f"{waveform}_{estimate}"].values, [1.0, np.nan]
             )
@@ -295,6 +419,8 @@ def test_saturated_derived_values_require_all_saturation_flags() -> None:
             "target_low_impact_charge": xr.DataArray([1.0], dims="epoch"),
             "target_low_velocity_estimate": xr.DataArray([1.0], dims="epoch"),
             "target_low_dust_mass_estimate": xr.DataArray([1.0], dims="epoch"),
+            "target_low_max_charge": xr.DataArray([1.0], dims="epoch"),
+            "target_low_max_charge_time": xr.DataArray([1.0], dims="epoch"),
             "target_low_saturation_flag": xr.DataArray([0], dims="epoch"),
         },
         coords={"epoch": [0]},
