@@ -409,8 +409,9 @@ def compute_hae_coordinates(dataset: xr.Dataset) -> dict[str, xr.DataArray]:
     pointing_coordinates = instrument_pointing(
         et, SpiceFrame[f"IMAP_HI_{sensor_number}"], SpiceFrame.ECLIPJ2000
     )
-    new_vars["hae_latitude"].values = pointing_coordinates[:, 0]
-    new_vars["hae_longitude"].values = pointing_coordinates[:, 1]
+    # instrument_pointing returns (longitude, latitude)
+    new_vars["hae_longitude"].values = pointing_coordinates[:, 0]
+    new_vars["hae_latitude"].values = pointing_coordinates[:, 1]
 
     return new_vars
 

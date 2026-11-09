@@ -456,7 +456,7 @@ def _check_source_sequence_counter(ds: xr.Dataset, apid: int) -> None:
     # Check for sequential source sequence counters
     # CCSDS source sequence counter is a 14-bit field (0-16383)
     counter_max = 16384
-    src_seq_ctr = ds["src_seq_ctr"].data
+    src_seq_ctr = ds["src_seq_ctr"].data.astype(np.int32)
 
     if len(src_seq_ctr) <= 1:
         return

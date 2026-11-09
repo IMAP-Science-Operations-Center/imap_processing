@@ -485,6 +485,49 @@ def test_instrument_pointing(furnish_kernels):
 
 
 @pytest.mark.parametrize(
+    "vectors, expected_lon_lat",
+    [
+        # Single vector input: -y axis has a longitude of 270, not -90
+        (np.array([0.0, -1.0, 0.0]), np.array([270.0, 0.0])),
+        # Multiple vector input covering all four quadrants and the poles
+        (
+            np.array(
+                [
+                    [1.0, 0.0, 0.0],
+                    [1.0, 1.0, 0.0],
+                    [-1.0, 1.0, 0.0],
+                    [-1.0, -1.0, 0.0],
+                    [1.0, -1.0, np.sqrt(2)],
+                    [0.0, 0.0, 1.0],
+                    [0.0, 0.0, -1.0],
+                ]
+            ),
+            np.array(
+                [
+                    [0.0, 0.0],
+                    [45.0, 0.0],
+                    [135.0, 0.0],
+                    [225.0, 0.0],
+                    [315.0, 45.0],
+                    [0.0, 90.0],
+                    [0.0, -90.0],
+                ]
+            ),
+        ),
+    ],
+)
+@mock.patch("imap_processing.spice.geometry.frame_transform")
+def test_instrument_pointing_lon_lat(mock_frame_transform, vectors, expected_lon_lat):
+    """Test instrument_pointing (lon, lat) output with known cartesian vectors."""
+    mock_frame_transform.return_value = vectors
+    et = 0.0 if vectors.ndim == 1 else np.zeros(len(vectors))
+    lon_lat = instrument_pointing(et, SpiceFrame.IMAP_HI_90, SpiceFrame.ECLIPJ2000)
+    assert lon_lat.shape == expected_lon_lat.shape
+    np.testing.assert_allclose(lon_lat, expected_lon_lat, atol=1e-12)
+    assert np.all((lon_lat[..., 0] >= 0) & (lon_lat[..., 0] < 360))
+
+
+@pytest.mark.parametrize(
     "frame",
     [
         SpiceFrame.IMAP_LO_BASE,

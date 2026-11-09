@@ -9,17 +9,19 @@ import xarray as xr
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.imap_cdf_manager import ImapCdfAttributes
-from imap_processing.cdf.utils import write_cdf
+from imap_processing.cdf.utils import load_cdf, write_cdf
 from imap_processing.idex.idex_constants import DT_BLOCK, ConversionFactors
 from imap_processing.idex.idex_event_flags import ALL_FLAG_NAMES, EVENT_FLAG_NAMES
 from imap_processing.idex.idex_l1b import (
     TRIGGER_LABELS,
     EventMessage,
     TriggerOrigin,
+    convert_waveforms,
     get_event_dead_time,
     get_spice_data,
     get_trigger_mode_and_level,
     get_trigger_origin,
+    get_waveform_statistics,
     idex_l1b,
     unpack_instrument_settings,
 )
@@ -82,6 +84,64 @@ def test_idex_cdf_file(l1b_dataset: xr.Dataset):
     file_name = write_cdf(l1b_dataset)
     assert file_name.exists()
     assert file_name.name == "imap_idex_l1b_sci-10days_20231218_v001.0001.cdf"
+    restored = load_cdf(file_name)
+    for channel in ConversionFactors:
+        for suffix in ("baseline", "rms"):
+            name = f"{channel.name.lower()}_{suffix}"
+            assert restored[name].dims == ("epoch",)
+            np.testing.assert_allclose(restored[name], l1b_dataset[name])
+            assert restored[name].attrs["UNITS"] == l1b_dataset[name].attrs["UNITS"]
+
+
+def test_waveform_statistics_all_channels():
+    """Statistics use the correct time axis and converted units for every channel."""
+    high_dim = "time_high_sample_rate_index"
+    low_dim = "time_low_sample_rate_index"
+    dataset = xr.Dataset(
+        {
+            "time_high_sample_rate": (
+                ("epoch", high_dim),
+                [[-7.0, -6.0, -5.0, -4.0], [10.0, 11.0, 12.0, 13.0]],
+            ),
+            "time_low_sample_rate": (
+                ("epoch", low_dim),
+                [[0.0, 0.8, 1.6, 2.4, 3.0], [-9.0, -8.2, -7.4, -6.6, -6.0]],
+            ),
+        },
+        coords={"epoch": [11, 22]},
+    )
+    for channel in ConversionFactors:
+        is_tof = channel.name.startswith("TOF")
+        dataset[channel.name] = xr.DataArray(
+            [[10, 12, 14, 900], [30, 30, 30, 900]]
+            if is_tof
+            else [[20, 22, 24, 26, 900], [40, 40, 40, 40, 900]],
+            dims=("epoch", high_dim if is_tof else low_dim),
+        )
+    attrs = get_idex_attrs("l1b")
+    dataset.update(convert_waveforms(dataset, attrs))
+    original = dataset.copy(deep=True)
+
+    statistics = get_waveform_statistics(dataset, attrs)
+
+    assert len(statistics) == 12
+    for channel in ConversionFactors:
+        is_tof = channel.name.startswith("TOF")
+        expected_baseline = np.array([12.0, 30.0] if is_tof else [23.0, 40.0])
+        expected_rms = np.array([np.sqrt(8 / 3) if is_tof else np.sqrt(5), 0.0])
+        expected_statistics = (("baseline", expected_baseline), ("rms", expected_rms))
+        for suffix, expected in expected_statistics:
+            field = statistics[f"{channel.name.lower()}_{suffix}"]
+            np.testing.assert_allclose(field, expected * channel.value)
+            np.testing.assert_array_equal(field.epoch, dataset.epoch)
+            assert field.dims == ("epoch",)
+            assert field.attrs["DEPEND_0"] == "epoch"
+            assert "DEPEND_1" not in field.attrs
+            assert "LABL_PTR_1" not in field.attrs
+            assert field.attrs["UNITS"] == ("mA" if is_tof else "pC")
+            maximum_dn = 1023 if is_tof else 4095
+            assert field.attrs["VALIDMAX"] == pytest.approx(maximum_dn * channel.value)
+    xr.testing.assert_identical(dataset, original)
 
 
 def test_idex_waveform_units(l1b_dataset: xr.Dataset):
