@@ -7,10 +7,59 @@ import pytest
 import xarray as xr
 
 from imap_processing.idex.idex_l2a import (
+    _has_low_rate_signal,
     estimate_dust_mass,
     idex_l2a,
     log_smooth_powerlaw,
 )
+
+
+@pytest.mark.parametrize("waveform", ["Target_High", "Target_Low", "Ion_Grid"])
+@pytest.mark.parametrize(
+    "time,signal,expected",
+    [
+        # Invalid samples do not affect the baseline (10) or population RMS (1).
+        ([np.nan, 0, 1, 2, 3], [1000, 9, np.nan, 11, 14.01], True),
+        ([np.inf, 0, 1, 2, 3], [1000, 9, np.inf, 11, 14.0], False),
+        # The earliest time defines the window even if its signal is missing.
+        ([0, 1, 2, 3], [np.nan, 9, 11, 14.01], True),
+        # The time axis need not be sorted; the endpoint is outside the baseline.
+        ([3, 2, 0, 1], [14.01, 11, 9, 10], True),
+        # Nonfinite pulse samples cannot trigger a fit.
+        ([0, 1, 3, 4], [9, 11, np.inf, np.nan], False),
+        ([0, 1, np.nan, np.inf], [9, 11, 1000, 1000], False),
+        ([0, 1, 3], [np.nan, np.inf, 1000], False),
+        ([], [], False),
+    ],
+)
+def test_low_rate_signal_uses_finite_baseline_window(waveform, time, signal, expected):
+    """Shared statistics retain the gate's finite-sample and window rules."""
+    assert _has_low_rate_signal(np.array(time), np.array(signal), waveform) is expected
+
+
+@pytest.mark.parametrize("failure", [False, True])
+@pytest.mark.parametrize("time_dtype", [int, float])
+def test_low_rate_null_result_shapes_and_dtype(failure, time_dtype):
+    """Skipped and failed fits return float NaNs even with integer sample times."""
+    time = xr.DataArray(np.arange(-6, 6, dtype=time_dtype))
+    signal = np.zeros(time.size)
+    if failure:
+        signal[-1] = 10.0
+    with mock.patch(
+        "imap_processing.idex.idex_l2a.curve_fit",
+        side_effect=RuntimeError("fit failed"),
+    ) as optimizer:
+        result = estimate_dust_mass(
+            time, xr.DataArray(signal), waveform_name="Target_High"
+        )
+
+    assert optimizer.call_count == int(failure)
+    assert len(result) == 5
+    assert result[0].shape == (5,)
+    assert result[4].shape == signal.shape
+    for value in result:
+        assert np.asarray(value).dtype.kind == "f"
+        assert np.all(np.isnan(value))
 
 
 @pytest.mark.parametrize("waveform", ["Target_High", "Target_Low", "Ion_Grid"])
@@ -163,6 +212,8 @@ def test_l2a_signal_gate_preserves_independent_channels():
             "TOF_High": (high_dimensions, np.tile([-1.0, 1.0], (2, 12))),
             "science_event_flag": ("epoch", [1, 1]),
             "tof_high_saturation_flag": ("epoch", [0, 0]),
+            "tof_high_baseline": ("epoch", [0.0, 0.0]),
+            "tof_high_rms": ("epoch", [1.0, 1.0]),
         },
         coords={"epoch": [0, 1]},
         attrs={"Logical_source": "imap_idex_l1b_sci-10days"},
@@ -175,6 +226,7 @@ def test_l2a_signal_gate_preserves_independent_channels():
         if waveform == "Ion_Grid":
             signal[0, -1] = -10.0
         dataset[waveform] = xr.DataArray(signal, dims=dimensions)
+        dataset[f"{waveform.lower()}_baseline"] = ("epoch", [0.0, 0.0])
         dataset[f"{waveform.lower()}_saturation_flag"] = ("epoch", [0, 0])
 
     t_rise_params = np.array([1.27, -0.2, -2.1, -0.37, 5.3, 13.3, 13.3, 0.28])
