@@ -510,6 +510,12 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
     xarray.Dataset
         The updated dataset with trimmed livetime data.
     """
+    mod_10: np.ndarray = dataset.hdr_minute_cnt.values % 10
+    # get the set ids
+    set_ids = np.cumsum(np.diff(mod_10, prepend=-1) < 0)
+    _, counts = np.unique(set_ids, return_counts=True)
+    # Create a mask of values per frame where the frame is in a complete set.
+    # complete_set_mask = np.repeat(counts, counts) == 10
     # epoch values are per science frame which is 1 minute
     epoch_vals = dataset["epoch"].values
     epoch_livetime_vals = dataset["epoch_livetime"].values
@@ -529,10 +535,15 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
             "dataset is too small to shift livetime correctly."
         )
 
-    # Compute shifted indices by 10 minutes
-    start_trimmed = max(start_idx - 10, 0)
-    end_trimmed = max(end_idx - 10, 0)
+    # Compute shifted indices by the number in the set
+    start_trimmed = max(start_idx - counts[0], 0)
+    end_trimmed = max(end_idx - counts[-1], 0)
+    # first trim the data to be the start and end
+    # trimmed_dataset = dataset.isel(epoch_livetime=slice(start_trimmed,
+    # end_trimmed + 1))
 
+    # Then return the dataset where there are only complete sets of
+    # livetime values corresponding to the sectored counts.
     return dataset.isel(epoch_livetime=slice(start_trimmed, end_trimmed + 1))
 
 
