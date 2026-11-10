@@ -125,6 +125,12 @@ EXTERNAL_TEST_DATA = [
     ("iois_1_packets_2026_090_05_05_07", "ialirt/data/l0/"),
     ("iois_1_packets_2026_090_05_06_08", "ialirt/data/l0/"),
     ("iois_1_packets_2026_090_05_07_09", "ialirt/data/l0/"),
+    ("iois_1_packets_2026_188_17_54_04", "ialirt/data/l0/"),
+    ("iois_1_packets_2026_188_17_55_05", "ialirt/data/l0/"),
+    ("iois_1_packets_2026_188_17_56_06", "ialirt/data/l0/"),
+    ("iois_1_packets_2026_188_17_57_07", "ialirt/data/l0/"),
+    ("iois_1_packets_2026_188_17_58_08", "ialirt/data/l0/"),
+    ("hit_science_20260707_ialirt_overlap.pkts", "ialirt/data/l0/"),
     ("imap_recon_od005_20250925_20251014_v01.bsp", "spice/test_data/"),
     ("imap_2025_283_2025_284_001.ah.bc", "spice/test_data/"),
 
