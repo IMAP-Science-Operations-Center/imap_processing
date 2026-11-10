@@ -1012,6 +1012,10 @@ def estimate_dust_mass(
     """
     Filter and fit the target or ion grid signals to get the total dust impact charge.
 
+    Fit only when a sample after the first 3 microseconds exceeds 4 times the
+    baseline RMS noise. Target excursions must be positive; Ion Grid excursions
+    may have either polarity. Skipped fits return NaN products.
+
     Parameters
     ----------
     low_sampling_time : xarray.DataArray
@@ -1056,6 +1060,13 @@ def estimate_dust_mass(
         )
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
+    null_result = (
+        np.full(5, np.nan),
+        np.nan,
+        np.nan,
+        np.nan,
+        np.full(time.shape, np.nan),
+    )
     if baseline_mean is None:
         baseline, _ = calculate_baseline_and_rms(signal, time)
         baseline_mean = float(baseline)
@@ -1080,9 +1091,7 @@ def estimate_dust_mass(
         amplitude = float("nan")
     if channel_name != "Ion_Grid" and (not np.isfinite(amplitude) or amplitude <= 0.0):
         amplitude = float(np.max(signal) - baseline_mean)
-    if not np.isfinite(amplitude):
-        amplitude = float(np.max(signal))
-    if channel_name != "Ion_Grid" and amplitude <= 0.0:
+    if not np.isfinite(amplitude) or (channel_name != "Ion_Grid" and amplitude <= 0.0):
         amplitude = float(np.max(signal))
 
     rise_time_0 = 0.371  # How fast the signal rises (us)
@@ -1104,6 +1113,9 @@ def estimate_dust_mass(
         [np.inf, np.inf, amplitude_upper_bound, np.inf, np.inf],
     )
 
+    if not _has_low_rate_signal(time, signal, channel_name):
+        return null_result
+
     try:
         with np.errstate(invalid="ignore", over="ignore"):
             param, _ = curve_fit(
@@ -1121,13 +1133,7 @@ def estimate_dust_mass(
             f"Signal range: {min(signal):.2f} to {max(signal):.2f}\n"
             "Returning None."
         )
-        return (
-            np.full(len(p0), np.nan),
-            np.nan,
-            np.nan,
-            np.nan,
-            np.full_like(time, np.nan),
-        )
+        return null_result
 
     impact_fit = fit_impact(time, *param)
     # Evaluate the analytic extremum of the fitted pulse instead of relying on the
@@ -1191,6 +1197,41 @@ def fit_impact(
     return constant_offset + np.heaviside(time_since_impact, 0) * (
         amplitude * exponent_1 * exponent_2
     )
+
+
+def _has_low_rate_signal(time: NDArray, signal: NDArray, channel_name: str) -> bool:
+    """
+    Check for a sample above 4 times the baseline RMS noise.
+
+    Parameters
+    ----------
+    time : numpy.ndarray
+        Sample times in microseconds.
+    signal : numpy.ndarray
+        Target or Ion Grid waveform in engineering units.
+    channel_name : str
+        Waveform name. Ion Grid permits either polarity; targets require a
+        positive excursion from the baseline.
+
+    Returns
+    -------
+    bool
+        Whether a finite sample after the first 3 microseconds exceeds the
+        threshold. False when no finite baseline samples are available.
+    """
+    noise_mean, noise_rms = calculate_baseline_and_rms(signal, time)
+    if not (np.isfinite(noise_mean) and np.isfinite(noise_rms)):
+        return False
+
+    # Only finite samples outside the shared statistics' first 3 microseconds
+    # can establish the presence of a pulse.
+    finite_time = np.isfinite(time)
+    window_start = float(np.min(time[finite_time]))
+    signal_window = finite_time & (time >= window_start + 3.0) & np.isfinite(signal)
+    excursions = signal[signal_window] - noise_mean
+    if channel_name == "Ion_Grid":
+        excursions = np.abs(excursions)
+    return bool(np.any(excursions > 4.0 * noise_rms))
 
 
 def remove_signal_noise(

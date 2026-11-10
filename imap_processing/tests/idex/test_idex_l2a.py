@@ -955,6 +955,10 @@ def test_estimate_dust_mass_reuses_baseline():
     time = xr.DataArray(np.arange(-6.0, 6.0))
     signal = xr.DataArray(np.arange(12.0))
     with (
+        # Isolate fit initialization; the threshold gate computes its own RMS.
+        mock.patch(
+            "imap_processing.idex.idex_l2a._has_low_rate_signal", return_value=True
+        ),
         mock.patch(
             "imap_processing.idex.idex_l2a.calculate_baseline_and_rms",
             side_effect=AssertionError("L1b baseline must not be recalculated"),
@@ -994,9 +998,9 @@ def test_estimate_dust_mass_remove_noise_logs_debug(caplog):
     )
 
 
-def test_estimate_dust_mass_nonfinite_signal_fallbacks():
+def test_estimate_dust_mass_skips_nonfinite_signal():
     """
-    Test fallback handling when the input signal is entirely non-finite.
+    Test that an entirely non-finite waveform is skipped without fitting.
     """
     time = xr.DataArray(np.linspace(-60, 60, 16))
     signal = xr.DataArray(np.full(16, np.nan))
@@ -1005,14 +1009,16 @@ def test_estimate_dust_mass_nonfinite_signal_fallbacks():
         "imap_processing.idex.idex_l2a.curve_fit",
         return_value=(np.array([0.0, 0.0, 1.0, 0.371, 37.1]), None),
     ) as mocked_curve_fit:
-        estimate_dust_mass(time, signal)
+        result = estimate_dust_mass(time, signal)
 
-    assert np.isnan(mocked_curve_fit.call_args.kwargs["p0"][2])
+    mocked_curve_fit.assert_not_called()
+    for value in result:
+        assert np.all(np.isnan(value))
 
 
-def test_estimate_dust_mass_non_ion_grid_negative_amplitude_fallback():
+def test_estimate_dust_mass_skips_constant_negative_signal():
     """
-    Test the non-Ion_Grid negative-amplitude fallback path.
+    Test that a constant negative baseline does not qualify as a signal.
     """
     time = xr.DataArray(np.linspace(-60, 60, 16))
     signal = xr.DataArray(np.full(16, -2.0))
@@ -1021,9 +1027,11 @@ def test_estimate_dust_mass_non_ion_grid_negative_amplitude_fallback():
         "imap_processing.idex.idex_l2a.curve_fit",
         return_value=(np.array([0.0, -2.0, -2.0, 0.371, 37.1]), None),
     ) as mocked_curve_fit:
-        estimate_dust_mass(time, signal)
+        result = estimate_dust_mass(time, signal)
 
-    assert mocked_curve_fit.call_args.kwargs["p0"][2] == -2.0
+    mocked_curve_fit.assert_not_called()
+    for value in result:
+        assert np.all(np.isnan(value))
 
 
 def test_estimate_dust_mass_ion_grid_negative_amplitude_bounds():
