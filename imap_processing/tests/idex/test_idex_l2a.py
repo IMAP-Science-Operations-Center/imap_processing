@@ -58,7 +58,9 @@ def test_l2a_uses_required_l1b_statistics(l1b_dataset, missing_statistic):
     if missing_statistic is not None:
         dataset = dataset.drop_vars(missing_statistic)
 
-    def fit_waveform(time, signal, remove_noise, waveform_name, baseline_mean):
+    def fit_waveform(
+        time, signal, remove_noise, waveform_name, saturation_flag, baseline_mean
+    ):
         return (
             np.array([0.0, baseline_mean, 1.0, 0.371, 37.1]),
             1.0,
@@ -104,7 +106,7 @@ def test_l2a_uses_required_l1b_statistics(l1b_dataset, missing_statistic):
     assert fit.call_count == 6
     for channel, expected in expected_baselines.items():
         supplied = [
-            call.args[4] for call in fit.call_args_list if call.args[3] == channel
+            call.args[5] for call in fit.call_args_list if call.args[3] == channel
         ]
         np.testing.assert_allclose(supplied, expected)
         np.testing.assert_allclose(
@@ -176,6 +178,11 @@ def test_l2a_fits_only_unsaturated_waveforms(saturation):
         dataset[channel] = xr.DataArray(
             samples, dims=("epoch", high_dim if is_tof else low_dim)
         )
+        baseline, rms = calculate_baseline_and_rms(
+            samples, high_time if is_tof else low_time
+        )
+        dataset[f"{channel.lower()}_baseline"] = xr.DataArray(baseline, dims="epoch")
+        dataset[f"{channel.lower()}_rms"] = xr.DataArray(rms, dims="epoch")
     original = dataset.copy(deep=True)
     fit_calls = []
 
