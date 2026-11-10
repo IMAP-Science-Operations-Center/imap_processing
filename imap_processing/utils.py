@@ -113,7 +113,9 @@ def convert_raw_to_eu(
             dataset[var].data = np.polyval(coeff_values, dataset[var].data)
 
         elif np.all(packet_df["convertAs"] == "SEGMENTED_POLY"):
-            data = dataset[var].data
+            # np.piecewise output takes the input dtype, so cast to float to avoid
+            # truncating (or wrapping negative) values for integer raw DNs
+            data = dataset[var].data.astype(np.float64)
             # Check if any of the raw DN values fall outside the ranges
             bad_mask = np.logical_or(
                 data < packet_df["dn_range_start"].min(),
