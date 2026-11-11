@@ -347,6 +347,10 @@ def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
     """
     Find start indices where mod values match [0,1,2,3,4,5,6,7,8,9] pattern.
 
+    To be a valid set, the previous set needs to be complete as well. Since the
+    first set will only be used for its livetime values, it is valid if it
+    matches the pattern.
+
     Parameters
     ----------
     mod_vals : np.ndarray
@@ -369,7 +373,19 @@ def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
     # Use sliding windows to find pattern matches
     sw_view = np.lib.stride_tricks.sliding_window_view(mod_vals, window_size)
     matches = np.all(sw_view == np.arange(window_size), axis=1)
-    return np.where(matches)[0]
+    starts = np.where(matches)[0]
+    # If no matches, return an empty array
+    if len(starts) == 0:
+        return np.array([], dtype=int)
+    # Find where the previous set is complete as well.
+    valid = np.isin(starts - 10, starts)
+    # If the first complete set is the first set,
+    # that set is considered complete since it's only used for livetime
+    # values.
+    valid[0] = starts[0] == 0
+    # Return the start inds of complete sets where the previous set is complete
+    # as well.
+    return starts[valid]
 
 
 def subset_sectored_counts(
@@ -422,6 +438,14 @@ def subset_sectored_counts(
         )
     else:
         start_indices = start_indices[start_indices >= bin_size]
+
+    # Sets can also be dropped when the previous set is incomplete (e.g.
+    # due to a dropped frame), so check again after filtering.
+    if start_indices.size == 0:
+        raise ValueError(
+            "No data to process - no complete sets of sectored counts with "
+            "a complete set of livetime values from the previous 10 minutes."
+        )
 
     # Subset data for complete sets of sectored counts.
     # Each set of sectored counts is 10 minutes long, so we take the indices
@@ -510,12 +534,6 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
     xarray.Dataset
         The updated dataset with trimmed livetime data.
     """
-    mod_10: np.ndarray = dataset.hdr_minute_cnt.values % 10
-    # get the set ids
-    set_ids = np.cumsum(np.diff(mod_10, prepend=-1) < 0)
-    _, counts = np.unique(set_ids, return_counts=True)
-    # Create a mask of values per frame where the frame is in a complete set.
-    # complete_set_mask = np.repeat(counts, counts) == 10
     # epoch values are per science frame which is 1 minute
     epoch_vals = dataset["epoch"].values
     epoch_livetime_vals = dataset["epoch_livetime"].values
@@ -525,26 +543,30 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
             "Epoch values are empty. Cannot proceed with livetime subsetting."
         )
 
-    # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
-    start_idx = np.where(epoch_livetime_vals == epoch_vals[0])[0][0]
-    end_idx = np.where(epoch_livetime_vals == epoch_vals[-1])[0][0]
+    # Get the inds of the epoch_livetime where it matches the filtered epoch vals.
+    match_inds = np.where(np.isin(epoch_livetime_vals, epoch_vals))[0]
 
-    if start_idx < 10:
+    # Each epoch must match exactly one epoch_livetime value, otherwise
+    # livetime will be misaligned with the sectored counts.
+    if match_inds.size != epoch_vals.size:
         raise ValueError(
-            "Start index for livetime is less than 10. This indicates that the "
+            f"Found {match_inds.size} epoch_livetime matches for "
+            f"{epoch_vals.size} epoch values. Livetime cannot be aligned with "
+            "sectored counts."
+        )
+
+    # Shift 10 frames (10 minutes) earlier to get the livetime indices
+    livetime_inds = match_inds - 10
+
+    if np.any(livetime_inds < 0):
+        raise ValueError(
+            "Livetime indices are negative. This indicates that the "
             "dataset is too small to shift livetime correctly."
         )
 
-    # Compute shifted indices by the number in the set
-    start_trimmed = max(start_idx - counts[0], 0)
-    end_trimmed = max(end_idx - counts[-1], 0)
-    # first trim the data to be the start and end
-    # trimmed_dataset = dataset.isel(epoch_livetime=slice(start_trimmed,
-    # end_trimmed + 1))
-
     # Then return the dataset where there are only complete sets of
     # livetime values corresponding to the sectored counts.
-    return dataset.isel(epoch_livetime=slice(start_trimmed, end_trimmed + 1))
+    return dataset.isel(epoch_livetime=livetime_inds)
 
 
 def filter_dataset_to_processing_day(

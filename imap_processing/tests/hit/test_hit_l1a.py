@@ -202,9 +202,42 @@ def test_subset_livetime():
     )
     with pytest.raises(
         ValueError,
-        match="Start index for livetime is less than 10. This indicates that the "
+        match="Livetime indices are negative. This indicates that the "
         "dataset is too small to shift livetime correctly.",
     ):
+        subset_livetime(dataset)
+
+    # Test case 4: Non-contiguous epochs (sets dropped in the middle). Each
+    # epoch should map to the livetime value 10 frames earlier.
+    epoch_livetime = np.arange(60)
+    epoch = np.concatenate([epoch_livetime[10:20], epoch_livetime[40:50]])
+    dataset = xr.Dataset(
+        {
+            "livetime_counter": ("epoch_livetime", np.arange(60) * 2),
+        },
+        coords={"epoch": epoch, "epoch_livetime": epoch_livetime},
+    )
+    trimmed = subset_livetime(dataset)
+    expected_epoch_livetime = epoch - 10
+    np.testing.assert_array_equal(
+        trimmed["epoch_livetime"].values, expected_epoch_livetime
+    )
+    np.testing.assert_array_equal(
+        trimmed["livetime_counter"].values, expected_epoch_livetime * 2
+    )
+
+    # Test case 5: An epoch value is missing from epoch_livetime, so livetime
+    # can't be aligned with the sectored counts.
+    dataset = xr.Dataset(
+        {
+            "livetime_counter": ("epoch_livetime", np.arange(60)),
+        },
+        coords={
+            "epoch": np.array([10, 11, 100]),
+            "epoch_livetime": np.arange(60),
+        },
+    )
+    with pytest.raises(ValueError, match="Livetime cannot be aligned"):
         subset_livetime(dataset)
 
 
@@ -228,8 +261,41 @@ def test_find_complete_mod10_sets():
     )
 
     # Test case 3: Pattern in the middle
-    mod_vals = np.array([5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4])
-    expected_indices = np.array([5])
+    mod_vals = np.array(
+        [
+            5,
+            6,
+            7,
+            8,
+            9,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            0,
+            1,
+            2,
+            3,
+            4,
+        ]
+    )
+    expected_indices = np.array([15])
     result = find_complete_mod10_sets(mod_vals)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
@@ -238,6 +304,78 @@ def test_find_complete_mod10_sets():
     # Test case 4: Empty input
     mod_vals = np.array([])
     expected_indices = np.array([])
+    result = find_complete_mod10_sets(mod_vals)
+    assert np.array_equal(result, expected_indices), (
+        f"Expected {expected_indices}, got {result}"
+    )
+
+    # Test case 5.
+    # incomplete, complete, complete, incomplete, complete
+    # A valid set has to have complete set before so only the set
+    # starting at 19 is valid.
+    mod_vals = np.array(
+        [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            8,
+            9,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            0,
+            1,
+            2,
+            3,
+            4,
+            6,
+            7,
+            8,
+            9,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+        ]
+    )
+    expected_indices = np.array([19])
+    result = find_complete_mod10_sets(mod_vals)
+    assert np.array_equal(result, expected_indices), (
+        f"Expected {expected_indices}, got {result}"
+    )
+
+    # Test case 6: Data starts with 10 frames that are not a complete set
+    # (leftover frame + set missing a frame). The first complete set at index
+    # 10 is invalid because the previous 10 frames aren't a complete set.
+    mod_vals = np.array([9, 0, 1, 2, 3, 4, 5, 6, 8, 9] + list(range(10)) * 2)
+    expected_indices = np.array([20])
     result = find_complete_mod10_sets(mod_vals)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
@@ -415,77 +553,42 @@ def test_subset_sectored_counts():
     l1a_counts_dataset = create_l1a_counts_dataset(np.arange(105, 135))
     validate_subset(l1a_counts_dataset)
 
-    # Test with partial data in the middle of the dataset
+    # Test with a gap in the middle of the dataset. The set after the gap
+    # (130-139) is complete but the 10 frames before it are not a complete
+    # set, so there is no valid livetime and no data to process.
     l1a_counts_dataset = create_l1a_counts_dataset(
-        [
-            100,
-            101,
-            102,
-            103,
-            104,
-            105,
-            106,
-            107,
-            108,
-            109,
-            110,
-            111,
-            112,
-            113,
-            114,
-            120,
-            121,
-            122,
-            123,
-            124,
-            130,
-            131,
-            132,
-            133,
-            134,
-            135,
-            136,
-            137,
-            138,
-            139,
-        ]
+        list(range(100, 115)) + list(range(120, 125)) + list(range(130, 140))
     )
-    validate_subset(l1a_counts_dataset)
+    with pytest.raises(
+        ValueError,
+        match="No data to process - no complete sets of sectored counts with "
+        "a complete set of livetime values from the previous 10 minutes.",
+    ):
+        subset_sectored_counts(l1a_counts_dataset, packet_date="20100106")
 
-    # Test with partial data at the start, middle, and end of the dataset
+    # Test with partial data at the start, middle, and end of the dataset.
+    # The complete set (130-139) follows partial data, so it is dropped.
+    # No complete set is preceded by another complete set, so no valid start
+    # indices are found.
     l1a_counts_dataset = create_l1a_counts_dataset(
-        [
-            105,
-            106,
-            107,
-            108,
-            109,
-            110,
-            111,
-            112,
-            113,
-            114,
-            115,
-            116,
-            117,
-            118,
-            119,
-            120,
-            121,
-            122,
-            130,
-            131,
-            132,
-            133,
-            134,
-            135,
-            136,
-            137,
-            138,
-            139,
-            140,
-            141,
-        ]
+        list(range(105, 123)) + list(range(130, 142))
+    )
+    with pytest.raises(
+        ValueError,
+        match="No data to process - valid start indices not found for "
+        "complete sectored counts.",
+    ):
+        subset_sectored_counts(l1a_counts_dataset, packet_date="20100106")
+
+    # Test with a dropped frame in the middle of the dataset. The set with the
+    # dropped frame (110-119, missing 119) and the set after it (120-129) are
+    # dropped. Only the following set (130-139) is kept.
+    l1a_counts_dataset = create_l1a_counts_dataset(
+        list(range(100, 119)) + list(range(120, 140))
+    )
+    subset_dataset = subset_sectored_counts(l1a_counts_dataset, packet_date="20100106")
+    np.testing.assert_array_equal(
+        subset_dataset["hdr_minute_cnt"].values, np.arange(130, 140)
     )
     validate_subset(l1a_counts_dataset)
 
