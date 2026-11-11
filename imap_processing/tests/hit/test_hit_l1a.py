@@ -243,9 +243,9 @@ def test_subset_livetime():
 
 def test_find_complete_mod10_sets():
     """Test the find_complete_mod10_sets function."""
-
+    complete_set = np.arange(10)
     # Test case 1: Valid pattern exists throughout
-    mod_vals = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    mod_vals = np.tile(complete_set, 2)
     expected_indices = np.array([0, 10])
     result = find_complete_mod10_sets(mod_vals)
     assert np.array_equal(result, expected_indices), (
@@ -261,38 +261,20 @@ def test_find_complete_mod10_sets():
     )
 
     # Test case 3: Pattern in the middle
-    mod_vals = np.array(
+    mod_vals = np.concat(
         [
-            5,
-            6,
-            7,
-            8,
-            9,
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            0,
-            1,
-            2,
-            3,
-            4,
+            np.array([5, 6, 7, 8, 9]),
+            complete_set,
+            complete_set,
+            np.array(
+                [
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                ]
+            ),
         ]
     )
     expected_indices = np.array([15])
@@ -313,56 +295,13 @@ def test_find_complete_mod10_sets():
     # incomplete, complete, complete, incomplete, complete
     # A valid set has to have complete set before so only the set
     # starting at 19 is valid.
-    mod_vals = np.array(
+    mod_vals = np.concat(
         [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            8,
-            9,
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            0,
-            1,
-            2,
-            3,
-            4,
-            6,
-            7,
-            8,
-            9,
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
+            np.array([0, 1, 2, 3, 4, 5, 6, 8, 9]),
+            complete_set,
+            complete_set,
+            np.array([0, 1, 2, 3, 4, 6, 7, 8, 9]),
+            complete_set,
         ]
     )
     expected_indices = np.array([19])
