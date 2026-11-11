@@ -103,8 +103,13 @@ We handle and track dependencies using a YAML config file that acts like a datab
 config file expects a specific format, and is used to determine the upstream and downstream
 dependencies of each product.
 
-Each product has entry for inputs, outputs and partition. The inputs are list of inputs needed to start
-processing the product, and outputs are the products that will be produced after processing. Partition
+Each processing job has entries for inputs, outputs and partition.
+Each job is identified with a `(job_data_level, job_descriptor)` pair,
+and these fields are distinct from (but generally related to) the job's output products'
+data levels and descriptors, because a given job can produce more than one output product.
+
+The inputs are list of inputs needed to start
+processing the job, and outputs are the products that will be produced after processing. Partition
 specifies the partitioning scheme for the product, which is used to determine the date range of
 the data of the file produced from the processing job. For example, if the partition is daily,
 then the file produced from the processing job will have a date range of 1 day. If the partition
@@ -201,8 +206,8 @@ frequently, and processing jobs should not be triggered when these files are upd
 Setting this to false allows for more controlled processing and may require additional
 review before updating these types of dependencies.
 
-[Past_days, Future_days] (Optional)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+date_range: [Past_days, Future_days] (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Default:**
 
@@ -227,6 +232,30 @@ Days can be used to support longer durations and different cadences. For example
 processing can use 7 days, and yearly processing can use 365 days.
 
 
+Dependency config assumptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- For any job with outputs that have the same descriptor but different data levels
+  (e.g., SWAPI's ``(l1a, hk)``), the major versions of such outputs must match.
+- A job's data level should match at least one of its output data products' data levels.
+
+These assumptions are enforced by a GitHub action running
+on every PR in the sds-data-manager repo.
+
+
+Dependency config best practices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The major version of each job output should be greater than or equal to the major version
+  of any data products on which that job output depends within the same instrument.
+- For a job that has exactly one output, if that output is a science output,
+  then the job descriptor should match the output's descriptor.
+
+These best practices are checked by a GitHub action running
+on every PR in the sds-data-manager repo,
+but PRs that violate this check are not prevented from merging.
+
+
 File content structure
 ~~~~~~~~~~~~~~~~~~~~~~
 The YAML config has the following structure:
@@ -236,25 +265,25 @@ The YAML config has the following structure:
    (level, descriptor):
      partition: daily
      inputs:
-       - source,
-         data_type,
-         descriptor,
-         required(bool),
-         trigger_job(bool),
-         [past_days, future_days]
-       - source,
-         data_type,
-         descriptor,
-         required(bool),
-         trigger_job(bool),
-         [past_days, future_days]
+       - source
+         data_type
+         descriptor
+         required(bool)
+         trigger_job(bool)
+         date_range: [past_days, future_days]
+       - source
+         data_type
+         descriptor
+         required(bool)
+         trigger_job(bool)
+         date_range: [past_days, future_days]
        ....
      outputs:
-       - source,
-         data_type,
+       - source
+         data_type
          descriptor
-       - source,
-         data_type,
+       - source
+         data_type
          descriptor
        ....
 
