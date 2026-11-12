@@ -826,6 +826,8 @@ def compute_pointing_directions(
 
     et = ttj2000ns_to_et(epoch)
     # create a meshgrid of spin and off angles using the bin centers
+    spin: np.ndarray
+    off: np.ndarray
     spin, off = np.meshgrid(spin_angles, off_angles, indexing="ij")
     # off_angles need to account for the pivot_angle
     off = off + (90 - pivot_angle)

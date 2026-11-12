@@ -1,6 +1,7 @@
 """Calculate Pointing Set Grids."""
 
 import logging
+from typing import cast
 
 import astropy_healpix.healpy as hp
 import numpy as np
@@ -257,9 +258,9 @@ def calculate_helio_pset(
     pset_dict["exposure_factor"] = exposure_time[np.newaxis, ...]
     pset_dict["pixel_index"] = healpix
     pset_dict["counts_pixel_index"] = counts_healpix
-    pset_dict["energy_bin_delta"] = np.diff(intervals, axis=1).squeeze()[
-        np.newaxis, ...
-    ]
+    pset_dict["energy_bin_delta"] = cast(
+        np.ndarray, np.diff(intervals, axis=1)
+    ).squeeze()[np.newaxis, ...]
     pset_dict["sensitivity"] = sensitivity
     pset_dict["efficiency"] = efficiencies
     pset_dict["geometric_function"] = geometric_function

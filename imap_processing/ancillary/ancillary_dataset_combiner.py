@@ -121,9 +121,9 @@ class AncillaryCombiner:
                 f"{filepath.end_date[4:6]}-"
                 f"{filepath.end_date[6:]}"
             )
-            end_dt = np.datetime64(formatted_str, "D")
+            end_dt: np.datetime64 = np.datetime64(formatted_str, "D")
         else:
-            end_dt = self.expected_end_date  # type: ignore[assignment]
+            end_dt = self.expected_end_date
 
         return TimestampedData(start_dt, end_dt, dataset, filepath.version)
 

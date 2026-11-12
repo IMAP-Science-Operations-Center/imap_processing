@@ -167,14 +167,14 @@ def match_coords_to_indices(
         # To match to a rectangular grid, we need to digitize the transformed az, el
         # pixel centers onto the bin edges of the output frame's grid, then
         # use ravel_multi_index to get the 1D indices of the pixels in the output frame.
-        az_indices = (
+        az_indices: NDArray[np.intp] | np.intp = (
             np.digitize(
                 input_obj_az_el_output_frame[..., 0],
                 output_object.sky_grid.az_bin_edges,
             )
             - 1
         )
-        el_indices = (
+        el_indices: NDArray[np.intp] | np.intp = (
             np.digitize(
                 input_obj_az_el_output_frame[..., 1],
                 output_object.sky_grid.el_bin_edges,
@@ -888,13 +888,13 @@ class AbstractSkyMap(ABC):
 
     @property
     @abstractmethod
-    def binning_grid_shape(self) -> tuple[int]:
+    def binning_grid_shape(self) -> tuple[int, ...]:
         """
         Shape of the binning grid.
 
         Returns
         -------
-        binning_grid_shape : tuple[int]
+        binning_grid_shape : tuple[int, ...]
             Shape of the binning grid.
         """
         raise NotImplementedError("binning_grid_shape property method not implemented.")
@@ -1533,13 +1533,13 @@ class RectangularSkyMap(AbstractSkyMap):
         return self.sky_grid.spacing_deg
 
     @property
-    def binning_grid_shape(self) -> tuple[int]:
+    def binning_grid_shape(self) -> tuple[int, int]:
         """
         Shape of the AzElSkyGrid.
 
         Returns
         -------
-        binning_grid_shape : tuple[int]
+        binning_grid_shape : tuple[int, int]
             Shape of the AzElSkyGrid (num_az_bins, num_el_bins).
         """
         return self.sky_grid.grid_shape

@@ -84,28 +84,31 @@ def l1a_hi_priority(
     byte_count_list = group_ds["byte_count"].values
     packet_version = group_ds["packet_version"].values[0]
     # The decompressed data in the shape of (epoch, n). Then reshape later.
-    decompressed_data = [
-        np.frombuffer(
-            bytes(
-                decompress(
-                    packet_data[:byte_count],
-                    compression_algorithm,
-                )
-            ),
-            dtype=">u4",
-            # '>' means big-endian, 'u4' means unsigned 4-byte integer (uint32)
-        )
-        # For newer packet versions, the decompressed data needs to be converted to
-        # uint32
-        if packet_version > 1
-        else decompress(
-            packet_data[:byte_count],
-            compression_algorithm,
-        )
-        for (packet_data, byte_count) in zip(
-            binary_data_list, byte_count_list, strict=False
-        )
-    ]
+    decompressed_data: np.ndarray = np.array(
+        [
+            np.frombuffer(
+                bytes(
+                    decompress(
+                        packet_data[:byte_count],
+                        compression_algorithm,
+                    )
+                ),
+                dtype=">u4",
+                # '>' means big-endian, 'u4' means unsigned 4-byte integer (uint32)
+            )
+            # For newer packet versions, the decompressed data needs to be converted to
+            # uint32
+            if packet_version > 1
+            else decompress(
+                packet_data[:byte_count],
+                compression_algorithm,
+            )
+            for (packet_data, byte_count) in zip(
+                binary_data_list, byte_count_list, strict=False
+            )
+        ],
+        dtype=np.uint32,
+    )
 
     num_packets = len(binary_data_list)
 
@@ -116,9 +119,7 @@ def l1a_hi_priority(
         view_tab_obj.sensor,
         view_tab_obj.collapse_table,
     )
-    species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
-        num_packets, collapse_shape[1]
-    )
+    species_data = decompressed_data.reshape(num_packets, collapse_shape[1])
     species_data = species_data.astype(np.float64)
     # ========== Create CDF Dataset with Metadata ===========
     cdf_attrs = ImapCdfAttributes()

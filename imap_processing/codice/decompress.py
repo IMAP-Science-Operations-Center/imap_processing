@@ -100,7 +100,7 @@ def _apply_lzma_lossless(compressed_bytes: bytes) -> bytes:
     return lzma_decompressed_values
 
 
-def _apply_pack_24_bit(compressed_bytes: bytes) -> NDArray[int]:
+def _apply_pack_24_bit(compressed_bytes: bytes) -> NDArray[np.uint32]:
     """
     Apply the pack 24 bit decompression algorithm.
 
@@ -114,7 +114,9 @@ def _apply_pack_24_bit(compressed_bytes: bytes) -> NDArray[int]:
     decompressed_values : NDArray[int]
         The 24-bit decompressed values.
     """
-    decompressed_values = np.frombuffer(compressed_bytes, dtype=np.uint8).reshape(-1, 3)
+    decompressed_values: np.ndarray = np.frombuffer(
+        compressed_bytes, dtype=np.uint8
+    ).reshape(-1, 3)
     decompressed_values = np.array(
         [int.from_bytes(value, byteorder="big") for value in decompressed_values],
         dtype=np.uint32,
@@ -123,7 +125,9 @@ def _apply_pack_24_bit(compressed_bytes: bytes) -> NDArray[int]:
     return decompressed_values
 
 
-def decompress(compressed_bytes: bytes, algorithm: IntEnum) -> list[int]:
+def decompress(
+    compressed_bytes: bytes, algorithm: IntEnum
+) -> list[int] | NDArray[np.uint32]:
     """
     Perform decompression on a byte stream into a list of integers.
 
@@ -161,7 +165,8 @@ def decompress(compressed_bytes: bytes, algorithm: IntEnum) -> list[int]:
         decompressed_bytes = _apply_lzma_lossless(compressed_bytes)
         decompressed_values = _apply_lossy_b(decompressed_bytes)
     elif algorithm == CoDICECompression.PACK_24_BIT:
-        decompressed_values = _apply_pack_24_bit(compressed_bytes)
+        decompressed_values_array = _apply_pack_24_bit(compressed_bytes)
+        return decompressed_values_array
     else:
         raise ValueError(f"{algorithm} is not supported")
 

@@ -366,7 +366,7 @@ def _unpack_and_store_events(
         offset += n_events
 
     # Convert bytes to 64-bit values and unpack all fields at once
-    all_64bits = all_event_bytes.view(np.uint64).ravel()
+    all_64bits: np.ndarray = all_event_bytes.view(np.uint64).ravel()
     unpacked = unpack_bits(bit_structure, all_64bits)
 
     # Place unpacked values directly into the dataset arrays

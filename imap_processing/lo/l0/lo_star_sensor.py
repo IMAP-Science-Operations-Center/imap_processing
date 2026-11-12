@@ -31,7 +31,7 @@ def process_star_sensor(ds: xr.Dataset) -> xr.Dataset:
     # This assumes that all data_compressed entries are of the same length
     # but allows for only one frombuffer call
     buffer = b"".join(ds["data_compressed"].values)
-    data = np.frombuffer(buffer, dtype=np.uint8).reshape(-1, 720)
+    data: np.ndarray = np.frombuffer(buffer, dtype=np.uint8).reshape(-1, 720)
 
     # Decompress from 8 -> 12 bits using the decompression tables
     decompression = DECOMPRESSION_TABLES[Decompress.DECOMPRESS8TO12].astype(np.uint16)

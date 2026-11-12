@@ -392,7 +392,7 @@ def combine_segmented_packets(
     )
 
     # Assign group IDs using cumulative sum - each group start increments the ID
-    group_ids = np.cumsum(is_group_start)
+    group_ids: np.ndarray = np.cumsum(is_group_start)
 
     # Get indices of packets we'll keep (first packet of each group)
     group_start_indices = np.where(is_group_start)[0]

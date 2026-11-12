@@ -464,7 +464,7 @@ class MagL1d(MagL2L1dBase):  # type: ignore[misc]
 
         # first timestamp where spin phase is less than the previous value
         # this is when the spin crosses zero
-        spin_starts = np.where(np.diff(sc_spin_phase) < 0)[0] + 1
+        spin_starts: np.ndarray = np.where(np.diff(sc_spin_phase) < 0)[0] + 1
 
         # if the value switches from nan to a number, or from a number to nan, that
         # is also a spin start

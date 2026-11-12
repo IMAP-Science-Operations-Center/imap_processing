@@ -107,27 +107,30 @@ def l1a_lo_priority(
 
     packet_version = group_ds["packet_version"].values[0]
     # The decompressed data in the shape of (epoch, n). Then reshape later.
-    decompressed_data = [
-        np.frombuffer(
-            bytes(
-                decompress(
-                    packet_data[:byte_count],
-                    compression_algorithm,
-                )
-            ),
-            dtype=">u4",  # Big endian
-        )
-        # For newer packet versions, the decompressed data needs to be converted to
-        # uint32
-        if packet_version > 1
-        else decompress(
-            packet_data[:byte_count],
-            compression_algorithm,
-        )
-        for (packet_data, byte_count) in zip(
-            binary_data_list, byte_count_list, strict=False
-        )
-    ]
+    decompressed_data: np.ndarray = np.array(
+        [
+            np.frombuffer(
+                bytes(
+                    decompress(
+                        packet_data[:byte_count],
+                        compression_algorithm,
+                    )
+                ),
+                dtype=">u4",  # Big endian
+            )
+            # For newer packet versions, the decompressed data needs to be converted to
+            # uint32
+            if packet_version > 1
+            else decompress(
+                packet_data[:byte_count],
+                compression_algorithm,
+            )
+            for (packet_data, byte_count) in zip(
+                binary_data_list, byte_count_list, strict=False
+            )
+        ],
+        dtype=np.uint32,
+    )
 
     num_packets = len(binary_data_list)
 
@@ -141,7 +144,7 @@ def l1a_lo_priority(
         view_tab_obj.collapse_table,
     )
     num_spin_sectors = collapse_shape[0]
-    species_data = np.array(decompressed_data, dtype=np.uint32).reshape(
+    species_data = decompressed_data.reshape(
         num_packets, num_species, num_esa_steps, num_spin_sectors
     )
 
