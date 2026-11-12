@@ -41,7 +41,7 @@ impact_charge_base: &impact_charge_base
   VALIDMIN: *int_fillval
   VAR_TYPE: data
 
-max_charge_time_base: &max_charge_time_base
+impact_charge_time_base: &impact_charge_time_base
   DEPEND_0: epoch
   DICT_KEY: SPASE>Support>SupportQuantity:Temporal
   DISPLAY_TYPE: time_series
@@ -51,7 +51,7 @@ max_charge_time_base: &max_charge_time_base
   VALIDMAX: *int_maxval
   VALIDMIN: *int_fillval
   VAR_TYPE: data
-  VAR_NOTES: Analytic pulse extremum time on the time_low_sample_rate axis, relative to the waveform trigger. Fill when the fit is unavailable, invalid, or the waveform is saturated.
+  VAR_NOTES: Time of the analytic pulse extremum used to calculate impact_charge, on the time_low_sample_rate axis, relative to the waveform trigger. Fill when the fit is unavailable, invalid, or the waveform is saturated.
 
 mass_estimate_base: &mass_estimate_base
   DEPEND_0: epoch
@@ -342,18 +342,11 @@ target_low_impact_charge:
   FIELDNAM: Target Low Impact Charge
   LABLAXIS: TL Impact Charge
 
-target_low_max_charge:
-  <<: *impact_charge_base
-  CATDESC: Signed fitted charge at the analytic pulse extremum of Target Low.
-  FIELDNAM: Target Low Maximum Charge
-  LABLAXIS: TL Max Charge
-  VAR_NOTES: Includes the fitted baseline offset. Fill when the fit is unavailable, invalid, or the waveform is saturated.
-
-target_low_max_charge_time:
-  <<: *max_charge_time_base
+target_low_impact_charge_time:
+  <<: *impact_charge_time_base
   CATDESC: Time of the analytic pulse extremum of the Target Low fit.
-  FIELDNAM: Target Low Maximum Charge Time
-  LABLAXIS: TL Max Charge Time
+  FIELDNAM: Target Low Impact Charge Time
+  LABLAXIS: TL Charge Time
 
 target_low_dust_mass_estimate:
   <<: *mass_estimate_base
@@ -397,18 +390,11 @@ target_high_impact_charge:
   FIELDNAM: Target High Impact Charge
   LABLAXIS: TH Impact Charge
 
-target_high_max_charge:
-  <<: *impact_charge_base
-  CATDESC: Signed fitted charge at the analytic pulse extremum of Target High.
-  FIELDNAM: Target High Maximum Charge
-  LABLAXIS: TH Max Charge
-  VAR_NOTES: Includes the fitted baseline offset. Fill when the fit is unavailable, invalid, or the waveform is saturated.
-
-target_high_max_charge_time:
-  <<: *max_charge_time_base
+target_high_impact_charge_time:
+  <<: *impact_charge_time_base
   CATDESC: Time of the analytic pulse extremum of the Target High fit.
-  FIELDNAM: Target High Maximum Charge Time
-  LABLAXIS: TH Max Charge Time
+  FIELDNAM: Target High Impact Charge Time
+  LABLAXIS: TH Charge Time
 
 target_high_dust_mass_estimate:
   <<: *mass_estimate_base
@@ -452,18 +438,11 @@ ion_grid_impact_charge:
   FIELDNAM: Ion Grid Impact Charge
   LABLAXIS: IG Impact Charge
 
-ion_grid_max_charge:
-  <<: *impact_charge_base
-  CATDESC: Signed fitted charge at the analytic pulse extremum of Ion Grid.
-  FIELDNAM: Ion Grid Maximum Charge
-  LABLAXIS: IG Max Charge
-  VAR_NOTES: Includes the fitted baseline offset and preserves pulse polarity. For negative pulses this is the fitted minimum. Fill when the fit is unavailable, invalid, or the waveform is saturated.
-
-ion_grid_max_charge_time:
-  <<: *max_charge_time_base
+ion_grid_impact_charge_time:
+  <<: *impact_charge_time_base
   CATDESC: Time of the analytic pulse extremum of the Ion Grid fit.
-  FIELDNAM: Ion Grid Maximum Charge Time
-  LABLAXIS: IG Max Charge Time
+  FIELDNAM: Ion Grid Impact Charge Time
+  LABLAXIS: IG Charge Time
 
 ion_grid_dust_mass_estimate:
   <<: *mass_estimate_base

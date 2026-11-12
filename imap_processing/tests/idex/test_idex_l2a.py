@@ -21,7 +21,6 @@ from imap_processing.idex.idex_l2a import (
     calculate_ion_grid_velocity_and_mass,
     calculate_kappa,
     calculate_mass_from_velocity,
-    calculate_max_charge,
     calculate_snr,
     calculate_velocity_and_mass,
     chi_square,
@@ -68,6 +67,7 @@ def test_l2a_uses_required_l1b_statistics(l1b_dataset, missing_statistic):
             0.0,
             0.0,
             np.zeros_like(signal),
+            0.371 * np.log(101.0),
         )
 
     with (
@@ -121,14 +121,14 @@ def test_estimate_dust_mass_skips_saturated_waveform(waveform):
     signal = xr.DataArray(np.full(8, 4095), name=waveform)
 
     with mock.patch("imap_processing.idex.idex_l2a.curve_fit") as optimizer:
-        parameters, charge, chisqr, redchi, fitted = estimate_dust_mass(
+        parameters, charge, chisqr, redchi, fitted, charge_time = estimate_dust_mass(
             time, signal, waveform_name=waveform, saturation_flag=1
         )
 
     optimizer.assert_not_called()
     assert parameters.shape == (5,)
     assert fitted.shape == signal.shape
-    for value in (parameters, charge, chisqr, redchi, fitted):
+    for value in (parameters, charge, chisqr, redchi, fitted, charge_time):
         assert np.all(np.isnan(value))
 
 
@@ -223,6 +223,7 @@ def test_l2a_fits_only_unsaturated_waveforms(saturation):
             "fit_parameters",
             "fit_results",
             "impact_charge",
+            "impact_charge_time",
             "chi_squared",
             "reduced_chi_squared",
             "velocity_estimate",
@@ -250,37 +251,32 @@ def test_l2a_fits_only_unsaturated_waveforms(saturation):
     xr.testing.assert_identical(dataset, original)
 
 
-@pytest.mark.parametrize("amplitude", [8.0, -8.0])
-def test_calculate_max_charge_signed_extremum(amplitude):
-    """Equal rise/decay times give a peak excursion of one quarter amplitude."""
-    parameters = np.array([-4.0, 1.0, amplitude, 2.0, 2.0])
+@pytest.mark.parametrize(
+    "waveform,amplitude",
+    [("Target_Low", 8.0), ("Target_High", 8.0), ("Ion_Grid", 8.0), ("Ion_Grid", -8.0)],
+)
+@pytest.mark.parametrize("impact_time", [-4.0, 2.0])
+def test_estimate_dust_mass_analytic_charge_time(waveform, amplitude, impact_time):
+    """Return the continuous extremum time for either pulse polarity."""
+    time = xr.DataArray(np.linspace(-10.0, 20.0, 121))
+    signal = xr.DataArray(
+        fit_impact(time.values, impact_time, 10.0, amplitude, 2.0, 2.0)
+    )
 
-    peak_time, peak_charge = calculate_max_charge(parameters)
+    parameters, charge, _, _, _, charge_time = estimate_dust_mass(
+        time, signal, waveform_name=waveform
+    )
 
-    assert peak_time == pytest.approx(-4.0 + 2.0 * np.log(2.0))
-    assert peak_charge == pytest.approx(1.0 + amplitude / 4.0)
-
-
-@pytest.mark.parametrize("index", range(5))
-@pytest.mark.parametrize("invalid", [np.nan, np.inf])
-def test_calculate_max_charge_nonfinite_parameters(index, invalid):
-    parameters = np.array([0.0, 1.0, 8.0, 2.0, 2.0])
-    parameters[index] = invalid
-
-    assert np.isnan(calculate_max_charge(parameters)).all()
-
-
-@pytest.mark.parametrize("index", [3, 4])
-@pytest.mark.parametrize("invalid", [0.0, -1.0])
-def test_calculate_max_charge_invalid_time_constants(index, invalid):
-    parameters = np.array([0.0, 1.0, 8.0, 2.0, 2.0])
-    parameters[index] = invalid
-
-    assert np.isnan(calculate_max_charge(parameters)).all()
+    expected_time = impact_time + 2.0 * np.log(2.0)
+    assert charge_time == pytest.approx(expected_time, abs=1e-6)
+    assert charge == pytest.approx(abs(amplitude) / 4.0, abs=1e-6)
+    assert np.min(np.abs(time.values - charge_time)) > 0.01
+    peak = fit_impact(np.array([charge_time]), *parameters)[0]
+    assert charge == pytest.approx(abs(peak - parameters[1]))
 
 
-def test_l2a_max_charge_fields_and_cdf(l1b_dataset):
-    """Peak fields preserve sign, mask unavailable/saturated fits, and round-trip."""
+def test_l2a_impact_charge_time_fields_and_cdf(l1b_dataset):
+    """Charge times mask unavailable/saturated fits and round-trip through CDF."""
     dataset = l1b_dataset.isel(epoch=slice(0, 4)).copy(deep=True)
     dataset["science_event_flag"].data = np.array([1, 1, 1, 0], dtype=np.uint8)
     waveforms = ("target_low", "target_high", "ion_grid")
@@ -301,10 +297,20 @@ def test_l2a_max_charge_fields_and_cdf(l1b_dataset):
                         np.nan,
                         np.nan,
                         np.full(sample_count, np.nan),
+                        np.nan,
                     )
                 )
             else:
-                fits.append((parameters, 2.0, 0.0, 0.0, np.zeros(sample_count)))
+                fits.append(
+                    (
+                        parameters,
+                        2.0,
+                        0.0,
+                        0.0,
+                        np.zeros(sample_count),
+                        -4.0 + event + 2.0 * np.log(2.0),
+                    )
+                )
 
     with (
         mock.patch(
@@ -333,15 +339,16 @@ def test_l2a_max_charge_fields_and_cdf(l1b_dataset):
     restored = load_cdf(cdf_path)
     with cdflib.CDF(cdf_path) as cdf:
         for waveform in waveforms:
-            expected_charge = -1.0 if waveform == "ion_grid" else 3.0
+            assert f"{waveform}_max_charge" not in result
+            assert f"{waveform}_max_charge_time" not in result
             for suffix, expected, units in (
                 (
-                    "max_charge",
-                    [expected_charge, np.nan, np.nan, expected_charge],
+                    "impact_charge",
+                    [2.0, np.nan, np.nan, 2.0],
                     "pC",
                 ),
                 (
-                    "max_charge_time",
+                    "impact_charge_time",
                     [
                         -4.0 + 2.0 * np.log(2.0),
                         np.nan,
@@ -389,8 +396,7 @@ def test_saturated_waveform_derived_values_are_nan() -> None:
             "impact_charge",
             "velocity_estimate",
             "dust_mass_estimate",
-            "max_charge",
-            "max_charge_time",
+            "impact_charge_time",
         )
     }
     dataset = xr.Dataset(data, coords={"epoch": [0, 1]})
@@ -404,8 +410,7 @@ def test_saturated_waveform_derived_values_are_nan() -> None:
             "impact_charge",
             "velocity_estimate",
             "dust_mass_estimate",
-            "max_charge",
-            "max_charge_time",
+            "impact_charge_time",
         ):
             np.testing.assert_array_equal(
                 dataset[f"{waveform}_{estimate}"].values, [1.0, np.nan]
@@ -419,8 +424,7 @@ def test_saturated_derived_values_require_all_saturation_flags() -> None:
             "target_low_impact_charge": xr.DataArray([1.0], dims="epoch"),
             "target_low_velocity_estimate": xr.DataArray([1.0], dims="epoch"),
             "target_low_dust_mass_estimate": xr.DataArray([1.0], dims="epoch"),
-            "target_low_max_charge": xr.DataArray([1.0], dims="epoch"),
-            "target_low_max_charge_time": xr.DataArray([1.0], dims="epoch"),
+            "target_low_impact_charge_time": xr.DataArray([1.0], dims="epoch"),
             "target_low_saturation_flag": xr.DataArray([0], dims="epoch"),
         },
         coords={"epoch": [0]},
@@ -1046,7 +1050,7 @@ def test_estimate_dust_mass_no_noise_removal():
             discharge_time=0.371,
         )
     )
-    param, sig_amp, chisqr, redchi, result = estimate_dust_mass(
+    param, sig_amp, chisqr, redchi, result, charge_time = estimate_dust_mass(
         time, signal, remove_noise=False
     )
     # Assert that the chi square value indicates a very good fit
@@ -1201,7 +1205,9 @@ def test_estimate_dust_mass_curve_fit_failure_returns_nans(caplog):
         ),
         caplog.at_level("WARNING"),
     ):
-        param, sig_amp, chisqr, redchi, result = estimate_dust_mass(time, signal)
+        param, sig_amp, chisqr, redchi, result, charge_time = estimate_dust_mass(
+            time, signal
+        )
 
     assert any("Failed to fit curve" in message for message in caplog.text.splitlines())
     assert np.all(np.isnan(param))
@@ -1209,6 +1215,7 @@ def test_estimate_dust_mass_curve_fit_failure_returns_nans(caplog):
     assert np.isnan(chisqr)
     assert np.isnan(redchi)
     assert np.all(np.isnan(result))
+    assert np.isnan(charge_time)
 
 
 def test_lowpass_filter():

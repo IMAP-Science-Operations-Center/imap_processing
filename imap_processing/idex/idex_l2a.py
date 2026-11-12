@@ -217,18 +217,11 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
                 [],
                 [],
                 ["time_low_sample_rate_index"],
+                [],
             ],
             vectorize=True,
             output_dtypes=[np.float64] * 6,
             keep_attrs=True,
-        )
-        max_charge_time, max_charge = xr.apply_ufunc(
-            calculate_max_charge,
-            fit_results[0],
-            input_core_dims=[["target_fit_parameter_index"]],
-            output_core_dims=[[], []],
-            vectorize=True,
-            output_dtypes=[np.float64, np.float64],
         )
         # Calculate mass and velocity estimates
         if waveform == "Ion_Grid":
@@ -262,8 +255,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
         output_vars = {
             f"{waveform_name}_fit_parameters": fit_results[0],
             f"{waveform_name}_impact_charge": fit_results[1],
-            f"{waveform_name}_max_charge": max_charge,
-            f"{waveform_name}_max_charge_time": max_charge_time,
+            f"{waveform_name}_impact_charge_time": fit_results[5],
             f"{waveform_name}_velocity_estimate": velocity_mass_results[0],
             f"{waveform_name}_dust_mass_estimate": velocity_mass_results[1],
             # Same as impact_charge for now
@@ -410,7 +402,7 @@ def _mask_non_science_derived_estimates(l2a_dataset: xr.Dataset) -> None:
 def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
     """Mask fitted charges and derived estimates for saturated waveforms.
 
-    Saturated waveforms are skipped during fitting. Impact charge, peak charge
+    Saturated waveforms are skipped during fitting. Impact charge
     and its time, velocity, and mass estimates are not scientifically valid when
     their source waveform is saturated.
 
@@ -428,8 +420,7 @@ def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
         invalid = l2a_dataset[saturation_flag] == 1
         for estimate_name in (
             f"{waveform_name}_impact_charge",
-            f"{waveform_name}_max_charge",
-            f"{waveform_name}_max_charge_time",
+            f"{waveform_name}_impact_charge_time",
             f"{waveform_name}_velocity_estimate",
             f"{waveform_name}_dust_mass_estimate",
         ):
@@ -1020,7 +1011,7 @@ def estimate_dust_mass(
     waveform_name: str = "",
     saturation_flag: int = 0,
     baseline_mean: float | None = None,
-) -> tuple[NDArray, float, float, float, NDArray]:
+) -> tuple[NDArray, float, float, float, NDArray, float]:
     """
     Filter and fit the target or ion grid signals to get the total dust impact charge.
 
@@ -1041,7 +1032,7 @@ def estimate_dust_mass(
         Channel name used to select channel-specific fit bounds.
     saturation_flag : int
         Waveform saturation flag from L1b. A value of 1 skips fitting and returns
-        NaN fit parameters, charge, chi-square values, and fitted samples.
+        NaN fit parameters, charge, chi-square values, fitted samples, and peak time.
     baseline_mean : float or None
         L1b mean baseline used to initialize the fit. Calculated from the first
         3 microseconds when omitted in standalone calls.
@@ -1053,14 +1044,17 @@ def estimate_dust_mass(
         [time_of_impact, constant_offset, amplitude, rise_time, discharge_time]
         if fit successful. None otherwise.
     sig_amp : float
-        Signal amplitude, calculated as difference between fitted maximum signal
-        and baseline mean if fit successful. None otherwise.
+        Absolute difference between the analytic pulse extremum and fitted
+        baseline, in pC. NaN if the fit is unavailable.
     chi_squared : float
         Sum of squared residuals from the fit.
     reduced_chi_squared : float
         Chi-squared per degree of freedom.
     result : numpy.ndarray
         The model values evaluated at each time point.
+    impact_charge_time : float
+        Analytic pulse extremum time in microseconds relative to the waveform
+        trigger. NaN if the fit is unavailable.
     """
     if saturation_flag == 1:
         return (
@@ -1069,6 +1063,7 @@ def estimate_dust_mass(
             np.nan,
             np.nan,
             np.full(target_signal.shape, np.nan),
+            np.nan,
         )
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
@@ -1078,6 +1073,7 @@ def estimate_dust_mass(
         np.nan,
         np.nan,
         np.full(time.shape, np.nan),
+        np.nan,
     )
     if baseline_mean is None:
         baseline, _ = calculate_baseline_and_rms(signal, time)
@@ -1148,41 +1144,13 @@ def estimate_dust_mass(
         return null_result
 
     impact_fit = fit_impact(time, *param)
-    _, y_max = calculate_max_charge(param)
+    # Evaluate the analytic extremum rather than the nearest waveform sample.
+    t_max = param[0] + param[3] * np.log((param[4] / param[3]) + 1.0)
+    y_max = float(fit_impact(np.asarray([t_max], dtype=float), *param)[0])
     sig_amp = abs(float(y_max - param[1]))
     chisqr, redchi = chi_square(signal, impact_fit, len(p0))
 
-    return param, float(sig_amp), chisqr, redchi, impact_fit
-
-
-def calculate_max_charge(fit_parameters: NDArray) -> tuple[float, float]:
-    """Calculate the analytic pulse extremum of a target or ion-grid fit.
-
-    Parameters
-    ----------
-    fit_parameters : numpy.ndarray
-        Parameters in the order time of impact, baseline offset, amplitude,
-        rise time, and discharge time. Times are in microseconds; offset and
-        amplitude are in pC.
-
-    Returns
-    -------
-    max_charge_time : float
-        Analytic extremum time on the waveform time axis, in microseconds.
-    max_charge : float
-        Signed fitted value at the extremum, including the baseline, in pC.
-        For a negative Ion Grid pulse this is the pulse minimum. Both outputs
-        are NaN for unavailable or invalid fit parameters.
-    """
-    if not np.all(np.isfinite(fit_parameters)) or np.any(fit_parameters[3:] <= 0):
-        return np.nan, np.nan
-
-    # Use the continuous pulse extremum rather than the nearest waveform sample.
-    t_max = fit_parameters[0] + fit_parameters[3] * np.log(
-        (fit_parameters[4] / fit_parameters[3]) + 1.0
-    )
-    y_max = float(fit_impact(np.asarray([t_max], dtype=float), *fit_parameters)[0])
-    return float(t_max), y_max
+    return param, float(sig_amp), chisqr, redchi, impact_fit, float(t_max)
 
 
 def fit_impact(
