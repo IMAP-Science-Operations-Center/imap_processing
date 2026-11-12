@@ -116,14 +116,31 @@ def generate_pset_dataset(
         field: de_dataset.attrs[field]
         for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
     }
-    gain_config_df = config_df.cal_prod_config.select_gain_config(hv_deltas)
+    gain_config_id = config_df.cal_prod_config.match_gain_config_id(hv_deltas)
+    if gain_config_id is None:
+        logger.warning(
+            "Pointing's detector gain state matches zero or multiple "
+            "gain_config_ids in the cal-prod config. PSET will have a single "
+            "fill calibration_prod, zero counts, fill geometric_factor and "
+            "backgrounds, and a NaN gain_config_id global attribute."
+        )
+        gain_config_df = None
+        cal_prod_numbers = None
+    else:
+        logger.info(f"Pointing gain state matches gain_config_id={gain_config_id}")
+        # The calibration_prod coordinate holds the matched gain_config_id's
+        # calibration products only.
+        gain_config_df = config_df.loc[gain_config_id]
+        cal_prod_numbers = np.sort(
+            gain_config_df.index.unique(level="calibration_prod").values
+        )
     # read background configuration file
     background_df = BackgroundConfig.from_csv(background_config_path)
 
     pset_dataset = empty_pset_dataset(
         de_dataset.ccsds_met.data.mean(),
         de_dataset.esa_energy_step,
-        config_df.cal_prod_config.calibration_product_numbers,
+        cal_prod_numbers,
         logical_source_parts["sensor"],
     )
     # Calculate and add despun_z, hae_latitude, and hae_longitude variables to
@@ -132,6 +149,12 @@ def generate_pset_dataset(
         pset_dataset.epoch.data[0] + pset_dataset.epoch_delta.data[0] / 2
     )
     pset_dataset.update(pset_geometry(pset_midpoint_et, logical_source_parts["sensor"]))
+    # Record which gain configuration this pointing ran so that L2 can
+    # combine PSETs from different gain configurations. NaN when unmatched,
+    # matching the L1B DE convention for the gain-state global attributes.
+    pset_dataset.attrs["gain_config_id"] = (
+        np.nan if gain_config_id is None else gain_config_id
+    )
     # Look up the per-esa_energy_step geometric factor for this pointing's
     # gain state.
     pset_dataset = add_pset_geometric_factor(pset_dataset, gain_config_df)
@@ -159,7 +182,7 @@ def generate_pset_dataset(
 def empty_pset_dataset(
     l1b_met: float,
     l1b_energy_steps: xr.DataArray,
-    cal_prod_numbers: npt.NDArray[np.int_],
+    cal_prod_numbers: npt.NDArray[np.int_] | None,
     sensor_str: str,
 ) -> xr.Dataset:
     """
@@ -172,9 +195,11 @@ def empty_pset_dataset(
         repoint-table data to get the start and end times of the pointing.
     l1b_energy_steps : xarray.DataArray
         The array of esa_energy_step data from the L1B DE product.
-    cal_prod_numbers : numpy.ndarray
+    cal_prod_numbers : numpy.ndarray or None
         Array of calibration product numbers from the configuration file.
-        These can be arbitrary integers, not necessarily starting at 0.
+        These can be arbitrary integers, not necessarily starting at 0. If
+        None (pointing matched no gain configuration), the calibration_prod
+        coordinate is a single FILLVAL entry.
     sensor_str : str
         '45sensor' or '90sensor'.
 
@@ -227,6 +252,8 @@ def empty_pset_dataset(
         "hi_pset_calibration_prod", check_schema=False
     ).copy()
     dtype = attrs.pop("dtype")
+    if cal_prod_numbers is None:
+        cal_prod_numbers = np.array([attrs["FILLVAL"]])
     coords["calibration_prod"] = xr.DataArray(
         cal_prod_numbers.astype(dtype),
         name="calibration_prod",
@@ -651,13 +678,19 @@ def pset_backgrounds(
     excess counts from the outer ESA during background testing. The result
     is clipped to zero to prevent negative rates.
 
+    If the calibration_prod coordinate is the single FILLVAL entry used for a
+    pointing with no matched gain configuration, the background variables are
+    returned filled with FILLVAL.
+
     Parameters
     ----------
     pset_coords : dict[str, xarray.DataArray]
         The PSET coordinates from the xarray.Dataset.
     background_config_df : pandas.DataFrame
         Background configuration DataFrame with MultiIndex
-        (calibration_prod, background_index, esa_energy_step).
+        (calibration_prod, background_index, esa_energy_step). Must contain
+        every calibration_prod in pset_coords and may contain others, which
+        are ignored.
     l1b_de_dataset : xarray.Dataset
         The L1B dataset for the pointing being processed.
     goodtimes_ds : xarray.Dataset
@@ -685,6 +718,13 @@ def pset_backgrounds(
         for var_name in ["background_rates", "background_rates_uncertainty"]
     }
 
+    # A pointing with no matched gain configuration has a single FILLVAL
+    # calibration_prod, so there are no backgrounds to compute and they are
+    # left at FILLVAL.
+    cal_prod = pset_coords["calibration_prod"]
+    if np.all(cal_prod.values == cal_prod.attrs["FILLVAL"]):
+        return output_vars
+
     # Get total exposure time
     total_exposure_time = float(exposure_times.sum())
 
@@ -705,15 +745,19 @@ def pset_backgrounds(
     # Config now has dims: (calibration_prod, background_index, esa_energy_step)
     config_ds = background_config_df.to_xarray()
 
-    # Validate calibration products match (compare values, not DataArray metadata)
-    if not np.array_equal(
-        config_ds["calibration_prod"].values, pset_coords["calibration_prod"].values
-    ):
+    # Backgrounds are independent of gain configuration, so the background
+    # config may define more calibration products than this PSET (which holds
+    # only its matched gain configuration's products). Require every PSET
+    # calibration product to be present, then select just those.
+    pset_cal_prods = pset_coords["calibration_prod"].values
+    missing_cal_prods = np.setdiff1d(pset_cal_prods, config_ds["calibration_prod"])
+    if missing_cal_prods.size > 0:
         raise ValueError(
-            f"Calibration products in pset_coords and background_config_df "
-            f"do not match. pset_coords: {pset_coords['calibration_prod'].values}, "
+            f"Calibration products in pset_coords are missing from "
+            f"background_config_df. pset_coords: {pset_cal_prods}, "
             f"background_config_df: {config_ds['calibration_prod'].values}"
         )
+    config_ds = config_ds.sel(calibration_prod=pset_cal_prods)
 
     # Validate ESA energy steps match (compare values, not DataArray metadata)
     if not np.array_equal(
