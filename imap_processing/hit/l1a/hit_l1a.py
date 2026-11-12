@@ -343,7 +343,9 @@ def add_cdf_attributes(
     return dataset
 
 
-def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
+def find_complete_mod10_sets(
+    mod_vals: np.ndarray, epoch_vals: np.ndarray
+) -> np.ndarray:
     """
     Find start indices where mod values match [0,1,2,3,4,5,6,7,8,9] pattern.
 
@@ -355,12 +357,15 @@ def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
     ----------
     mod_vals : np.ndarray
         1D array of mod 10 values from the hdr_minute_cnt field in the L1A counts data.
+    epoch_vals : np.ndarray
+        1D array of epoch values corresponding to the mod_vals.
 
     Returns
     -------
     np.ndarray
         Indices in mod_vals where the complete pattern [0, 1, ..., 9] starts.
     """
+    # First ensure that each set is
     # The pattern to match is an array from 0-9
     window_size = 10
 
@@ -379,12 +384,27 @@ def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
         return np.array([], dtype=int)
     # Find where the previous set is complete as well.
     valid = np.isin(starts - 10, starts)
+
+    # For each of those valid starts, make sure the set before it is actually 10
+    # minutes before. If a full set is missing, raise an error.
+    # Skip any that start before 10 because it's only used for the
+    # livetime values.
+    starts_to_check = starts[(valid | starts >= window_size)]
+    gap_ns = epoch_vals[starts_to_check] - epoch_vals[starts_to_check - window_size]
+    expected_ns = 10 * 60 * 1e9  # 10 minutes in ns
+    tolerance_ns = 120 * 1e9  # 2 minutes in ns
+    invalid_times = np.abs(gap_ns - expected_ns) > tolerance_ns
+    if np.any(invalid_times):
+        raise ValueError(
+            "Valid sets are expected to have a previous 10 minutes before. "
+            "This indicates there were full sets missing from the dataset. "
+            "This needs further investigation."
+        )
+
     # If the first complete set is the first set,
     # that set is considered complete since it's only used for livetime
     # values.
     valid[0] = starts[0] == 0
-    # Return the start inds of complete sets where the previous set is complete
-    # as well.
     return starts[valid]
 
 
@@ -427,7 +447,9 @@ def subset_sectored_counts(
     # provided in l0/constants.py for reference.
     bin_size = 10
     mod_10: np.ndarray = sectored_counts_dataset.hdr_minute_cnt.values % 10
-    start_indices = find_complete_mod10_sets(mod_10)
+    start_indices = find_complete_mod10_sets(
+        mod_10, sectored_counts_dataset.epoch.values
+    )
 
     # Filter out start indices that are less than or equal to the bin size
     # since the previous 10 minutes are needed for calculating rates

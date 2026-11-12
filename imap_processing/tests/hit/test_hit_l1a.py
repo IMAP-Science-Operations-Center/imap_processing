@@ -247,7 +247,8 @@ def test_find_complete_mod10_sets():
     # Test case 1: Valid pattern exists throughout
     mod_vals = np.tile(complete_set, 2)
     expected_indices = np.array([0, 10])
-    result = find_complete_mod10_sets(mod_vals)
+    epoch = np.arange(len(mod_vals)) * 60 * 1e9  # ns
+    result = find_complete_mod10_sets(mod_vals, epoch)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
     )
@@ -255,7 +256,8 @@ def test_find_complete_mod10_sets():
     # Test case 2: No valid pattern
     mod_vals = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6])
     expected_indices = np.array([])
-    result = find_complete_mod10_sets(mod_vals)
+    epoch = np.arange(len(mod_vals)) * 60 * 1e9  # ns
+    result = find_complete_mod10_sets(mod_vals, epoch)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
     )
@@ -278,7 +280,8 @@ def test_find_complete_mod10_sets():
         ]
     )
     expected_indices = np.array([15])
-    result = find_complete_mod10_sets(mod_vals)
+    epoch = np.arange(len(mod_vals)) * 60 * 1e9  # ns
+    result = find_complete_mod10_sets(mod_vals, epoch)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
     )
@@ -286,7 +289,8 @@ def test_find_complete_mod10_sets():
     # Test case 4: Empty input
     mod_vals = np.array([])
     expected_indices = np.array([])
-    result = find_complete_mod10_sets(mod_vals)
+    epoch = np.array([])
+    result = find_complete_mod10_sets(mod_vals, epoch)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
     )
@@ -305,7 +309,8 @@ def test_find_complete_mod10_sets():
         ]
     )
     expected_indices = np.array([19])
-    result = find_complete_mod10_sets(mod_vals)
+    epoch = np.arange(len(mod_vals)) * 60 * 1e9
+    result = find_complete_mod10_sets(mod_vals, epoch)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
     )
@@ -315,10 +320,25 @@ def test_find_complete_mod10_sets():
     # 10 is invalid because the previous 10 frames aren't a complete set.
     mod_vals = np.array([9, 0, 1, 2, 3, 4, 5, 6, 8, 9] + list(range(10)) * 2)
     expected_indices = np.array([20])
-    result = find_complete_mod10_sets(mod_vals)
+    epoch = np.arange(len(mod_vals)) * 60 * 1e9
+    result = find_complete_mod10_sets(mod_vals, epoch)
     assert np.array_equal(result, expected_indices), (
         f"Expected {expected_indices}, got {result}"
     )
+    # Test case 7: Valid pattern throughout but there is an unexpected time
+    # gap between sets indicating a full dropped set. The function should
+    # raise a ValueError.
+    mod_vals = np.tile(complete_set, 2)
+    epoch = np.arange(len(mod_vals)) * 60 * 1e9  # ns
+    # Simulate a gap in time between the first and second set
+    epoch[10:] += 10 * 60 * 1e9
+    message = (
+        "Valid sets are expected to have a previous 10 minutes before."
+        " This indicates there were full sets missing from the dataset. "
+        "This needs further investigation."
+    )
+    with pytest.raises(ValueError, match=message):
+        find_complete_mod10_sets(mod_vals, epoch)
 
 
 def test_calculate_uncertainties():
@@ -469,9 +489,8 @@ def test_subset_sectored_counts():
                 "livetime_counter": ("epoch", np.arange(len(hdr_minute_cnt_values))),
             },
             coords={
-                "epoch": np.arange(
-                    316008084684000000, 316008084684000000 + len(hdr_minute_cnt_values)
-                ),
+                "epoch": (np.arange(len(hdr_minute_cnt_values)) * 60 * 1e9)
+                + 316008084684000000
             },
         )
 
@@ -485,8 +504,8 @@ def test_subset_sectored_counts():
         assert np.all(subset_dataset["hdr_minute_cnt"].values % 10 == np.arange(10))
         assert np.all(
             subset_dataset["epoch_livetime"].values
-            == subset_dataset["epoch"].values - 10
-        ), "epoch_livetime values are not shifted by 10 from epoch values"
+            == subset_dataset["epoch"].values - (10 * 60 * 1e9)
+        ), "epoch_livetime values are not shifted by 10ns from epoch values"
 
     # Test with partial data at the start and end of the dataset
     l1a_counts_dataset = create_l1a_counts_dataset(np.arange(105, 135))
