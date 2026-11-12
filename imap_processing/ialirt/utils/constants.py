@@ -26,10 +26,26 @@ IALIRT_DIMS = {
     "codice_lo_o_plus_7_over_o_plus_6": ["codice_lo_epoch"],
     # Fe low/Fe high charge state ratio
     "codice_lo_fe_low_over_fe_high": ["codice_lo_epoch"],
-    # Medium energy (<1 MeV) electrons (A-side)
-    "hit_e_a_side_med_en": ["hit_epoch"],
-    # Medium energy (<1 MeV) electrons (B-side)
-    "hit_e_b_side_med_en": ["hit_epoch"],
+    # 300 to 400 keV electron intensity (A-side)
+    "hit_e_a_side_300_400_kev": ["hit_epoch"],
+    # 400 to 800 keV electron intensity (A-side)
+    "hit_e_a_side_400_800_kev": ["hit_epoch"],
+    # 800 to 1200 keV electron intensity (A-side)
+    "hit_e_a_side_800_1200_kev": ["hit_epoch"],
+    # 1200 to 2000 keV electron intensity (A-side)
+    "hit_e_a_side_1200_2000_kev": ["hit_epoch"],
+    # >2000 keV electron intensity (A-side)
+    "hit_e_a_side_gt_2000_kev": ["hit_epoch"],
+    # 300 to 400 keV electron intensity (B-side)
+    "hit_e_b_side_300_400_kev": ["hit_epoch"],
+    # 400 to 800 keV electron intensity (B-side)
+    "hit_e_b_side_400_800_kev": ["hit_epoch"],
+    # 800 to 1200 keV electron intensity (B-side)
+    "hit_e_b_side_800_1200_kev": ["hit_epoch"],
+    # 1200 to 2000 keV electron intensity (B-side)
+    "hit_e_b_side_1200_2000_kev": ["hit_epoch"],
+    # >2000 keV electron intensity (B-side)
+    "hit_e_b_side_gt_2000_kev": ["hit_epoch"],
     # Low energy (6 to 8 MeV) protons (Omnidirectional)
     "hit_h_omni_low_en": ["hit_epoch"],
     # Medium energy (12 to 15 MeV) protons (Omnidirectional)
@@ -85,8 +101,6 @@ IALIRT_DTYPES = {
     "codice_lo_o_plus_7_over_o_plus_6": np.float32,
     "codice_lo_fe_low_over_fe_high": np.float32,
     # HIT scalars
-    "hit_e_a_side_med_en": np.float32,
-    "hit_e_b_side_med_en": np.float32,
     "hit_e_a_side_300_400_kev": np.float32,
     "hit_e_a_side_400_800_kev": np.float32,
     "hit_e_a_side_800_1200_kev": np.float32,
@@ -125,12 +139,8 @@ IALIRT_DTYPES = {
 }
 
 hit_restricted_fields = {
-    "hit_e_a_side_high_en",
-    "hit_e_b_side_high_en",
     "hit_h_a_side_high_en",
     "hit_h_b_side_high_en",
-    "hit_e_a_side_low_en",
-    "hit_e_b_side_low_en",
 }
 
 # HIT I-ALiRT electron intensity factors from HIT Algorithm Document v1.11.05,
