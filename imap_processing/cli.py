@@ -17,6 +17,7 @@ import json
 import logging
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
@@ -627,7 +628,7 @@ class ProcessInstrument(ABC):
     @abstractmethod
     def do_processing(
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset]:
+    ) -> Sequence[xr.Dataset | Path]:
         """
         Abstract method that processes the IMAP processing steps.
 
@@ -642,14 +643,14 @@ class ProcessInstrument(ABC):
 
         Returns
         -------
-        list[xr.Dataset]
-            List of products produced.
+        Sequence[xr.Dataset | Path]
+            Sequence of products and paths produced.
         """
         raise NotImplementedError
 
     def post_processing(
         self,
-        processed_data: list[xr.Dataset | Path],
+        processed_data: Sequence[xr.Dataset | Path],
         dependencies: ProcessingInputCollection,
     ) -> list[Path]:
         """
@@ -674,8 +675,8 @@ class ProcessInstrument(ABC):
 
         Parameters
         ----------
-        processed_data : list[xarray.Dataset | Path]
-            A list of datasets (products) and paths produced by the do_processing
+        processed_data : Sequence[xarray.Dataset | Path]
+            A sequence of datasets (products) and paths produced by the do_processing
             method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
@@ -1262,7 +1263,8 @@ class Idex(ProcessInstrument):
             l1a_file = l1a_file[0]
             logger.info(f"Processing IDEX l1b using l1a file: {l1a_file.name}")
             # process data
-            datasets = [idex_l1b(load_cdf(l1a_file), self.descriptor)]
+            dataset = idex_l1b(load_cdf(l1a_file), self.descriptor)
+            datasets = [dataset] if dataset else []
         elif self.data_level == "l2a":
             if len(dependency_list) != 3:
                 raise ValueError(
@@ -1507,7 +1509,7 @@ class Lo(ProcessInstrument):
 
     def do_processing(
         self, dependencies: ProcessingInputCollection
-    ) -> list[xr.Dataset | Path]:
+    ) -> Sequence[xr.Dataset | Path]:
         """
         Perform IMAP-Lo specific processing.
 
@@ -1518,13 +1520,13 @@ class Lo(ProcessInstrument):
 
         Returns
         -------
-        datasets : list[xarray.Dataset | Path]
-            The list of processed products.
+        datasets : Sequence[xarray.Dataset | Path]
+            The sequence of processed products.
         """
         print(f"Processing IMAP-Lo {self.data_level}")
-        datasets: list[xr.Dataset | Path] = []
+        datasets: Sequence[xr.Dataset | Path] = []
         if self.data_level == "l1b" and self.descriptor == "pivot-ckernel":
-            datasets.extend(self._generate_pivot_kernel(dependencies))
+            datasets = self._generate_pivot_kernel(dependencies)
 
         elif self.data_level == "l1a":
             # L1A packet / products are 1 to 1. Should only have
@@ -1667,9 +1669,11 @@ class Mag(ProcessInstrument):
 
             combined_calibration = MagAncillaryCombiner(calibration[0], day_buffer)
 
-            input_data = load_cdf(science_files[0])
+            input_dataset = load_cdf(science_files[0])
             datasets = [
-                mag_l1b(input_data, current_day, combined_calibration.combined_dataset)
+                mag_l1b(
+                    input_dataset, current_day, combined_calibration.combined_dataset
+                )
             ]
 
         elif self.data_level == "l1c":
@@ -1767,7 +1771,7 @@ class Mag(ProcessInstrument):
             # dependencies.
             input_files = retrieve_mag_l1_inputs_from_l2_offsets(offset_dataset)
             if input_files:
-                input_data = load_cdf(input_files[0])
+                input_dataset = load_cdf(input_files[0])
             else:
                 science_files = dependencies.get_file_paths(
                     source="mag", data_type="l1b"
@@ -1781,12 +1785,12 @@ class Mag(ProcessInstrument):
                     offsets[0].imap_file_paths[0].construct_path().name,
                 )
                 input_files = [science_files[0]]
-                input_data = load_cdf(input_files[0])
+                input_dataset = load_cdf(input_files[0])
 
             datasets = mag_l2(
                 combined_calibration.combined_dataset,
                 offset_dataset,
-                input_data,
+                input_dataset,
                 current_day,
                 mode=DataMode(descriptor_no_frame.upper()),
             )
@@ -1824,7 +1828,7 @@ class Mag(ProcessInstrument):
 
     def post_processing(
         self,
-        processed_data: list[xr.Dataset | Path],
+        processed_data: Sequence[xr.Dataset | Path],
         dependencies: ProcessingInputCollection,
     ) -> list[Path]:
         """
@@ -1837,8 +1841,8 @@ class Mag(ProcessInstrument):
 
         Parameters
         ----------
-        processed_data : list[xarray.Dataset | Path]
-            A list of datasets (products) and paths produced by the do_processing
+        processed_data : Sequence[xarray.Dataset | Path]
+            A sequence of datasets (products) and paths produced by the do_processing
             method.
         dependencies : ProcessingInputCollection
             Object containing dependencies to process.
@@ -1854,6 +1858,7 @@ class Mag(ProcessInstrument):
             "imap_mag_l1d_spin-offsets",
         ]
 
+        processed_data_out = list(processed_data)
         for index, dataset in enumerate(processed_data):
             if isinstance(dataset, xr.Dataset):
                 logical_source = dataset.attrs["Logical_source"]
@@ -1888,13 +1893,13 @@ class Mag(ProcessInstrument):
                             istp=False,
                         )
                         # update the dataset in processed_data to point to a path
-                        processed_data[index] = output_filepath
+                        processed_data_out[index] = output_filepath
                     except (ValueError, TypeError, ISTPError) as e:
                         # Don't fail for any reason for ancillary files
                         logger.warning(f"Hit error {e} when creating {output_filepath}")
                         continue
 
-        return super().post_processing(processed_data, dependencies)
+        return super().post_processing(processed_data_out, dependencies)
 
 
 class Spacecraft(ProcessInstrument):
@@ -1917,7 +1922,7 @@ class Spacecraft(ProcessInstrument):
             The list of processed products.
         """
         print(f"Processing Spacecraft {self.data_level}")
-        processed_dataset = []
+        processed_dataset: list[xr.Dataset | Path] = []
         if self.descriptor == "quaternions":
             # File path is expected output file path
             input_files = dependencies.get_file_paths(source="spacecraft")
