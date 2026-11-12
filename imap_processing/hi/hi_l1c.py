@@ -117,7 +117,6 @@ def generate_pset_dataset(
         for field in CalibrationProductConfig.GAIN_MATCH_FIELDS
     }
     gain_config_id = config_df.cal_prod_config.match_gain_config_id(hv_deltas)
-    gain_config_df = None if gain_config_id is None else config_df.loc[gain_config_id]
     if gain_config_id is None:
         logger.warning(
             "Pointing's detector gain state matches zero or multiple "
@@ -125,11 +124,13 @@ def generate_pset_dataset(
             "fill calibration_prod, zero counts, fill geometric_factor and "
             "backgrounds, and a NaN gain_config_id global attribute."
         )
+        gain_config_df = None
         cal_prod_numbers = None
     else:
         logger.info(f"Pointing gain state matches gain_config_id={gain_config_id}")
         # The calibration_prod coordinate holds the matched gain_config_id's
         # calibration products only.
+        gain_config_df = config_df.loc[gain_config_id]
         cal_prod_numbers = np.sort(
             gain_config_df.index.unique(level="calibration_prod").values
         )
