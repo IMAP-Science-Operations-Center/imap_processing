@@ -90,6 +90,35 @@ def read_sci_lut(file_path: Path, table_id: str) -> dict:
     return sci_lut_data
 
 
+def index_sci_lut_files(file_paths: list[Path]) -> dict[str, Path]:
+    """Index supplied SCI-LUT files by table ID, rejecting conflicting entries.
+
+    Parameters
+    ----------
+    file_paths : list[pathlib.Path]
+        Ancillary files supplied as processing dependencies.
+
+    Returns
+    -------
+    dict[str, pathlib.Path]
+        Source file for each table ID. Identical repeated entries are allowed.
+    """
+    tables: dict[str, dict] = {}
+    sources: dict[str, Path] = {}
+    for path in file_paths:
+        for table_id, table in json.loads(path.read_text()).items():
+            if table_id == "description":
+                continue
+            if table_id in tables and tables[table_id] != table:
+                raise ValueError(
+                    f"Conflicting SCI-LUT definitions for table ID {table_id}: "
+                    f"{sources[table_id].name} and {path.name}."
+                )
+            tables[table_id] = table
+            sources.setdefault(table_id, path)
+    return sources
+
+
 def get_view_tab_info(json_data: dict, view_id: int, apid: int) -> dict:
     """
     Get the view table information for a specific view and APID.
@@ -156,7 +185,7 @@ def get_view_tab_obj(
 
 def process_by_table_id(
     unpacked_dataset: xr.Dataset,
-    lut_file: Path,
+    lut_file: Path | dict[str, Path],
     process_fn: Callable[..., xr.Dataset],
 ) -> xr.Dataset:
     """
@@ -173,8 +202,8 @@ def process_by_table_id(
     ----------
     unpacked_dataset : xarray.Dataset
         Full unpacked dataset from the L0 packet file.
-    lut_file : pathlib.Path
-        Path to the SCI-LUT JSON file passed through to *process_fn*.
+    lut_file : pathlib.Path or dict[str, pathlib.Path]
+        SCI-LUT file, or source files indexed by table ID for transition days.
     process_fn : Callable
         The private ``_process_xxx`` function to call for each table_id group.
         It must accept the signature
@@ -192,12 +221,21 @@ def process_by_table_id(
     plan_step = unpacked_dataset["plan_step"].values[0]
 
     unique_table_ids = np.unique(unpacked_dataset["table_id"].values)
+    if isinstance(lut_file, dict):
+        missing = sorted(
+            {str(table_id) for table_id in unique_table_ids} - lut_file.keys()
+        )
+        if missing:
+            raise ValueError(
+                "Supplied SCI-LUT files do not have data for table IDs: "
+                + ", ".join(missing)
+            )
     processed = [
         process_fn(
             unpacked_dataset.isel(
                 epoch=unpacked_dataset["table_id"].values == table_id
             ),
-            lut_file,
+            lut_file[str(table_id)] if isinstance(lut_file, dict) else lut_file,
             table_id,
             view_id,
             apid,
@@ -212,13 +250,24 @@ def process_by_table_id(
     # instead of expanding them along the epoch dimension.
     # Eg. voltage_table and k_factor are 1-D arrays that apply to all
     # epochs in the same way.
-    return xr.concat(
+    # Voltage tables can change with the onboard LUT. Only promote this support
+    # variable when it differs; keep identical tables one-dimensional.
+    varying = [
+        name
+        for name in ("voltage_table",)
+        if name in processed[0]
+        and any(not processed[0][name].equals(ds[name]) for ds in processed[1:])
+    ]
+    combined = xr.concat(
         processed,
         dim="epoch",
-        data_vars="minimal",
+        data_vars=varying or "minimal",
         coords="minimal",
         compat="equals",
     ).sortby("epoch")
+    for name in varying:
+        combined[name].attrs["DEPEND_0"] = "epoch"
+    return combined
 
 
 def get_collapse_pattern_shape(
