@@ -389,7 +389,7 @@ def find_complete_mod10_sets(
     # minutes before. If a full set is missing, raise an error.
     # Skip any that start before 10 because it's only used for the
     # livetime values.
-    starts_to_check = starts[(valid | starts >= window_size)]
+    starts_to_check = starts[(valid & starts >= window_size)]
     gap_ns = epoch_vals[starts_to_check] - epoch_vals[starts_to_check - window_size]
     expected_ns = 10 * 60 * 1e9  # 10 minutes in ns
     tolerance_ns = 120 * 1e9  # 2 minutes in ns
