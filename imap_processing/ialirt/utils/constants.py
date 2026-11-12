@@ -123,6 +123,38 @@ hit_restricted_fields = {
     "hit_e_b_side_low_en",
 }
 
+# HIT I-ALiRT electron intensity factors from HIT Algorithm Document v1.11.05,
+# Table 38. Keyed by A-side I-ALiRT rate number; the B-side rate is the A-side
+# rate + 10 and uses the same factors. Geometry factors assume an E^-3 spectrum.
+HIT_IALIRT_ELECTRON_FACTORS = {
+    # rate: delta E (MeV), geometry factor sigma (cm^2 sr), background b
+    1: {"delta_e": 0.3, "geometry_factor": 1.78, "b": 0.0},
+    2: {"delta_e": 0.1, "geometry_factor": 0.399, "b": 0.0},
+    3: {"delta_e": 0.4, "geometry_factor": 0.204, "b": 0.0},
+    4: {"delta_e": 0.4, "geometry_factor": 0.0118, "b": 0.0},
+    5: {"delta_e": 0.8, "geometry_factor": 0.00134, "b": 0.0},
+    6: {"delta_e": 88.0, "geometry_factor": 0.0000349, "b": 0.0},
+}
+
+# HIT I-ALiRT electron intensity products and their I-ALiRT rate
+# (HIT Algorithm Document v1.11.05, Sec. 8.2).
+HIT_IALIRT_ELECTRON_PRODUCTS = {
+    "hit_e_a_side_300_400_kev": 2,
+    "hit_e_a_side_400_800_kev": 3,
+    "hit_e_a_side_800_1200_kev": 4,
+    "hit_e_a_side_1200_2000_kev": 5,
+    "hit_e_a_side_gt_2000_kev": 6,
+    "hit_e_b_side_300_400_kev": 12,
+    "hit_e_b_side_400_800_kev": 13,
+    "hit_e_b_side_800_1200_kev": 14,
+    "hit_e_b_side_1200_2000_kev": 15,
+    "hit_e_b_side_gt_2000_kev": 16,
+}
+
+# I-ALiRT electron intensities are only valid from this date: the energy bins
+# changed on 2026-05-13 and the ERATES (livetime) were fixed on 2026-05-18.
+HIT_IALIRT_ELECTRON_START_DATE = "20260519"
+
 codice_hi_energy_center = [
     0.02378414,
     0.03363586,
