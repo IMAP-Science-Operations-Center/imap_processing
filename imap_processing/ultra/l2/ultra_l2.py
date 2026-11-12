@@ -452,12 +452,11 @@ def generate_ultra_skymap(
         else:
             expected_present_vars_pointing_ind.append(var)
 
-    # Get existing variables that should be weighted by exposure and solid angle
-    existing_vars_to_weight = []
+    # Variables to weight by pointing set exposure times solid angle
+    vars_to_weight = VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
     pointing_indep_vars = []
-    for var in VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE:
+    for var in vars_to_weight:
         if var in first_pset:
-            existing_vars_to_weight.append(var)
             if "epoch" not in first_pset[var].dims:
                 pointing_indep_vars.append(var)
 
@@ -526,8 +525,8 @@ def generate_ultra_skymap(
         # Initial processing for weighted quantities at PSET level
         # Weight the values by exposure and solid angle
         # Ensure only valid pointing set pixels contribute to the weighted mean.
-        pointing_set.data[existing_vars_to_weight] = (
-            pointing_set.data[existing_vars_to_weight]
+        pointing_set.data[vars_to_weight] = (
+            pointing_set.data[vars_to_weight]
             * pointing_set.data["pointing_set_exposure_times_solid_angle"]
         ).where(good_pixel_mask)
 
@@ -548,7 +547,7 @@ def generate_ultra_skymap(
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
-    skymap.data_1d[existing_vars_to_weight] /= skymap.data_1d[
+    skymap.data_1d[vars_to_weight] /= skymap.data_1d[
         "pointing_set_exposure_times_solid_angle"
     ]
     # Revert any pointing independent variables back to their original dims
@@ -601,22 +600,21 @@ def generate_ultra_skymap(
         # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
         # where sum here refers to the projection process
         # summing over N pset pixels across different psets
+        # Leave as float here so NaNs (no valid coverage) survive until the final
+        # cast to int64 in ultra_l2, where they are replaced with the fill value.
         skymap.data_1d["obs_date_range"] = (
             (
+                skymap.data_1d["obs_date_squared_for_std"]
+                / (skymap.data_1d["num_pointing_set_pixel_members"])
+            )
+            - (
                 (
-                    skymap.data_1d["obs_date_squared_for_std"]
+                    skymap.data_1d["obs_date_range"]
                     / (skymap.data_1d["num_pointing_set_pixel_members"])
                 )
-                - (
-                    (
-                        skymap.data_1d["obs_date_range"]
-                        / (skymap.data_1d["num_pointing_set_pixel_members"])
-                    )
-                    ** 2
-                )
+                ** 2
             )
-            ** 0.5
-        ).astype(np.int64)
+        ) ** 0.5
 
     # Drop the variables that are no longer needed
     vars_to_drop = set(VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION).intersection(
@@ -721,7 +719,6 @@ def ultra_l2(
         inertial_frame = map_descriptor.frame_descriptor
         descriptor_duration = str(map_descriptor.duration)
     inertial_frame_long_name = INERTIAL_FRAME_LONG_NAMES.get(inertial_frame, "unknown")
-
     # Object which holds CDF attributes for the map
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs(instrument="ultra")
@@ -996,9 +993,17 @@ def ultra_l2(
             )
         )
 
-    # Adjust the dtype of obs dates to be int64
-    map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
-    map_dataset["obs_date_range"] = map_dataset["obs_date_range"].astype(np.int64)
+    # Adjust the dtype of obs dates to be int64.
+    # Nan pixels should be explicitly replaced
+    # by fillvals.
+    for obs_var in ["obs_date", "obs_date_range"]:
+        obs_values = map_dataset[obs_var]
+        map_dataset[obs_var] = xr.where(
+            np.isfinite(obs_values),
+            obs_values,
+            UltraConstants.FILLVAL_INT64,
+            keep_attrs=True,
+        ).astype(np.int64)
 
     # Adjust CATDESC per descriptor
     if descriptor is not None:

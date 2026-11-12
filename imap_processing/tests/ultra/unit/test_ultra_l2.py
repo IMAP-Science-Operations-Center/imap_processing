@@ -14,6 +14,10 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.quality_flags import ImapPSETUltraFlags
+from imap_processing.spice.time import (
+    et_to_ttj2000ns,
+    str_to_et,
+)
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 from imap_processing.ultra.l2 import ultra_l2
@@ -418,6 +422,11 @@ class TestUltraL2:
             hp_skymap.data_1d["counts"].sum(),
             n_counts,
         )
+
+        # Check obs_date
+        obs_date = hp_skymap.data_1d["obs_date"].values
+        utc = "2025-05-15T12:00:00"
+        assert np.all(obs_date == et_to_ttj2000ns(str_to_et(utc)))
 
     @pytest.mark.usefixtures("_mock_multiple_psets", "_setup_spice_kernels_list")
     def test_generate_ultra_healpix_skymap_multiple_psets(self, furnish_kernels):
