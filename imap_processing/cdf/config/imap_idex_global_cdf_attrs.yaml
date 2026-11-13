@@ -55,7 +55,7 @@ imap_idex_l1b_sci:
       Major version 3, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
     - >-
-      Major version 4, Nov. 13, 2026 - Adds per-waveform baseline and RMS
+      Major version 4, TODO: date - Adds per-waveform baseline and RMS
       noise statistics for all six waveform channels, computed from the
       first 3 microseconds of each waveform. Corrects the temperature_1 and
       temperature_2 conversion to use the segmented polynomial over the
@@ -97,7 +97,7 @@ imap_idex_l2a_sci:
       Major version 3, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
     - >-
-      Major version 4, Nov. 13, 2026 - Uses the Level-1B baseline and RMS
+      Major version 4, TODO: date - Uses the Level-1B baseline and RMS
       statistics for signal-to-noise estimates and fit initialization.
       Skips fits for saturated TOF High, Target, and Ion Grid waveforms,
       keeping fits for unsaturated channels in the same event. Skips
@@ -122,7 +122,7 @@ imap_idex_l2b_sci:
       Major version 3, Oct. 8, 2026 - Use corrected spin tables and SPICE
       kernels for spin axis and spin phase.
     - >-
-      Major version 4, Nov. 13, 2026 - Inherits the Level-2A fitting
+      Major version 4, TODO: date - Inherits the Level-2A fitting
       changes. Events whose Target Low fits are skipped for saturation or
       for failing the 4 times baseline RMS signal threshold no longer
       contribute to the charge and mass binned counts and rates.
