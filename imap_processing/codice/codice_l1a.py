@@ -28,7 +28,7 @@ from imap_processing.codice.codice_l1a_lo_counters_singles import (
 from imap_processing.codice.codice_l1a_lo_priority import l1a_lo_priority
 from imap_processing.codice.codice_l1a_lo_species import l1a_lo_species
 from imap_processing.codice.constants import CODICEAPID
-from imap_processing.codice.utils import process_by_table_id
+from imap_processing.codice.utils import index_sci_lut_files, process_by_table_id
 from imap_processing.utils import packet_file_to_datasets
 
 logger = logging.getLogger(__name__)
@@ -69,11 +69,15 @@ def process_l1a(  # noqa: PLR0912
         xtce_file,
     )
     datasets = []
+    lut_files = None
     for apid in datasets_by_apid:
         if apid not in [CODICEAPID.COD_LO_PHA, CODICEAPID.COD_HI_PHA]:
             # Get LUT file. Direct events do not need LUT
-            lut_file = dependency.get_file_paths(descriptor="l1a-sci-lut")
-            lut_file = lut_file[0]
+            if lut_files is None:
+                lut_files = index_sci_lut_files(
+                    dependency.get_file_paths(descriptor="l1a-sci-lut")
+                )
+            lut_file = lut_files
 
         if apid == CODICEAPID.COD_LO_SW_SPECIES_COUNTS:
             logger.info("Processing Lo SW Species Counts")
