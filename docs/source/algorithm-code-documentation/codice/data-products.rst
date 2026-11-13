@@ -80,7 +80,8 @@ the science and housekeeping APIDs are defined in the two XTCE files in
      - 0x484
      - ``COD_LO_SW_SPECIES_COUNTS``
      - yes
-     - Sunward species counts, 16 species, 128 ESA steps.
+     - Sunward species counts, 16 telemetry slots (15 species written to
+       the CDF; ``ne`` is dropped), 128 ESA steps.
    * - 1157
      - 0x485
      - ``COD_LO_NSW_SPECIES_COUNTS``
@@ -452,9 +453,12 @@ See :ref:`codice-ancillary` for the contents of each of these.
 Species inventories
 -------------------
 
-**[CODE]** ``constants.py``. These lists drive which CDF variables exist; the
-**actual** species ordering in the telemetry comes from the SCI-LUT and is
-cross-checked at L1A.
+**[CODE]** ``constants.py``. These lists drive which CDF variables exist, and
+they are the same for every date and SCI-LUT version. The **actual** species
+ordering in the telemetry comes from the SCI-LUT ``species_names`` and is used
+at L1A to find each species' slot; a species with no slot is NaN-filled. For
+``lo-sw-species`` and I-ALiRT Lo, the SCI-LUT ``desired_species_names`` is no
+longer read (see :ref:`codice-ancillary`).
 
 .. list-table::
    :header-rows: 1
@@ -462,11 +466,13 @@ cross-checked at L1A.
 
    * - Constant
      - Members
-   * - ``LO_SW_SPECIES_VARIABLE_NAMES`` (16)
+   * - ``LO_SW_SPECIES_VARIABLE_NAMES`` (15)
      - ``hplus``, ``heplusplus``, ``cplus4``, ``cplus5``, ``cplus6``,
-       ``oplus5``, ``oplus6``, ``oplus7``, ``oplus8``, ``ne``, ``mg``, ``si``,
-       ``fe_loq``, ``fe_hiq``, ``heplus``, ``cnoplus``
-   * - ``LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES`` (14)
+       ``oplus5``, ``oplus6``, ``oplus7``, ``oplus8``, ``mg``, ``si``,
+       ``fe_loq``, ``fe_hiq``, ``heplus``, ``cnoplus``. ``ne`` is in the
+       telemetry and in some SCI-LUT ``desired_species_names`` lists, but is
+       not a product.
+   * - ``LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES`` (13)
      - the above minus ``heplus`` and ``cnoplus``
    * - ``LO_SW_PICKUP_ION_SPECIES_VARIABLE_NAMES`` (2)
      - ``heplus``, ``cnoplus``

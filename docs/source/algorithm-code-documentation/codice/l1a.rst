@@ -337,10 +337,13 @@ intensities. This is an on-board issue; the ground cannot undo it. See
 is normally ``(1,)``. Output dims ``(epoch, esa_step, spin_sector)`` with
 ``spin_sector`` of length 1.
 
-Species selection is defensive: the module takes the union of the SCI-LUT's
-``desired_species_names`` and the hard-coded list, then for each wanted species
-either takes its index in ``actual_species_names`` or logs a warning and fills
-NaN. This absorbs the Fe highQ/lowQ label swap.
+Species selection: the output species are the hard-coded
+``LO_SW_SPECIES_VARIABLE_NAMES`` (or ``LO_IALIRT_VARIABLE_NAMES``), the same for
+every SCI-LUT version. For each one the module either takes its index in the
+SCI-LUT ``species_names`` (``actual_species_names``) or logs a warning and fills
+NaN. ``desired_species_names`` is not read. The Fe highQ/lowQ label swap and the
+FSW "off by one" mislabeling are absorbed by ``species_names``, not by the
+species list.
 
 Uncertainty is ``sqrt(counts)``, matching **[DOC]**
 :math:`\sigma_j(l) = \sqrt{C_j(l)}`.

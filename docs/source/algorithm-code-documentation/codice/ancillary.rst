@@ -125,11 +125,19 @@ Things to know:
 * ``collapse_*[id]["variables"]`` is used only by the aggregated-counters
   products, where each row is one counter and a row of zeros means "counter
   turned off in flight".
-* ``species_names`` is what the instrument actually sent;
-  ``desired_species_names`` is what the team wants written. L1A takes the union
-  of ``desired_species_names`` and the hard-coded ``*_VARIABLE_NAMES``, and
-  NaN-fills anything that is not in ``species_names``. This is how the P3 Fe
-  highQ/lowQ label swap is absorbed.
+* ``species_names`` is the slot map: position *i* is the species in slot *i*
+  of the decompressed data. It is how mislabeled telemetry is corrected - the
+  FSW "off by one" tables prepend a ``junk`` slot, and the P3 Fe highQ/lowQ
+  swap is a reordering of ``fe_hiq`` / ``fe_loq`` here.
+* For ``species.sw`` and ``ialirt.sw``, L1A does **not** read
+  ``desired_species_names``. The output variables are exactly
+  ``LO_SW_SPECIES_VARIABLE_NAMES`` / ``LO_IALIRT_VARIABLE_NAMES``; each is
+  taken from its slot in ``species_names`` by name, or NaN-filled if it has no
+  slot. This keeps the variable set identical across SCI-LUT versions, which
+  L1B and L2 rely on since they only know the constants. Older SCI-LUTs still
+  list ``ne`` in ``species.sw.desired_species_names`` (it is ignored), and
+  ``imap_codice_l1a-sci-lut_20250731_20251123_v001`` has no
+  ``desired_species_names`` field at all.
 * ``lo_stepping_tab["row_number"]["data"]`` is the half-spin index per ESA step
   and can be **shorter than 128** (it is under the post-2025-12-18 scheme). L1A
   pads with ``HALF_SPIN_FILLVAL = 63`` and masks those steps to NaN.

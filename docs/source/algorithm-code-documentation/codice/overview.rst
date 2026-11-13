@@ -700,9 +700,9 @@ instrument team for later changes.
 .. warning::
 
    **[CODE]** The Fe highQ/lowQ label swap is handled indirectly: L1A reads the
-   species ordering from the SCI-LUT (``desired_species_names`` vs
-   ``actual_species_names``) and warns + fills with NaN when a wanted species is
-   absent. The comment in ``codice_l1a_lo_species.py`` calls this out as
+   species ordering (slot map) from the SCI-LUT ``species_names`` and looks up
+   each species in ``LO_SW_SPECIES_VARIABLE_NAMES`` by name, warning and filling
+   with NaN when one has no slot. The comment in ``codice_l1a_lo_species.py`` calls this out as
    handling "the bug in which the spacecraft was sending data down 'off by one'
    and getting mislabeled". If you see unexplained NaN species columns, check
    the SCI-LUT version first.
