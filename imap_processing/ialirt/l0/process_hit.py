@@ -8,12 +8,17 @@ import xarray as xr
 
 from imap_processing.hit.l0.decom_hit import decompress_rates_16_to_32
 from imap_processing.hit.l1b.hit_l1b import livetime_fraction_calculation
+from imap_processing.ialirt.utils.constants import (
+    HIT_IALIRT_ELECTRON_FACTORS,
+    HIT_IALIRT_ELECTRON_PRODUCTS,
+    HIT_IALIRT_ELECTRON_START_DATE,
+)
 from imap_processing.ialirt.utils.grouping import (
     _populate_instrument_header_items,
     find_groups,
 )
 from imap_processing.ialirt.utils.time import calculate_time
-from imap_processing.spice.time import met_to_ttj2000ns
+from imap_processing.spice.time import met_to_ttj2000ns, str_yyyymmdd_to_ttj2000ns
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +162,60 @@ def calculate_livetime_fraction(l1: dict) -> float:
     return float(livetime.values[0])
 
 
+def calculate_electron_intensities(
+    l1: dict, livetime_fraction: float, epoch: int
+) -> dict[str, Decimal | None]:
+    """
+    Convert I-ALiRT electron counts to intensities.
+
+    HIT Algorithm Document v1.11.05, Sec. 8.2 and Eq. 32, with one stopping
+    range and a one-minute accumulation:
+
+    J = (C / livetime fraction − b) / (Δt · ΔE · σ)
+
+    where C = counts, b = background, Δt = accumulation time (60 s),
+    ΔE = width of each energy step (MeV), and σ = geometric factor (cm² sr).
+
+    Parameters
+    ----------
+    l1 : dict
+        Decompressed L1 rates for one group, as returned by ``create_l1``.
+    livetime_fraction : float
+        Livetime fraction for the group, as returned by
+        ``calculate_livetime_fraction``.
+    epoch : int
+        Group start time in TT J2000 nanoseconds.
+
+    Returns
+    -------
+    intensities : dict
+        Electron intensity for each product in
+        ``HIT_IALIRT_ELECTRON_PRODUCTS``, or None if unavailable.
+    """
+    no_intensity = (
+        # Livetime is the amount of time within a minute that HIT could record events.
+        # So it must be positive and not nan.
+        not np.isfinite(livetime_fraction)
+        or livetime_fraction <= 0
+        # Must be a date after startdate.
+        or epoch < str_yyyymmdd_to_ttj2000ns(HIT_IALIRT_ELECTRON_START_DATE)
+    )
+
+    intensities: dict[str, Decimal | None] = {}
+    for key, rate in HIT_IALIRT_ELECTRON_PRODUCTS.items():
+        # Rate 3 duplicates Rate 2 (known FSW bug)
+        if no_intensity or rate == 3:
+            intensities[key] = None
+            continue
+        factors = HIT_IALIRT_ELECTRON_FACTORS[rate]
+        intensity = (l1[f"IALRT_RATE_{rate}"] / livetime_fraction - factors["b"]) / (
+            60 * factors["delta_e"] * factors["geometry_factor"]
+        )
+        intensities[key] = Decimal(f"{intensity:.3f}")
+
+    return intensities
+
+
 def process_hit(xarray_data: xr.Dataset) -> list[dict]:
     """
     Create L1 data dictionary.
@@ -221,26 +280,17 @@ def process_hit(xarray_data: xr.Dataset) -> list[dict]:
         met = grouped_data["met"][(grouped_data["group"] == group).values]
 
         l1 = create_l1(fast_rate_1, fast_rate_2, slow_rate)
+        hit_epoch = int(met_to_ttj2000ns(hit_met))
+        electron_intensities = calculate_electron_intensities(
+            l1, calculate_livetime_fraction(l1), hit_epoch
+        )
 
         hit_data.append(
             _populate_instrument_header_items(met)
             | {
                 "instrument": "hit",
-                "hit_epoch": int(met_to_ttj2000ns(hit_met)),
-                "hit_e_a_side_low_en": Decimal(
-                    f"{l1['IALRT_RATE_1'] + l1['IALRT_RATE_2']:.3f}"
-                ),
-                "hit_e_a_side_med_en": Decimal(
-                    f"{l1['IALRT_RATE_5'] + l1['IALRT_RATE_6']:.3f}"
-                ),
-                "hit_e_a_side_high_en": Decimal(f"{l1['IALRT_RATE_7']:.3f}"),
-                "hit_e_b_side_low_en": Decimal(
-                    f"{l1['IALRT_RATE_11'] + l1['IALRT_RATE_12']:.3f}"
-                ),
-                "hit_e_b_side_med_en": Decimal(
-                    f"{l1['IALRT_RATE_15'] + l1['IALRT_RATE_16']:.3f}"
-                ),
-                "hit_e_b_side_high_en": Decimal(f"{l1['IALRT_RATE_17']:.3f}"),
+                "hit_epoch": hit_epoch,
+                **electron_intensities,
                 "hit_h_omni_low_en": Decimal(f"{l1['H_06_08']:.3f}"),
                 "hit_h_omni_med_en": Decimal(f"{l1['H_12_15']:.3f}"),
                 "hit_h_a_side_high_en": Decimal(f"{l1['IALRT_RATE_8']:.3f}"),
