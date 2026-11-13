@@ -9,12 +9,15 @@ from imap_processing.hit.l0.decom_hit import decom_hit
 from imap_processing.hit.l1b.hit_l1b import livetime_fraction_calculation
 from imap_processing.ialirt.l0.process_hit import (
     HIT_PREFIX_TO_RATE_TYPE,
+    calculate_electron_intensities,
     calculate_livetime_fraction,
     create_l1,
     process_hit,
 )
+from imap_processing.ialirt.utils.constants import HIT_IALIRT_ELECTRON_PRODUCTS
 from imap_processing.ialirt.utils.grouping import find_groups
 from imap_processing.ialirt.utils.time import calculate_time
+from imap_processing.spice.time import str_yyyymmdd_to_ttj2000ns
 from imap_processing.utils import packet_file_to_datasets
 
 
@@ -103,7 +106,7 @@ def test_process_spacecraft_packet(sc_packet_path):
     )[478]
     hit_product = process_hit(sc_xarray_data)
 
-    assert len(hit_product[0].keys()) == 18
+    assert len(hit_product[0].keys()) == 22
 
 
 def generate_prefixes(prefixes):
@@ -203,6 +206,41 @@ def test_calculate_livetime_fraction_no_livetime():
     assert np.isnan(calculate_livetime_fraction(l1))
 
 
+def test_calculate_electron_intensities():
+    """Tests the electron count to intensity conversion."""
+    epoch = str_yyyymmdd_to_ttj2000ns("20260707")
+    l1 = {f"IALRT_RATE_{i}": 0 for i in range(1, 21)}
+    l1["IALRT_RATE_2"] = 120
+    l1["IALRT_RATE_16"] = 3
+
+    intensities = calculate_electron_intensities(l1, 0.5, epoch)
+
+    assert set(intensities) == set(HIT_IALIRT_ELECTRON_PRODUCTS)
+    # J = (counts / livetime - b) / (60 * delta_E * sigma), Table 38
+    assert float(intensities["hit_e_a_side_300_400_kev"]) == pytest.approx(
+        (120 / 0.5) / (60 * 0.1 * 0.399), abs=1e-3
+    )
+    assert float(intensities["hit_e_b_side_gt_2000_kev"]) == pytest.approx(
+        (3 / 0.5) / (60 * 88.0 * 0.0000349), abs=1e-3
+    )
+    assert intensities["hit_e_b_side_800_1200_kev"] == 0
+    # Rate 3 duplicates Rate 2 onboard and is never released.
+    assert intensities["hit_e_a_side_400_800_kev"] is None
+
+
+@pytest.mark.parametrize(
+    "livetime_fraction, date",
+    [(np.nan, "20260707"), (0.0, "20260707"), (0.5, "20260518")],
+)
+def test_calculate_electron_intensities_none(livetime_fraction, date):
+    """Tests no intensities without livetime or before the start date."""
+    l1 = {f"IALRT_RATE_{i}": 10 for i in range(1, 21)}
+    intensities = calculate_electron_intensities(
+        l1, livetime_fraction, str_yyyymmdd_to_ttj2000ns(date)
+    )
+    assert all(value is None for value in intensities.values())
+
+
 def test_process_hit(xarray_data, caplog):
     """Tests process_hit."""
 
@@ -217,11 +255,9 @@ def test_process_hit(xarray_data, caplog):
     hit_product = process_hit(xarray_data)
     assert len(hit_product) == 15
 
-    assert hit_product[0]["hit_e_a_side_low_en"] == 0
-    assert hit_product[0]["hit_e_a_side_med_en"] == 0
-    assert hit_product[0]["hit_e_b_side_low_en"] == 0
-    assert hit_product[0]["hit_e_b_side_high_en"] == 0
-    assert hit_product[0]["hit_e_b_side_med_en"] == 0
+    # Ground test data: no livetime and before the intensity start date.
+    for key in HIT_IALIRT_ELECTRON_PRODUCTS:
+        assert hit_product[0][key] is None
     assert hit_product[0]["hit_he_omni_high_en"] == 0
 
 

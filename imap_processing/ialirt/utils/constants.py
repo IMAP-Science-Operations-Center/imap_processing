@@ -144,8 +144,8 @@ hit_restricted_fields = {
 }
 
 # HIT I-ALiRT electron intensity factors from HIT Algorithm Document v1.11.05,
-# Table 38. Keyed by I-ALiRT rate number: A-side rates 1-6 and B-side rates
-# 11-16 (same factors as A-side). Geometry factors assume an E^-3 spectrum.
+# Table 38. Keyed by I-ALiRT rate number: A-side rates 2-6 and B-side rates
+# 12-16 (same factors as A-side). Geometry factors assume an E^-3 spectrum.
 HIT_IALIRT_ELECTRON_FACTORS = {
     # rate: delta E (MeV), geometry factor sigma (cm^2 sr), background b
     2: {"delta_e": 0.1, "geometry_factor": 0.399, "b": 0.0},

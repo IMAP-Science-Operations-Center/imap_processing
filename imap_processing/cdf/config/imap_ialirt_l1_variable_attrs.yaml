@@ -424,6 +424,126 @@ hit_e_b_side_high_en:
   VALIDMIN: 0
   VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
 
+hit_e_a_side_300_400_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 300 to 400 keV electrons, A-side aperture (anti-sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 300 to 400 keV (A-side)
+  FORMAT: F17.6
+  LABLAXIS: A-side e- 300 to 400 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_a_side_400_800_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 400 to 800 keV electrons, A-side aperture (anti-sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 400 to 800 keV (A-side)
+  FORMAT: F17.6
+  LABLAXIS: A-side e- 400 to 800 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_a_side_800_1200_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 800 to 1200 keV electrons, A-side aperture (anti-sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 800 to 1200 keV (A-side)
+  FORMAT: F17.6
+  LABLAXIS: A-side e- 800 to 1200 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_a_side_1200_2000_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 1200 to 2000 keV electrons, A-side aperture (anti-sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 1200 to 2000 keV (A-side)
+  FORMAT: F17.6
+  LABLAXIS: A-side e- 1200 to 2000 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_a_side_gt_2000_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for >2000 keV electrons, A-side aperture (anti-sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity >2000 keV (A-side)
+  FORMAT: F17.6
+  LABLAXIS: A-side e- >2000 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_b_side_300_400_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 300 to 400 keV electrons, B-side aperture (sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 300 to 400 keV (B-side)
+  FORMAT: F17.6
+  LABLAXIS: B-side e- 300 to 400 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_b_side_400_800_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 400 to 800 keV electrons, B-side aperture (sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 400 to 800 keV (B-side)
+  FORMAT: F17.6
+  LABLAXIS: B-side e- 400 to 800 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_b_side_800_1200_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 800 to 1200 keV electrons, B-side aperture (sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 800 to 1200 keV (B-side)
+  FORMAT: F17.6
+  LABLAXIS: B-side e- 800 to 1200 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_b_side_1200_2000_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for 1200 to 2000 keV electrons, B-side aperture (sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity 1200 to 2000 keV (B-side)
+  FORMAT: F17.6
+  LABLAXIS: B-side e- 1200 to 2000 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
+hit_e_b_side_gt_2000_kev:
+  <<: *default_float32
+  CATDESC: Livetime-corrected intensity from HIT for >2000 keV electrons, B-side aperture (sunward) look direction
+  DEPEND_0: hit_epoch
+  FIELDNAM: Electron intensity >2000 keV (B-side)
+  FORMAT: F17.6
+  LABLAXIS: B-side e- >2000 keV
+  UNITS: 1/(cm^2 s sr MeV)
+  VALIDMAX: 1000000000.0
+  VALIDMIN: 0
+  VAR_NOTES: A-side indicates the HIT aperture that is nominally looking in the anti-sunward direction. B-side indicates the aperture looking nominally in the sunward direction.
+
 hit_h_omni_low_en:
   <<: *default_float32
   CATDESC: Counts from HIT for protons between 6 to 8 MeV, omnidirectional
