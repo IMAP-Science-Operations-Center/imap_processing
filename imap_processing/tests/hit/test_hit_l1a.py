@@ -333,8 +333,8 @@ def test_find_complete_mod10_sets():
     # Simulate a gap in time between the first and second set
     epoch[10:] += 10 * 60 * 1e9
     message = (
-        "Valid sets are expected to have a previous 10 minutes before."
-        " This indicates there were full sets missing from the dataset. "
+        "Valid sets are expected to have a previous 10 minutes before. "
+        "This indicates there were full sets missing from the dataset. "
         "This needs further investigation."
     )
     with pytest.raises(ValueError, match=message):

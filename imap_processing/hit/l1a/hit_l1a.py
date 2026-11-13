@@ -378,18 +378,16 @@ def find_complete_mod10_sets(
     # Use sliding windows to find pattern matches
     sw_view = np.lib.stride_tricks.sliding_window_view(mod_vals, window_size)
     matches = np.all(sw_view == np.arange(window_size), axis=1)
-    starts = np.where(matches)[0]
+    starts = np.flatnonzero(matches)
     # If no matches, return an empty array
     if len(starts) == 0:
         return np.array([], dtype=int)
     # Find where the previous set is complete as well.
-    valid = np.isin(starts - 10, starts)
+    valid = np.isin(starts - window_size, starts)
 
     # For each of those valid starts, make sure the set before it is actually 10
     # minutes before. If a full set is missing, raise an error.
-    # Skip any that start before 10 because it's only used for the
-    # livetime values.
-    starts_to_check = starts[(valid & starts >= window_size)]
+    starts_to_check = starts[valid]
     gap_ns = epoch_vals[starts_to_check] - epoch_vals[starts_to_check - window_size]
     expected_ns = 10 * 60 * 1e9  # 10 minutes in ns
     tolerance_ns = 120 * 1e9  # 2 minutes in ns
