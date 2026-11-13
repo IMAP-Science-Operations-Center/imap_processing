@@ -911,7 +911,7 @@ class AbstractSkyMap(ABC):
         """
         return self.az_el_points.shape[0]
 
-    def project_pset_values_to_map(  # noqa: PLR0912
+    def project_pset_values_to_map(
         self,
         pointing_set: PointingSet,
         value_keys: list[str] | None = None,
@@ -925,11 +925,27 @@ class AbstractSkyMap(ABC):
         the map grid correspond to which pixels in the pointing set grid, and then
         binning the values at those indices from the pointing set to the map.
 
+        Non-spatial dimensions (e.g. energy step, calibration product) are combined
+        into the map by coordinate label, not by array position. A pointing set may
+        therefore contain a subset of the map variable's labels, in any order, and
+        its values are added only into the matching map labels. The ``epoch``
+        dimension, and any dimension without a coordinate on either the map or the
+        pointing set, is combined by position and must have the same size in both.
+
+        If a value key is not yet a variable in ``self.data_1d``, it is created,
+        filled with zeros, using the dims of the pointing set variable. Dims that
+        already exist in ``self.data_1d`` keep the map's size and coords; other
+        dims take the size and coords of this pointing set. To project pointing
+        sets that each cover only some labels (e.g. some ESA energy steps), a
+        caller can pre-initialize the map variable in ``self.data_1d`` with the
+        full non-spatial coords and the spatial pixel dim as the last dim (required),
+        before projecting any pointing set.
+
         Parameters
         ----------
         pointing_set : PointingSet
             The pointing set containing the values to project to the map.
-        value_keys : list[tuple[str, IndexMatchMethod]] | None
+        value_keys : list[str] | None
             The keys of the values in the PointingSet to project to the map.
             Ex.: ["counts", "flux"]
             data_vars named each key must be present, and of the same dimensionality in
@@ -945,8 +961,13 @@ class AbstractSkyMap(ABC):
 
         Raises
         ------
-        ValueError
+        KeyError
             If a value key is not found in the pointing set.
+        ValueError
+            If a pointing set variable cannot be combined into the map variable:
+            its non-spatial dims differ from the map variable's, one of its
+            coordinate labels is not in the map variable's coords, or a dim
+            combined by position differs in size.
         """
         if value_keys is None:
             value_keys = list(pointing_set.data.data_vars.keys())
@@ -972,15 +993,20 @@ class AbstractSkyMap(ABC):
                 input_object=self,
                 output_object=pointing_set,
             )
+            # The map pixels that pull from a valid PSET pixel, and the PSET
+            # pixels they pull from, are the same for every value key.
+            valid_map_mask = pset_valid_mask[matched_indices_pull]
+            valid_matched_indices_pull = matched_indices_pull[valid_map_mask]
         else:
             raise NotImplementedError(
                 "Only PUSH and PULL index matching methods are supported."
             )
 
-        for value_key in value_keys:
-            if value_key not in pointing_set.data.data_vars:
-                raise ValueError(f"Value key {value_key} not found in pointing set.")
+        # Map positions of this PSET's non-spatial labels, resolved once per dim
+        # and shared by all value keys (map variables share coords per dim).
+        dim_positions: dict[str, NDArray | None] = {}
 
+        for value_key in value_keys:
             # If multiple spatial axes present
             # (i.e (az, el) for rectangular coordinate PSET),
             # stack them into a single coordinate to match the raveled indices
@@ -990,18 +1016,30 @@ class AbstractSkyMap(ABC):
 
             if value_key not in self.data_1d.data_vars:
                 # Initialize the map data array if it doesn't exist (values start at 0)
-                output_shape = (*raveled_pset_data.shape[:-1], self.num_points)
+                # Non-spatial dims that already exist in the map (e.g. from a
+                # pre-initialized variable) keep the map's size, so that the
+                # PSET's values are combined into the map's labels below.
+                output_dims = pointing_set.unwrapped_dims_dict[value_key]
+                output_shape = tuple(
+                    self.num_points
+                    if dim == CoordNames.GENERIC_PIXEL.value
+                    else self.data_1d.sizes.get(dim, raveled_pset_data.sizes[dim])
+                    for dim in output_dims
+                )
                 self.data_1d[value_key] = xr.DataArray(
                     np.zeros(output_shape),
-                    dims=pointing_set.unwrapped_dims_dict[value_key],
+                    dims=output_dims,
                 )
 
-                # Make coordinates for the map data array if they don't exist
+                # Copy the PSET's coordinates for dims the map doesn't have coords
+                # for yet. Dims without a PSET coordinate stay coordinate-less, so
+                # they keep being combined by position.
                 self.data_1d.coords.update(
                     {
                         dim: pointing_set.data[dim]
                         for dim in self.data_1d[value_key].dims
                         if dim not in self.data_1d.coords
+                        and dim in pointing_set.data.coords
                     }
                 )
 
@@ -1033,26 +1071,215 @@ class AbstractSkyMap(ABC):
                 # dividing pointing_projected_values by some binned weights.
                 # For unweighted means, we could use the number of pointing set pixels
                 # that correspond to each map pixel as the weights.
-                self.data_1d[value_key] += pointing_projected_values
+                self._add_projected_values(
+                    value_key=value_key,
+                    projected_values=pointing_projected_values,
+                    pset_data=data_bc,
+                    map_pixel_mask=None,
+                    dim_positions=dim_positions,
+                )
             elif index_match_method is IndexMatchMethod.PULL:
-                valid_map_mask = pset_valid_mask[matched_indices_pull]
                 # We know that there will only be one value per sky map pixel,
                 # so we can use the matched indices directly
                 pointing_projected_values = raveled_pset_data.values[
-                    ..., matched_indices_pull[valid_map_mask]
+                    ..., valid_matched_indices_pull
                 ]
                 # TODO: we may need to allow for unweighted/weighted means here by
                 # dividing pointing_projected_values by some binned weights.
                 # For unweighted means, we could use the number of pointing set pixels
                 # that correspond to each map pixel as the weights.
-                self.data_1d[value_key].values[..., valid_map_mask] += (
-                    pointing_projected_values
+                self._add_projected_values(
+                    value_key=value_key,
+                    projected_values=pointing_projected_values,
+                    pset_data=raveled_pset_data,
+                    map_pixel_mask=valid_map_mask,
+                    dim_positions=dim_positions,
                 )
 
         # TODO: The max epoch needs to include the pset duration. Right now it
         #     is just capturing the start epoch. See issue #1747
         self.min_epoch = min(self.min_epoch, pointing_set.epoch)
         self.max_epoch = max(self.max_epoch, pointing_set.epoch)
+
+    def _add_projected_values(
+        self,
+        value_key: str,
+        projected_values: NDArray,
+        pset_data: xr.DataArray,
+        map_pixel_mask: NDArray | None,
+        dim_positions: dict[str, NDArray | None],
+    ) -> None:
+        """
+        Add a PSET's projected values into a map variable, matching coords by label.
+
+        Each non-spatial dimension of the PSET is combined into the map variable
+        by coordinate label, so a PSET may hold a subset of the map variable's
+        labels, in any order. Positions are used instead of labels for the
+        ``epoch`` dimension (each PSET has its own epoch value) and for any
+        dimension that lacks a coordinate on the map or the PSET; those
+        dimensions must have the same size in both.
+
+        Parameters
+        ----------
+        value_key : str
+            Name of the variable in ``self.data_1d`` to add the values into.
+        projected_values : NDArray
+            The PSET values binned to the map. The leading axes match the
+            non-spatial dimensions of ``pset_data`` and the final axis
+            corresponds to the map pixels selected by ``map_pixel_mask``.
+        pset_data : xr.DataArray
+            The raveled PSET data the values were projected from. Its dims (all
+            except the final, spatial dim) and coords label the leading axes
+            of ``projected_values``.
+        map_pixel_mask : NDArray or None
+            Boolean mask over the map pixels that the final axis of
+            ``projected_values`` corresponds to. None means all map pixels.
+        dim_positions : dict[str, NDArray | None]
+            Cache of resolved map positions per non-spatial dim for the current
+            PSET, updated in place. Map variables share one coordinate per dim,
+            so a dim only needs resolving once per PSET. A None entry means the
+            PSET matches the map exactly along that dim.
+
+        Raises
+        ------
+        ValueError
+            If the map variable's last dim is not the spatial pixel dim, or if
+            the PSET and map variable non-spatial dims differ.
+        """
+        map_var = self.data_1d[value_key]
+        pixel_dim = CoordNames.GENERIC_PIXEL.value
+        pset_dims = tuple(pset_data.dims[:-1])
+        map_dims = map_var.dims[:-1]
+
+        if map_var.dims[-1] != pixel_dim:
+            raise ValueError(
+                f"Map variable '{value_key}' has dims {map_var.dims}; the last dim "
+                f"must be the spatial pixel dim '{pixel_dim}'."
+            )
+        # Sorted comparison also catches repeated dim names, which xarray allows
+        # at construction (with a warning).
+        if sorted(pset_dims) != sorted(map_dims):
+            raise ValueError(
+                f"Non-spatial dims of PSET variable '{value_key}' {pset_dims} do not "
+                f"match the non-spatial dims of the map variable {map_dims}."
+            )
+        for dim in map_dims:
+            if dim not in dim_positions:
+                dim_positions[dim] = self._resolve_dim_positions(
+                    value_key, dim, pset_data, map_var
+                )
+
+        # Put the PSET values in the map variable's dim order
+        if pset_dims != map_dims:
+            projected_values = np.moveaxis(
+                projected_values,
+                [pset_dims.index(dim) for dim in map_dims],
+                range(len(map_dims)),
+            )
+        if map_pixel_mask is not None:
+            # Spread the values onto the full pixel axis, so the add below uses
+            # a slice for pixels. This is much faster than indexing the pixels.
+            full_pixel_values = np.zeros(
+                (*projected_values.shape[:-1], self.num_points),
+                dtype=projected_values.dtype,
+            )
+            full_pixel_values[..., map_pixel_mask] = projected_values
+            projected_values = full_pixel_values
+
+        if all(dim_positions[dim] is None for dim in map_dims):
+            # Fast path: the PSET matches the map's labels exactly
+            map_var.values += projected_values
+        else:
+            # Orthogonal (outer-product) index over the non-spatial dims
+            non_spatial_index = np.ix_(
+                *(
+                    np.arange(map_var.sizes[dim])
+                    if dim_positions[dim] is None
+                    else dim_positions[dim]
+                    for dim in map_dims
+                )
+            )
+            map_var.values[(*non_spatial_index, slice(None))] += projected_values
+
+    @staticmethod
+    def _resolve_dim_positions(
+        value_key: str, dim: str, pset_data: xr.DataArray, map_var: xr.DataArray
+    ) -> NDArray | None:
+        """
+        Find the map positions of a PSET's labels along one non-spatial dim.
+
+        Parameters
+        ----------
+        value_key : str
+            Name of the variable being projected, used in error messages.
+        dim : str
+            The non-spatial dimension to resolve.
+        pset_data : xr.DataArray
+            The raveled PSET data being projected.
+        map_var : xr.DataArray
+            The map variable the PSET data is being added into.
+
+        Returns
+        -------
+        NDArray or None
+            Map positions of each PSET label along ``dim``, or None if the
+            PSET matches the map exactly along ``dim`` (or ``dim`` is combined
+            by position).
+
+        Raises
+        ------
+        ValueError
+            If a PSET coordinate label is not in the map variable's coords, if
+            the PSET or map coordinate has duplicate labels, or if a positionally
+            combined dimension differs in size.
+        """
+        pset_size = pset_data.sizes[dim]
+        map_size = map_var.sizes[dim]
+        label_matched = (
+            dim != CoordNames.TIME.value
+            and dim in pset_data.coords
+            and dim in map_var.coords
+        )
+        if not label_matched:
+            if pset_size != map_size:
+                reason = (
+                    "the epoch dim is always combined by position"
+                    if dim == CoordNames.TIME.value
+                    else "no coordinate on the map variable or PSET"
+                )
+                raise ValueError(
+                    f"Cannot combine dim '{dim}' of '{value_key}' by position "
+                    f"({reason}): PSET size {pset_size} != map size {map_size}."
+                )
+            return None
+
+        pset_labels = pset_data.coords[dim].values
+        map_labels = map_var.coords[dim].values
+        # Check before the equality shortcut, so duplicates are caught even when
+        # the map's labels were copied from this PSET.
+        if len(np.unique(pset_labels)) != pset_size:
+            raise ValueError(
+                f"PSET coordinate '{dim}' of '{value_key}' has duplicate labels: "
+                f"{pset_labels.tolist()}."
+            )
+        if np.array_equal(pset_labels, map_labels):
+            return None
+        map_index = map_var.indexes[dim]
+        if not map_index.is_unique:
+            raise ValueError(
+                f"Map coordinate '{dim}' of '{value_key}' has duplicate labels: "
+                f"{map_labels.tolist()}."
+            )
+        positions = map_index.get_indexer(pset_labels)
+        if np.any(positions < 0):
+            # Print labels with tolist() so floats show at full precision
+            raise ValueError(
+                f"PSET coordinate '{dim}' of '{value_key}' has labels "
+                f"{pset_labels[positions < 0].tolist()} not found in the map "
+                f"coordinate values {map_labels.tolist()} (labels are matched "
+                f"exactly)."
+            )
+        return positions
 
     @classmethod
     def from_properties_json(
