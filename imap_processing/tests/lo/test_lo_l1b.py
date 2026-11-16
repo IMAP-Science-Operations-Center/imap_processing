@@ -550,6 +550,56 @@ def test_get_spin_start_times(mock_interpolate_spin_data):
     )
 
 
+@pytest.mark.parametrize("correction_us", [0, 43_000, 98_000])
+@pytest.mark.parametrize("use_corrected", [True, False])
+def test_get_spin_start_times_uses_original_spin_starts(
+    correction_us,
+    use_corrected,
+    generate_spin_data,
+    use_test_spin_data_csv,
+    tmp_path,
+    monkeypatch,
+):
+    """
+    DE times count from the spacecraft spin pulse: the original spin start.
+
+    The ACS spin start correction must not move the DE spin start times,
+    whichever spin table the rest of L1B uses.
+    """
+    spin_df = generate_spin_data(STAR_START_MET, spin_period=SPIN_PERIOD)
+    # The corrected spin starts come `correction_us` after the original ones
+    spin_df["spin_start_subsec_sclk_corr"] = (
+        spin_df["spin_start_subsec_sclk"] + correction_us
+    )
+    spin_csv = tmp_path / "corrected_spin_data.spin.csv"
+    spin_df.to_csv(spin_csv, index=False)
+    use_test_spin_data_csv([spin_csv])
+    monkeypatch.setattr(
+        "imap_processing.lo.l1b.lo_l1b.USE_CORRECTED_SPIN_START", use_corrected
+    )
+
+    original_starts = (
+        spin_df["spin_start_sec_sclk"].values
+        + spin_df["spin_start_subsec_sclk"].values / 1e6
+    )
+    # One query mid-spin, and one 10 ms after an original spin start, which is
+    # before the corrected start of that spin when there is a correction
+    met = np.array([original_starts[3] + SPIN_PERIOD / 2, original_starts[5] + 0.010])
+    l1a_de = xr.Dataset(
+        {
+            "met": ("epoch", met),
+            "de_count": ("epoch", [2, 1]),
+        },
+        coords={"epoch": [0, 1]},
+    )
+
+    spin_start_times = get_spin_start_times(l1a_de)
+
+    expected = original_starts[[3, 3, 5]]
+    # rtol=0: the default rtol allows tens of seconds at MET ~5e8 s
+    np.testing.assert_allclose(spin_start_times, expected, rtol=0, atol=1e-6)
+
+
 @patch("imap_processing.lo.l1b.lo_l1b.interpolate_spin_data")
 def test_set_event_met(mock_interpolate_spin_data):
     # Arrange
