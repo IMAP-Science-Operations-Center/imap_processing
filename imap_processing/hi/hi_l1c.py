@@ -129,10 +129,9 @@ def generate_pset_dataset(
     else:
         logger.info(f"Pointing gain state matches gain_config_id={gain_config_id}")
         # The calibration_prod coordinate holds the matched gain_config_id's
-        # calibration products only.
-        gain_config_df = config_df.loc[gain_config_id]
         # calibration products. CalibrationProductConfig validation requires
         # every gain_config_id to define the same calibration products.
+        gain_config_df = config_df.loc[gain_config_id]
         cal_prod_numbers = np.sort(
             gain_config_df.index.unique(level="calibration_prod").values
         )
