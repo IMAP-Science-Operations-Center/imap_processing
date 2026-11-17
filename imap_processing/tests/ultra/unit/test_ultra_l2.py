@@ -475,7 +475,7 @@ class TestUltraL2:
             ultra_l2.REQUIRED_L1C_VARIABLES_PUSH
             + ultra_l2.REQUIRED_L1C_VARIABLES_PULL
             + ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
-            + ultra_l2.EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL
+            + ultra_l2.L1C_POINTING_INDEPENDENT_VARIABLES_PULL
             + ["ena_intensity", "ena_intensity_stat_uncert"]
         )
         for var in expected_vars:
@@ -860,6 +860,19 @@ class TestUltraL2:
             " 6 deg, 6 Mon"
         )
         write_cdf(output_map)
+
+    def test_ultra_l2_missing_var(self, mock_data_dict, furnish_kernels):
+        with furnish_kernels(self.required_kernel_names):
+            key = next(iter(mock_data_dict.keys()))
+            mock_data_dict[key] = mock_data_dict[key].drop_vars("sensitivity")
+            with pytest.raises(
+                ValueError,
+                match="Required variable sensitivity not found in the first L1C PSET.",
+            ):
+                ultra_l2.ultra_l2(
+                    data_dict=mock_data_dict,
+                    descriptor="u90-ena-h-hf-nsp-full-hae-6deg-6mo",
+                )[0]
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_descriptor_hpmap(self, mock_data_dict, furnish_kernels):

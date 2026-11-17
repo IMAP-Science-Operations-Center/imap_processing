@@ -66,10 +66,9 @@ REQUIRED_L1C_VARIABLES_PULL = [
     "background_rates",
     "obs_date",
 ]
-# These variables are expected but not strictly required. In certain test scenarios,
-# they may be missing, in which case we will raise a warning and continue.
-# All psets must be consistent and either have these variables or not.
-EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL = [
+
+# Pointing independent variables required in every L1C Pset.
+L1C_POINTING_INDEPENDENT_VARIABLES_PULL = [
     "geometric_function",
     "scatter_theta",
     "scatter_phi",
@@ -433,24 +432,18 @@ def generate_ultra_skymap(
             f"PUSH Variables: {output_map_structure.values_to_push_project} \n"
             f"PULL Variables: {output_map_structure.values_to_pull_project}"
         )
-    # TODO remove this in the future once all test data includes these variables
-    # Add expected but not required variables to the pull projection list
-    # Log a warning if they are missing from any PSET but continue processing.
-    expected_present_vars_pointing_ind = []
+
     first_pset = (
         load_cdf(ultra_l1c_psets[0])
         if isinstance(ultra_l1c_psets[0], (str, Path))
         else ultra_l1c_psets[0]
     )
 
-    for var in EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
+    for var in L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
         if var not in first_pset.variables:
-            logger.warning(
-                f"Expected variable {var} not found in the first L1C PSET. "
-                "This variable will not be projected to the map."
+            raise ValueError(
+                f"Required variable {var} not found in the first L1C PSET."
             )
-        else:
-            expected_present_vars_pointing_ind.append(var)
 
     # Variables to weight by pointing set exposure times solid angle
     vars_to_weight = VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
@@ -463,7 +456,7 @@ def generate_ultra_skymap(
     output_map_structure.values_to_pull_project = list(
         set(
             output_map_structure.values_to_pull_project
-            + expected_present_vars_pointing_ind
+            + L1C_POINTING_INDEPENDENT_VARIABLES_PULL
         )
     )
 
