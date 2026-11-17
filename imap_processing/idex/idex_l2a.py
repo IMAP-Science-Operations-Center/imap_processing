@@ -105,6 +105,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
     tof_high = l1b_dataset["TOF_High"]
     hs_time = l1b_dataset["time_high_sample_rate"]
     ls_time = l1b_dataset["time_low_sample_rate"]
+    earliest_waveform_time = float(ls_time.min())
 
     # Load an array of known masses of ions
     atomic_masses_path = f"{imap_module_directory}/idex/atomic_masses.csv"
@@ -267,6 +268,9 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
         for name, data in output_vars.items():
             l2a_dataset[name] = data
             l2a_dataset[name].attrs = idex_attrs.get_variable_attributes(name)
+        l2a_dataset[f"{waveform_name}_impact_charge_time"].attrs["VALIDMIN"] = (
+            earliest_waveform_time
+        )
 
     l2a_dataset["mass"] = mass_scales_da
     l2a_dataset["mass"].attrs = idex_attrs.get_variable_attributes("mass")
@@ -1056,15 +1060,6 @@ def estimate_dust_mass(
         Analytic pulse extremum time in microseconds relative to the waveform
         trigger. NaN if the fit is unavailable.
     """
-    if saturation_flag == 1:
-        return (
-            np.full(5, np.nan),
-            np.nan,
-            np.nan,
-            np.nan,
-            np.full(target_signal.shape, np.nan),
-            np.nan,
-        )
     signal = np.array(target_signal.data)
     time = np.array(low_sampling_time.data)
     null_result = (
@@ -1075,6 +1070,8 @@ def estimate_dust_mass(
         np.full(time.shape, np.nan),
         np.nan,
     )
+    if saturation_flag == 1:
+        return null_result
     if baseline_mean is None:
         baseline, _ = calculate_baseline_and_rms(signal, time)
         baseline_mean = float(baseline)

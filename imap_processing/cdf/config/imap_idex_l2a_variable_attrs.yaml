@@ -48,9 +48,9 @@ impact_charge_time_base: &impact_charge_time_base
   FILLVAL: *double_fillval
   FORMAT: F20.6
   UNITS: microseconds
-  VALIDMAX: *int_maxval
-  VALIDMIN: *int_fillval
-  VAR_NOTES: Time of the analytic pulse extremum used to calculate impact_charge, on the time_low_sample_rate axis, relative to the waveform trigger. Fill when the fit is unavailable, invalid, or the waveform is saturated.
+  VALIDMAX: 10000.0 # Temporary upper limit of 10 ms, expressed in microseconds.
+  VALIDMIN: null # Set during processing to the earliest low-rate waveform time.
+  VAR_NOTES: Time of the analytic pulse extremum used to calculate impact_charge, on the time_low_sample_rate axis, relative to the waveform trigger. VALIDMIN is the earliest low-rate waveform time in the product; VALIDMAX is temporarily 10 ms. Fill when the fit is unavailable, invalid, or the waveform is saturated.
   VAR_TYPE: data
 
 mass_estimate_base: &mass_estimate_base

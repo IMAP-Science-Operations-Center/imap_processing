@@ -275,13 +275,20 @@ def test_estimate_dust_mass_analytic_charge_time(waveform, amplitude, impact_tim
     assert charge == pytest.approx(abs(peak - parameters[1]))
 
 
-def test_l2a_impact_charge_time_fields_and_cdf(l1b_dataset):
+@pytest.mark.parametrize("earliest_time", [-80.0, -12.0])
+def test_l2a_impact_charge_time_fields_and_cdf(l1b_dataset, earliest_time):
     """Charge times mask unavailable/saturated fits and round-trip through CDF."""
     dataset = l1b_dataset.isel(epoch=slice(0, 4)).copy(deep=True)
     dataset["science_event_flag"].data = np.array([1, 1, 1, 0], dtype=np.uint8)
     waveforms = ("target_low", "target_high", "ion_grid")
     fits = []
     sample_count = dataset.sizes["time_low_sample_rate_index"]
+    # The earliest sample is in the second event, not the first waveform.
+    dataset["time_low_sample_rate"].data = (
+        earliest_time
+        + np.array([2.0, 0.0, 3.0, 1.0])[:, None]
+        + 0.25 * np.arange(sample_count)[None, :]
+    )
     for waveform in waveforms:
         dataset[f"{waveform}_saturation_flag"].data = np.array(
             [0, 0, 1, 0], dtype=np.uint8
@@ -366,6 +373,11 @@ def test_l2a_impact_charge_time_fields_and_cdf(l1b_dataset):
                 assert attrs["DEPEND_0"] == "epoch"
                 assert attrs["UNITS"] == units
                 assert attrs["FILLVAL"] == -1.0e31
+                if suffix == "impact_charge_time":
+                    assert result[name].attrs["VALIDMIN"] == earliest_time
+                    assert result[name].attrs["VALIDMAX"] == 10000.0
+                    assert attrs["VALIDMIN"] == earliest_time
+                    assert attrs["VALIDMAX"] == 10000.0
 
 
 def test_non_science_derived_estimates_are_nan() -> None:
