@@ -90,6 +90,7 @@ def test_l1b_lo_sw_species(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_lo-sw-species_{VALIDATION_FILE_DATE}_v002.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -135,6 +136,7 @@ def test_l1b_hi_omni(mock_get_file_paths, codice_lut_path):
     assert (
         cdf_file.name == f"imap_codice_l1b_hi-omni_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -168,6 +170,7 @@ def test_l1b_hi_sectored(mock_get_file_paths, codice_lut_path):
         cdf_file.name == f"imap_codice_l1b_hi-sectored_{VALIDATION_FILE_DATE}_"
         f"v001.0001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -201,6 +204,7 @@ def test_l1b_hi_priorities(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_hi-priority_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -234,6 +238,7 @@ def test_l1b_nsw_lo_priorities(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_lo-nsw-priority_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -267,6 +272,7 @@ def test_l1b_sw_lo_priorities(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_lo-sw-priority_{VALIDATION_FILE_DATE}_v001.0001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -309,6 +315,7 @@ def test_l1b_lo_counters_aggregated(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_lo-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -348,6 +355,7 @@ def test_l1b_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_hi-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -388,6 +396,7 @@ def test_lo_counters_singles(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_lo-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -428,3 +437,4 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1b_hi-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
