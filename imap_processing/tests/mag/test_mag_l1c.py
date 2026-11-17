@@ -1381,8 +1381,52 @@ def test_process_mag_l1c_previous_day_anchor_ignores_buffer_samples():
     leading = epochs_out[epochs_out < nm_epochs[0]]
 
     assert leading.size > 0
-    assert leading[0] == anchor + cadence
+    assert leading[0] == window_start_ns + 128
     assert np.all((leading - anchor) % cadence == 0)
+
+
+def test_mag_l1c_continued_timeline_keeps_buffer_before_midnight():
+    """The continued timeline must still cover the 30 minutes before midnight.
+
+    A real previous-day L1C runs past the current day's midnight, so its last
+    timestamp before midnight is inside the current window. The output must start at
+    the window start and reuse the previous day's timestamps up to midnight.
+    """
+    day2 = np.datetime64("2025-01-02")
+    window_start_ns, _ = _expected_day_ns(day2)
+    midnight_ns = window_start_ns + 1800 * 1_000_000_000
+    cadence = 500_000_000
+    phase_ns = 73_000_000
+
+    previous_day_epochs = np.arange(
+        window_start_ns - 600 * 1_000_000_000 + phase_ns,
+        midnight_ns + 1800 * 1_000_000_000,
+        cadence,
+        dtype=np.int64,
+    )
+    previous_day = _build_mag_l1b(previous_day_epochs, "imap_mag_l1c_norm-mago", "")
+    burst_day2 = _build_mag_l1b(
+        np.arange(
+            window_start_ns - 60 * 1_000_000_000,
+            midnight_ns + 600 * 1_000_000_000,
+            125_000_000,
+            dtype=np.int64,
+        ),
+        "imap_mag_l1b_burst-mago",
+        "0:8",
+    )
+
+    output = mag_l1c(burst_day2, day2, previous_day_dataset=previous_day)
+    epochs_out = output["epoch"].data
+
+    previous_day_before_midnight = previous_day_epochs[
+        (previous_day_epochs >= window_start_ns) & (previous_day_epochs < midnight_ns)
+    ]
+    output_before_midnight = epochs_out[epochs_out < midnight_ns]
+    assert output_before_midnight.size == previous_day_before_midnight.size
+    assert np.allclose(
+        output_before_midnight, previous_day_before_midnight, rtol=0, atol=1e3
+    )
 
 
 def test_mag_l1c_raises_on_previous_day_without_epochs():
