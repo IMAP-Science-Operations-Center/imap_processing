@@ -202,8 +202,22 @@ def create_l2_dataset(
         attrs=attrs.get_variable_attributes("ecliptic_dim", check_schema=False),
     )
 
+    # Epoch is the midpoint, so the delta is symmetric: half the observation span.
+    epoch_delta = xr.DataArray(
+        np.array(
+            [(histogram_l2.end_time - histogram_l2.start_time) / 2], dtype=np.int64
+        ),
+        name="epoch_delta",
+        dims=["epoch"],
+        attrs=attrs.get_variable_attributes("epoch_delta", check_schema=False),
+    )
+
     output = xr.Dataset(
-        data_vars={"bins_label": bins_label, "flags_label": flags_label},
+        data_vars={
+            "bins_label": bins_label,
+            "flags_label": flags_label,
+            "epoch_delta": epoch_delta,
+        },
         coords={
             "epoch": epoch_time,
             "bins": bins,

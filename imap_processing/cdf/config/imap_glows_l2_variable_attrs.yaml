@@ -4,6 +4,14 @@ max_uint32_min_one: &max_uint32_min_one 4294967294
 max_uint16: &max_uint16 65535
 min_epoch: &min_epoch -315575942816000000
 
+# Override the default epoch (defined in imap_constant_attrs.yaml) for L2.
+epoch:
+  DELTA_MINUS_VAR: epoch_delta
+  DELTA_PLUS_VAR: epoch_delta
+
+epoch_delta:
+  CATDESC: Half-width of the observational day, from start_time to epoch (and epoch to end_time)
+
 bins_label:
   CATDESC: Label names for histogram bin numbers
   FIELDNAM: Label name
