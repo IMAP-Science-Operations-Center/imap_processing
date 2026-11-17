@@ -50,8 +50,8 @@ rise_time_10_90_base: &rise_time_10_90_base
   UNITS: microseconds
   VALIDMAX: *int_maxval
   VALIDMIN: 0.0
-  VAR_TYPE: data
   VAR_NOTES: Interval between the 10 and 90 percent crossings on the continuous fitted leading edge, measured relative to the fitted baseline and analytic pulse extremum. Uses the pulse magnitude for either polarity. Fill when the fit is unavailable, invalid, or the waveform is saturated.
+  VAR_TYPE: data
 
 mass_estimate_base: &mass_estimate_base
   DEPEND_0: epoch
