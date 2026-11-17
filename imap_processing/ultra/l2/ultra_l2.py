@@ -600,7 +600,7 @@ def generate_ultra_skymap(
         # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
         # where sum here refers to the projection process
         # summing over N pset pixels across different psets
-        # Leave as float here so nans survive until the final
+        # Leave as float here so nans stay until the final
         # cast to int64 below where they get replaced with fillvals.
         skymap.data_1d["obs_date_range"] = (
             (
@@ -994,8 +994,7 @@ def ultra_l2(
         )
 
     # Adjust the dtype of obs dates to be int64.
-    # Nan pixels should be explicitly replaced
-    # by fillvals.
+    # Nan pixels should be replaced by fillvals.
     for obs_var in ["obs_date", "obs_date_range"]:
         obs_values = map_dataset[obs_var]
         map_dataset[obs_var] = xr.where(

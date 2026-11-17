@@ -62,7 +62,7 @@ class TestUltraL2:
     @pytest.fixture
     def _mock_multiple_psets(self, _setup_spice_kernels_list, furnish_kernels):
         # Set the timestrs to be 6 months apart from the 0th to final pset
-        manual_timestrs = [
+        self.manual_timestrs = [
             "2025-05-15T12:00:00",
             "2025-07-15T12:00:00",
             "2025-09-15T12:00:00",
@@ -78,7 +78,7 @@ class TestUltraL2:
                     width_scale=5,
                     counts_scaling_params=(50, 0.5),
                     peak_exposure=1000,
-                    timestr=manual_timestrs[i],
+                    timestr=self.manual_timestrs[i],
                     head=("90"),
                     energy_dependent_exposure=True,
                 )
@@ -502,6 +502,13 @@ class TestUltraL2:
         assert hp_skymap.data_1d["geometric_function"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["scatter_theta"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["scatter_phi"].dims == pointing_independent_dims
+
+        # Check obs_date
+        obs_date = hp_skymap.data_1d["obs_date"].values
+        # Get min and max time (with a second tolerance)
+        min_time = et_to_ttj2000ns(str_to_et(self.manual_timestrs[0]) - 1)
+        max_time = et_to_ttj2000ns(str_to_et(self.manual_timestrs[-1]) + 1)
+        assert np.all((min_time <= obs_date) & (obs_date < max_time))
 
     @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
