@@ -18,9 +18,10 @@ from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice.codice_l1a import process_l1a
+from imap_processing.codice.codice_l1a import calculate_quality_flags, process_l1a
 from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.utils import CODICEAPID
+from imap_processing.quality_flags import ImapCodiceL1aFlags
 from imap_processing.tests.codice.conftest import (
     VALIDATION_FILE_DATE,
     VALIDATION_FILE_VERSION,
@@ -160,6 +161,7 @@ def test_lo_counters_aggregated(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -197,6 +199,7 @@ def test_lo_counters_singles(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -250,6 +253,7 @@ def test_lo_sw_priority(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-sw-priority_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -303,6 +307,7 @@ def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-nsw-priority_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -363,6 +368,7 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-sw-species_{VALIDATION_FILE_DATE}_v002.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -399,6 +405,7 @@ def test_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -437,6 +444,7 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_hi-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -480,6 +488,7 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
     assert_epoch_delta_cdf_metadata(cdf_file)
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -531,6 +540,7 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     assert (
         cdf_file.name == f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -583,6 +593,8 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
     assert (
         cdf_file.name == f"imap_codice_l1a_hi-priority_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -646,6 +658,7 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
         for variable in LO_MODE_SUPPORT_VARIABLES:
             attrs = cdf.varattsget(variable)
             assert attrs["VAR_TYPE"] == "support_data"
+    assert "quality_flags" in processed_data
 
 
 def test_direct_events_incomplete_groups(codice_lut_path, caplog):
@@ -760,3 +773,38 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
         == f"imap_codice_l1a_hi-direct-events_{VALIDATION_FILE_DATE}_v002.cdf"
     )
     assert_epoch_delta_cdf_metadata(cdf_file)
+    assert "quality_flags" in processed_data
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_calculate_quality_flags(mock_get_file_paths, codice_lut_path):
+    """Tests the calculate_quality_flags function."""
+
+    # test case #1 - no flags
+    macro_status = np.full(100, 10, dtype=np.uint32)
+    quality_flags = calculate_quality_flags(macro_status)
+    assert np.all(quality_flags == ImapCodiceL1aFlags.NONE)
+
+    # Test case #2 - only gain test is flagged for the first 10 values
+    macro_status = np.concat([np.full(10, 128, np.uint32), np.full(10, 126, np.uint32)])
+    quality_flags = calculate_quality_flags(macro_status)
+    expected_status = np.concat(
+        [
+            np.full(10, ImapCodiceL1aFlags.GAIN_TEST.value, np.uint16),
+            np.full(10, ImapCodiceL1aFlags.NONE.value, np.uint16),
+        ]
+    )
+    np.testing.assert_array_equal(quality_flags, expected_status)
+
+    # Test case #3 - Both Gain test and MCP current flags
+    value = (1 << 28) | (1 << 8)
+    macro_status = np.concat([np.full(10, value, np.uint32)])
+    quality_flags = calculate_quality_flags(macro_status)
+    np.testing.assert_array_equal(
+        quality_flags,
+        np.full(
+            10,
+            ImapCodiceL1aFlags.GAIN_TEST.value | ImapCodiceL1aFlags.MCP_CURRENT.value,
+            np.uint16,
+        ),
+    )

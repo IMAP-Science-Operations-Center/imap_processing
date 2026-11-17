@@ -167,10 +167,10 @@ def process_l1a(  # noqa: PLR0912
     cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
     if hk_l1a_ds is not None:
         # Get quality flags for each science epoch.
-        flags = calculate_quality_flags(hk_l1a_ds)
+        flags = calculate_quality_flags(hk_l1a_ds.macro_status.values)
         for dataset in datasets:
             # Don't add quality flags to hskp products
-            if "hskp" in dataset.attrs.Logical_source_id:
+            if "hskp" in dataset.attrs["Logical_source"]:
                 continue
 
             # Get the quality flags for this dataset. We must
@@ -203,14 +203,14 @@ def process_l1a(  # noqa: PLR0912
     return datasets
 
 
-def calculate_quality_flags(hk_dataset: xr.Dataset) -> np.ndarray:
+def calculate_quality_flags(macro_status: np.ndarray) -> np.ndarray:
     """
     Calculate quality flags from the L1A housekeeping macro status.
 
     Parameters
     ----------
-    hk_dataset : xarray.Dataset
-        L1A housekeeping (COD_NHK) dataset containing ``macro_status``.
+    macro_status : numpy.ndarray
+        Housekeeping macro status (uint32), one per housekeeping record.
 
     Returns
     -------
@@ -218,7 +218,7 @@ def calculate_quality_flags(hk_dataset: xr.Dataset) -> np.ndarray:
         Quality flags (uint8), one per housekeeping record.
     """
     # Extract the macro status array and ensure its uint32
-    macro_status = hk_dataset["macro_status"].values.astype(np.uint32)
+    macro_status = macro_status.astype(np.uint32)
     flags = np.full(macro_status.shape, ImapCodiceL1aFlags.NONE, dtype=np.uint8)
 
     # Any of bits 7 through 13 set means there is a gain test in progress.
