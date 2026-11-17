@@ -480,10 +480,9 @@ def process_mag_l1c(
         if previous_day_timeline is not None:
             last_timestamp_ns, previous_day_rate = previous_day_timeline
             period_ns = int(1e9 // previous_day_rate)
-            # One period before the first continued timestamp at or after the window
-            # start: interpolate_gaps only fills points strictly inside a gap, and
-            # this extra leading point is removed after generate_timeline.
-            steps = max(1, -((last_timestamp_ns - day_start_ns) // period_ns))
+            # Start one period before the first continued timestamp in the window,
+            # since gaps are filled strictly inside; that extra point is dropped below.
+            steps = -((last_timestamp_ns - day_start_ns) // period_ns)
             continued_gap_start_ns = last_timestamp_ns + (steps - 1) * period_ns
 
     inherited_gap_start_ns = None
