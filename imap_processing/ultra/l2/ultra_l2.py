@@ -600,8 +600,8 @@ def generate_ultra_skymap(
         # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
         # where sum here refers to the projection process
         # summing over N pset pixels across different psets
-        # Leave as float here so NaNs (no valid coverage) survive until the final
-        # cast to int64 in ultra_l2, where they are replaced with the fill value.
+        # Leave as float here so nans survive until the final
+        # cast to int64 below where they get replaced with fillvals.
         skymap.data_1d["obs_date_range"] = (
             (
                 skymap.data_1d["obs_date_squared_for_std"]
