@@ -34,7 +34,16 @@ SC_FRAME_VARS_TO_PROJECT = {
 }
 HELIO_FRAME_VARS_TO_PROJECT = SC_FRAME_VARS_TO_PROJECT | {"energy_sc"}
 # TODO: is an exposure time weighted average for obs_date appropriate?
+# These are averaged using the total exposure time summed over gain
+# configurations. Backgrounds are independent of gain configuration, so they
+# are keyed by calibration_prod only and averaged over every pointing.
 FULL_EXPOSURE_TIME_AVERAGE_SET = {"bg_rate", "bg_rate_sys_err", "obs_date", "energy_sc"}
+
+# Each (gain_config_id, calibration_prod) pair is a distinct calibration
+# product. Map variables that vary by product (counts, exposure, and the
+# intensities derived from them) carry both dims until
+# combine_calibration_products() collapses them.
+PRODUCT_DIMS = ("gain_config_id", "calibration_prod")
 
 # Calibration systematic uncertainty as a fraction of intensity.
 # This represents the current calibration uncertainty (40%).
@@ -186,28 +195,39 @@ def create_sky_map_from_psets(
     )
     vars_to_exposure_time_average = FULL_EXPOSURE_TIME_AVERAGE_SET & vars_to_bin
 
-    for i_pset, pset_path in enumerate(psets):
+    # The map holds every (gain_config_id, calibration_prod, esa_energy_step)
+    # in the cal-prod config. Initializing the maps with these coords before any
+    # PSET is projected makes each map variable span all of them, and ena_maps
+    # adds each PSET's values into the map by coordinate label. So a PSET only
+    # fills its own gain_config_id and the ESA energy steps it observed.
+    cal_prod_config = CalibrationProductConfig.from_csv(
+        l2_ancillary_path_dict["cal-prod"]
+    ).cal_prod_config
+    map_coords = cal_prod_config.map_coords()
+    for map in rect_maps.values():
+        map.data_1d = map.data_1d.assign_coords(map_coords)
+    esa_ds = esa_energy_df(
+        l2_ancillary_path_dict["esa-energies"], map_coords["esa_energy_step"]
+    ).to_xarray()
+    energy_kev = esa_ds["nominal_central_energy"]
+
+    unmatched_psets = []
+    for pset_path in psets:
         logger.debug(f"Processing {pset_path}")
         pset_ds = load_cdf(pset_path)
 
-        # Store the first PSET esa_energy_step values and make sure every PSET
-        # contains the same set of esa_energy_step values.
-        # TODO: Correctly handle PSETs with different esa_energy_step values.
-        if i_pset == 0:
-            cached_esa_steps = pset_ds["esa_energy_step"].values.copy()
-            esa_ds = esa_energy_df(
-                l2_ancillary_path_dict["esa-energies"],
-                pset_ds["esa_energy_step"].values,
-            ).to_xarray()
-            energy_kev = esa_ds["nominal_central_energy"]
-        if not np.array_equal(cached_esa_steps, pset_ds["esa_energy_step"].values):
-            raise ValueError(
-                "All PSETs must have the same set of esa_energy_step values."
-            )
+        gain_config_id = get_pset_gain_config_id(
+            pset_ds, cal_prod_config.gain_config_ids
+        )
+        if gain_config_id is None:
+            unmatched_psets.append(pset_path)
+            continue
 
+        validate_pset_products(pset_ds, cal_prod_config)
         pset_processed = process_single_pset(
             pset_ds,
-            energy_kev,
+            gain_config_id,
+            energy_kev.sel(esa_energy_step=pset_ds["esa_energy_step"].values),
             descriptor,
             vars_to_exposure_time_average,
         )
@@ -221,11 +241,21 @@ def create_sky_map_from_psets(
                 hi_pset, list(vars_to_bin), pset_valid_mask=directional_mask
             )
 
+    logger.info(
+        f"Projected {len(psets) - len(unmatched_psets)} of {len(psets)} PSETs "
+        f"into the map."
+    )
+    if unmatched_psets:
+        logger.warning(
+            f"Skipped {len(unmatched_psets)} PSETs whose pointing matched no "
+            f"gain_config_id in the cal-prod config: "
+            f"{[str(path) for path in unmatched_psets]}"
+        )
+
     for map in rect_maps.values():
-        # Finish the exposure time weighted mean calculation of backgrounds
-        # Allow divide by zero to fill set pixels with zero exposure time to NaN
-        with np.errstate(divide="ignore"):
-            map.data_1d[vars_to_exposure_time_average] /= map.data_1d["exposure_factor"]
+        map.data_1d = finish_exposure_time_averages(
+            map.data_1d, vars_to_exposure_time_average
+        )
 
         # Add ESA energy data to the map dataset for use in rate/intensity calculations
         energy_delta = esa_ds["bandpass_fwhm"] / 2
@@ -246,6 +276,7 @@ def create_sky_map_from_psets(
 
 def process_single_pset(
     pset: xr.Dataset,
+    gain_config_id: int,
     energy_kev: xr.DataArray,
     descriptor: MapDescriptor,
     vars_to_exposure_time_average: set[str],
@@ -257,6 +288,8 @@ def process_single_pset(
     ----------
     pset : xarray.Dataset
         Single pointing set dataset to process.
+    gain_config_id : int
+        The gain_config_id the PSET's pointing matched in L1C.
     energy_kev : xarray.DataArray
         Central energy values in keV for the ESA energy steps.
     descriptor : imap_processing.ena_maps.utils.naming.MapDescriptor
@@ -270,8 +303,10 @@ def process_single_pset(
     xarray.Dataset
         Processed pointing set ready for projection.
     """
-    # Step 1: Rename some PSET vars to match L2 variables
+    # Step 1: Rename some PSET vars to match L2 variables and drop the
+    # esa_energy_step_label variable, which isn't used in L2
     pset_processed = pset.rename(HiPointingSet.l1c_to_l2_var_mapping)
+    pset_processed = pset_processed.drop_vars("esa_energy_step_label", errors="ignore")
 
     # Step 2: Add obs_date variable to be used in determining a map mean obs_date
     mid_time = (
@@ -299,7 +334,171 @@ def process_single_pset(
         if var in pset_processed:
             pset_processed[var] *= pset_processed["exposure_factor"]
 
+    # Step 7: Label counts and exposure with the PSET's gain_config_id. This
+    # comes after step 6 so the gain-independent variables weighted by
+    # exposure_factor don't pick up a gain_config_id dim.
+    pset_processed = add_gain_config_dim(pset_processed, gain_config_id)
+
     return pset_processed
+
+
+def finish_exposure_time_averages(
+    map_ds: xr.Dataset, vars_to_exposure_time_average: set[str]
+) -> xr.Dataset:
+    """
+    Divide exposure-time weighted map sums by the total exposure time.
+
+    The total exposure time is exposure_factor summed over gain
+    configurations. Pixels with zero exposure time become NaN.
+
+    Parameters
+    ----------
+    map_ds : xarray.Dataset
+        Map dataset with all PSETs projected. Must contain exposure_factor
+        with a gain_config_id dim.
+    vars_to_exposure_time_average : set of str
+        Variables that were multiplied by exposure time before projection.
+
+    Returns
+    -------
+    xarray.Dataset
+        Map dataset with exposure-time averaged variables.
+    """
+    total_exposure = map_ds["exposure_factor"].sum(dim="gain_config_id")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        for var in vars_to_exposure_time_average:
+            map_ds[var] = map_ds[var] / total_exposure
+    return map_ds
+
+
+def get_pset_gain_config_id(
+    pset: xr.Dataset, gain_config_ids: np.ndarray
+) -> int | None:
+    """
+    Get the gain_config_id a PSET's pointing matched in L1C.
+
+    Parameters
+    ----------
+    pset : xarray.Dataset
+        L1C PSET dataset.
+    gain_config_ids : numpy.ndarray
+        The gain_config_id values defined in the cal-prod config.
+
+    Returns
+    -------
+    int or None
+        The PSET's gain_config_id, or None if the pointing matched no gain
+        configuration in L1C (the global attribute is NaN).
+
+    Raises
+    ------
+    ValueError
+        If the PSET has no gain_config_id global attribute and the cal-prod
+        config has more than one gain_config_id, or if the PSET's
+        gain_config_id is not in the cal-prod config.
+    """
+    value = pset.attrs.get("gain_config_id")
+    if value is None:
+        # PSETs produced before L1C recorded gain_config_id. These are only
+        # unambiguous when the cal-prod config has a single gain configuration.
+        if len(gain_config_ids) != 1:
+            raise ValueError(
+                "PSET has no gain_config_id global attribute, which is required "
+                "when the cal-prod config defines multiple gain_config_id values."
+            )
+        return int(gain_config_ids[0])
+
+    value = float(np.squeeze(value))
+    if np.isnan(value):
+        return None
+    if value not in gain_config_ids:
+        raise ValueError(
+            f"PSET gain_config_id={value} is not in the cal-prod config "
+            f"gain_config_id values {gain_config_ids.tolist()}."
+        )
+    return int(value)
+
+
+def validate_pset_products(
+    pset: xr.Dataset, cal_prod_config: CalibrationProductConfig
+) -> None:
+    """
+    Check that an L1C PSET's calibration products and ESA steps are defined.
+
+    L1C only includes the ESA energy steps observed during the pointing, so a
+    PSET may hold a subset of the cal-prod config's steps; map projection adds
+    them into the matching map labels. A step the cal-prod config doesn't
+    define indicates a processing or ancillary file problem.
+
+    Parameters
+    ----------
+    pset : xarray.Dataset
+        L1C PSET dataset, from a pointing that matched a gain configuration.
+        PSETs whose pointing matched no gain configuration must be skipped
+        before calling this (see get_pset_gain_config_id()).
+    cal_prod_config : CalibrationProductConfig
+        The cal_prod_config accessor of the calibration product configuration.
+
+    Raises
+    ------
+    ValueError
+        If the PSET's calibration products differ from the cal-prod config's,
+        or if the PSET has ESA energy steps the cal-prod config doesn't
+        define.
+    """
+    cal_prods = cal_prod_config.calibration_product_numbers
+    pset_cal_prods = pset["calibration_prod"].values
+    if not np.array_equal(np.sort(pset_cal_prods), cal_prods):
+        raise ValueError(
+            f"PSET calibration_prod values {pset_cal_prods.tolist()} do not "
+            f"match the cal-prod config calibration products "
+            f"{cal_prods.tolist()}."
+        )
+
+    esa_steps = cal_prod_config.esa_energy_steps
+    extra_esa_steps = np.asarray(
+        np.setdiff1d(pset["esa_energy_step"].values, esa_steps)
+    )
+    if extra_esa_steps.size > 0:
+        raise ValueError(
+            f"PSET esa_energy_step values {extra_esa_steps.tolist()} are not "
+            f"defined in the cal-prod config esa_energy_step values "
+            f"{esa_steps.tolist()}."
+        )
+
+
+def add_gain_config_dim(pset: xr.Dataset, gain_config_id: int) -> xr.Dataset:
+    """
+    Label a processed PSET's counts and exposure with its gain_config_id.
+
+    Each (gain_config_id, calibration_prod) pair is treated as a separate
+    calibration product in the map. Giving ena_count and exposure_factor a
+    length-1 gain_config_id dim lets map projection add them into the map
+    slot for this PSET's gain configuration by label. Backgrounds and other
+    exposure-time averaged variables are independent of gain configuration,
+    so they are left unchanged.
+
+    Parameters
+    ----------
+    pset : xarray.Dataset
+        PSET processed by process_single_pset().
+    gain_config_id : int
+        The gain_config_id the PSET's pointing matched.
+
+    Returns
+    -------
+    xarray.Dataset
+        The PSET with ena_count and exposure_factor given a length-1
+        gain_config_id dim, placed after epoch.
+    """
+    pset = pset.copy()
+    for var in ["ena_count", "exposure_factor"]:
+        pset[var] = (
+            pset[var]
+            .expand_dims(gain_config_id=[gain_config_id])
+            .transpose("epoch", "gain_config_id", ..., missing_dims="ignore")
+        )
+    return pset
 
 
 # =============================================================================
@@ -468,15 +667,6 @@ def calculate_ena_intensity(
     """
     # read calibration product configuration file
     cal_prod_df = CalibrationProductConfig.from_csv(l2_ancillary_path_dict["cal-prod"])
-    # L2 does not yet combine PSETs from different gain states into a single
-    # map (see hi_l1c.add_pset_geometric_factor()'s docstring), so use the
-    # first (and, today, only) gain_config_id present in the ancillary file.
-    gain_config_ids = cal_prod_df.index.get_level_values("gain_config_id").unique()
-    if len(gain_config_ids) != 1:
-        raise NotImplementedError(
-            "L2 processing does not yet support multiple gain_config_id values."
-        )
-    cal_prod_df = cal_prod_df.loc[gain_config_ids[0]]
     # reindex_like removes esa_energy_steps and calibration products not in the
     # map_ds esa_energy_step and calibration_product coordinates
     geometric_factor = cal_prod_df.to_xarray().reindex_like(map_ds)["geometric_factor"]
@@ -539,13 +729,19 @@ def combine_calibration_products(
     Combine calibration products using weighted averaging.
 
     Implements the algorithm described in Hi Algorithm Document Section 3.1.2
-    for properly combining data from multiple calibration products.
+    for properly combining data from multiple calibration products. Each
+    (gain_config_id, calibration_prod) pair is a separate calibration product.
+
+    A product contributes to a pixel only where it has non-zero exposure time.
+    A pixel that no pointing of a gain configuration observed has zero
+    exposure for that gain configuration's products.
 
     Parameters
     ----------
     map_ds : xarray.Dataset
         Map dataset that has preliminary intensity variables computed for each
-        calibration product.
+        calibration product. Product variables, including exposure_factor,
+        must have gain_config_id and calibration_prod dims.
     geometric_factors : xarray.DataArray
         Geometric factors for each calibration product and energy step.
     esa_energies : xarray.DataArray
@@ -557,10 +753,11 @@ def combine_calibration_products(
         Map dataset with updated variables: ena_intensity, ena_intensity_stat_uncert,
         bg_intensity_sys_err, ena_count, bg_rate,
         bg_rate_sys_err now combined across calibration products at each
-        energy level.
+        energy level. exposure_factor is summed over gain_config_id to give
+        the total exposure time.
     """
-    ena_flux = map_ds["ena_intensity"]
-    sys_err = map_ds["bg_intensity_sys_err"]
+    product_dims = list(PRODUCT_DIMS)
+    valid = map_ds["exposure_factor"] > 0
 
     # Calculate improved statistical variance estimates using geometric factor
     # ratios to reduce bias from Poisson uncertainty estimation
@@ -568,31 +765,36 @@ def combine_calibration_products(
         map_ds, geometric_factors, esa_energies
     )
 
-    # Perform inverse-variance weighted averaging
-    # Handle divide by zero and invalid values
+    # Perform inverse-variance weighted averaging over valid products. A pixel
+    # with no valid products gets 0 / 0 = NaN.
     with np.errstate(divide="ignore", invalid="ignore"):
-        # Use total variance weights for flux combination
-        flux_weights = 1.0 / improved_stat_variance
-        weighted_flux_sum = (ena_flux * flux_weights).sum(dim="calibration_prod")
-        combined_flux = weighted_flux_sum / flux_weights.sum(dim="calibration_prod")
+        flux_valid = (
+            valid & np.isfinite(map_ds["ena_intensity"]) & (improved_stat_variance > 0)
+        )
+        flux_weights = xr.where(flux_valid, 1.0 / improved_stat_variance, 0.0)
+        weighted_flux_sum = (
+            map_ds["ena_intensity"].where(flux_valid, 0.0) * flux_weights
+        ).sum(dim=product_dims)
+        combined_flux = weighted_flux_sum / flux_weights.sum(dim=product_dims)
 
     map_ds["ena_intensity"] = combined_flux
     # Statistical uncertainty
+    stat_uncert = map_ds["ena_intensity_stat_uncert"].where(valid, np.nan)
     map_ds["ena_intensity_stat_uncert"] = np.sqrt(
-        1
-        / (1 / (map_ds["ena_intensity_stat_uncert"] ** 2)).sum(
-            dim="calibration_prod", skipna=True, min_count=1
-        )
+        1 / (1 / (stat_uncert**2)).sum(dim=product_dims, skipna=True, min_count=1)
     )
+
     # For systematic error, just do quadrature sum over the systematic error for
     # each calibration product.
+    sys_err = map_ds["bg_intensity_sys_err"].where(valid, np.nan)
     map_ds["bg_intensity_sys_err"] = np.sqrt(
-        (sys_err**2).sum(dim="calibration_prod", skipna=True, min_count=1)
+        (sys_err**2).sum(dim=product_dims, skipna=True, min_count=1)
     )
 
     # ena_count is a diagnostic tally of binned direct events, so it is simply
     # summed across calibration products.
-    map_ds["ena_count"] = map_ds["ena_count"].sum(dim="calibration_prod")
+    map_ds["ena_count"] = map_ds["ena_count"].sum(dim=product_dims)
+    map_ds["exposure_factor"] = map_ds["exposure_factor"].sum(dim="gain_config_id")
 
     # bg_rate is combined the same way as ena_intensity_stat_uncert above:
     # inverse-variance weighted using each calibration product's own
@@ -778,6 +980,16 @@ def _calculate_improved_stat_variance(
 
     The key insight is that we can vectorize this by first computing a geometric
     factor normalized signal rate, then scaling it back for each calibration product.
+    For product i with signal rate R_i, exposure time t_i, and geometric
+    factor g_i, the geometric factor normalized signal rate is
+    sum(R_i * t_i) / sum(g_i * t_i). When every product has the same exposure
+    time, as in the Algorithm Document, this reduces to sum(R_i) / sum(g_i).
+    Products from different gain configurations have different exposure times,
+    and a product with zero exposure time in a pixel adds nothing to either sum.
+
+    The intensity variance of product i is then::
+
+        (bg_rate + g_i * sum(R_i * t_i) / sum(g_i * t_i)) / (t_i * (g_i * E)**2)
 
     Parameters
     ----------
@@ -791,9 +1003,12 @@ def _calculate_improved_stat_variance(
     Returns
     -------
     improved_variance : xr.DataArray
-        Improved statistical variance estimates.
+        Improved statistical variance estimates. Where the estimate is not
+        finite and positive, this is ena_intensity_stat_uncert squared instead.
     """
-    n_calib_prods = map_ds["ena_intensity"].sizes.get("calibration_prod", 1)
+    n_calib_prods = int(
+        np.prod([map_ds["ena_intensity"].sizes[dim] for dim in PRODUCT_DIMS])
+    )
 
     if n_calib_prods <= 1:
         # No improvement possible with single calibration product
@@ -802,19 +1017,23 @@ def _calculate_improved_stat_variance(
     logger.debug("Computing geometric factor normalized signal rates")
 
     # signal_rates = ena_count / exposure_factor - bg_rate
-    # signal_rates shape is: (n_epoch, n_energy, n_cal_prod, n_spatial_pixels)
+    # signal_rates shape is:
+    # (n_epoch, n_gain_config, n_energy, n_cal_prod, n_spatial_pixels)
     signal_rates = map_ds["ena_signal_rates"]
+    exposure = map_ds["exposure_factor"]
 
     # Compute geometric factor normalized signal rate (vectorized approach)
     # This represents the weighted average signal rate per unit geometric factor
     # geometric_factor_norm_signal_rates shape is: (n_epoch, n_energy, n_spatial_pixels)
-    geometric_factor_norm_signal_rates = signal_rates.sum(
-        dim="calibration_prod"
-    ) / geometric_factors.sum(dim="calibration_prod")
+    # Signal rates are NaN where the exposure time is zero, and the sum skips them.
+    geometric_factor_norm_signal_rates = (signal_rates * exposure).sum(
+        dim=PRODUCT_DIMS
+    ) / (geometric_factors * exposure).sum(dim=PRODUCT_DIMS)
 
     # For each calibration product, the averaged signal rate estimate is:
     # averaged_signal_rate_i = geometric_factor_norm_signal_rates * geometric_factor_i
-    # averaged_signal_rates shape is: (n_epoch, n_energy, n_cal_prod, n_spatial_pixels)
+    # averaged_signal_rates shape is:
+    # (n_epoch, n_gain_config, n_energy, n_cal_prod, n_spatial_pixels)
     averaged_signal_rates = geometric_factor_norm_signal_rates * geometric_factors
 
     logger.debug("Including background rates in uncertainty calculation")
@@ -826,13 +1045,13 @@ def _calculate_improved_stat_variance(
     # Statistical variance:
     with np.errstate(divide="ignore", invalid="ignore"):
         improved_variance = total_count_rates_for_uncertainty / (
-            map_ds["exposure_factor"] * (geometric_factors * esa_energies)
+            exposure * (geometric_factors * esa_energies) ** 2
         )
 
-    # Handle invalid cases by falling back to original uncertainties
+    # Handle invalid cases by falling back to original variances
     improved_variance = xr.where(
-        ~np.isfinite(improved_variance) | (geometric_factors == 0),
-        map_ds["ena_intensity_stat_uncert"],
+        ~np.isfinite(improved_variance) | (improved_variance <= 0),
+        map_ds["ena_intensity_stat_uncert"] ** 2,
         improved_variance,
     )
 
