@@ -178,7 +178,10 @@ def process_l1a(  # noqa: PLR0912
             # will not all be the same for every science product.
 
             # Assumes that the flag is in effect until the next one.
-            idx = np.searchsorted(flags, dataset.epoch.values, "right") - 1
+            idx = (
+                np.searchsorted(hk_l1a_ds.epoch.values, dataset.epoch.values, "right")
+                - 1
+            )
             dataset["quality_flags"] = xr.DataArray(
                 data=flags[idx],
                 name="quality_flags",
