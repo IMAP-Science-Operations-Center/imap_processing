@@ -41,6 +41,18 @@ impact_charge_base: &impact_charge_base
   VALIDMIN: *int_fillval
   VAR_TYPE: data
 
+rise_time_10_90_base: &rise_time_10_90_base
+  DEPEND_0: epoch
+  DICT_KEY: SPASE>Support>SupportQuantity:Temporal
+  DISPLAY_TYPE: time_series
+  FILLVAL: *double_fillval
+  FORMAT: F20.6
+  UNITS: microseconds
+  VALIDMAX: *int_maxval
+  VALIDMIN: 0.0
+  VAR_TYPE: data
+  VAR_NOTES: Interval between the 10 and 90 percent crossings on the continuous fitted leading edge, measured relative to the fitted baseline and analytic pulse extremum. Uses the pulse magnitude for either polarity. Fill when the fit is unavailable, invalid, or the waveform is saturated.
+
 mass_estimate_base: &mass_estimate_base
   DEPEND_0: epoch
   DICT_KEY: SPASE>Particle>ParticleType:Dust>ParticleQuantity:Mass>Qualifier:Derived
@@ -330,6 +342,12 @@ target_low_impact_charge:
   FIELDNAM: Target Low Impact Charge
   LABLAXIS: TL Impact Charge
 
+target_low_rise_time_10_90:
+  <<: *rise_time_10_90_base
+  CATDESC: Fitted leading-edge 10-90 percent rise time for Target Low.
+  FIELDNAM: Target Low 10-90 Rise Time
+  LABLAXIS: TL 10-90 Rise Time
+
 target_low_dust_mass_estimate:
   <<: *mass_estimate_base
   CATDESC: Estimated dust mass from Target Low signal based on impact charge.
@@ -338,7 +356,7 @@ target_low_dust_mass_estimate:
 
 target_low_velocity_estimate:
   <<: *velocity_estimate_base
-  CATDESC: Estimated particle velocity from Target Low signal based on impact charge.
+  CATDESC: Estimated particle velocity from Target Low fitted 10-90 percent rise time.
   FIELDNAM: Estimated Velocity (Target Low)
   LABLAXIS: TL Velocity Est
 
@@ -372,6 +390,12 @@ target_high_impact_charge:
   FIELDNAM: Target High Impact Charge
   LABLAXIS: TH Impact Charge
 
+target_high_rise_time_10_90:
+  <<: *rise_time_10_90_base
+  CATDESC: Fitted leading-edge 10-90 percent rise time for Target High.
+  FIELDNAM: Target High 10-90 Rise Time
+  LABLAXIS: TH 10-90 Rise Time
+
 target_high_dust_mass_estimate:
   <<: *mass_estimate_base
   CATDESC: Estimated dust mass from Target High signal based on impact charge.
@@ -380,7 +404,7 @@ target_high_dust_mass_estimate:
 
 target_high_velocity_estimate:
   <<: *velocity_estimate_base
-  CATDESC: Estimated particle velocity from Target High signal based on impact charge.
+  CATDESC: Estimated particle velocity from Target High fitted 10-90 percent rise time.
   FIELDNAM: Estimated Velocity (Target High)
   LABLAXIS: TH Velocity Est
 
@@ -413,6 +437,12 @@ ion_grid_impact_charge:
   CATDESC: Charge from the dust impact on Ion Grid (IG) channel derived from the fitted curve.
   FIELDNAM: Ion Grid Impact Charge
   LABLAXIS: IG Impact Charge
+
+ion_grid_rise_time_10_90:
+  <<: *rise_time_10_90_base
+  CATDESC: Fitted leading-edge 10-90 percent rise time for Ion Grid.
+  FIELDNAM: Ion Grid 10-90 Rise Time
+  LABLAXIS: IG 10-90 Rise Time
 
 ion_grid_dust_mass_estimate:
   <<: *mass_estimate_base

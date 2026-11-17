@@ -21,6 +21,7 @@ from imap_processing.idex.idex_l2a import (
     calculate_ion_grid_velocity_and_mass,
     calculate_kappa,
     calculate_mass_from_velocity,
+    calculate_rise_time_10_90,
     calculate_snr,
     calculate_velocity_and_mass,
     chi_square,
@@ -34,7 +35,7 @@ from imap_processing.idex.idex_l2a import (
     sine_fit,
     time_to_mass,
 )
-from imap_processing.idex.idex_utils import calculate_baseline_and_rms
+from imap_processing.idex.idex_utils import calculate_baseline_and_rms, get_idex_attrs
 
 
 @pytest.mark.parametrize(
@@ -51,6 +52,7 @@ from imap_processing.idex.idex_utils import calculate_baseline_and_rms
 def test_l2a_uses_required_l1b_statistics(l1b_dataset, missing_statistic):
     """L2a uses stored statistics and rejects inputs missing required fields."""
     dataset = l1b_dataset.isel(epoch=slice(0, 2)).copy(deep=True)
+    dataset["science_event_flag"][:] = 1
     expected_baselines = {
         channel: dataset[f"{channel.lower()}_baseline"].values.copy()
         for channel in ("Target_Low", "Target_High", "Ion_Grid")
@@ -93,6 +95,10 @@ def test_l2a_uses_required_l1b_statistics(l1b_dataset, missing_statistic):
             "imap_processing.idex.idex_l2a.calculate_baseline_and_rms",
             wraps=calculate_baseline_and_rms,
         ) as calculate,
+        mock.patch(
+            "imap_processing.idex.idex_l2a.invert_rise_time_to_velocity",
+            return_value=10.0,
+        ) as invert,
     ):
         if missing_statistic is not None:
             with pytest.raises(KeyError, match=missing_statistic):
@@ -104,6 +110,21 @@ def test_l2a_uses_required_l1b_statistics(l1b_dataset, missing_statistic):
     if missing_statistic is not None:
         return
     assert fit.call_count == 6
+    # Only the target channels use rise-time inversion; Ion Grid uses charge ratio.
+    assert invert.call_count == 4
+    expected_rise = calculate_rise_time_10_90(np.array([0.0, 0.0, 1.0, 0.371, 37.1]))
+    assert expected_rise != pytest.approx(0.371)
+    for call in invert.call_args_list:
+        assert call.args[0] == pytest.approx(expected_rise)
+    for channel in ("target_low", "target_high"):
+        np.testing.assert_allclose(result[f"{channel}_velocity_estimate"], 10.0)
+        # Yield at 10 km/s is 755.009 C/kg; fitted charge here is 1 pC.
+        np.testing.assert_allclose(
+            result[f"{channel}_dust_mass_estimate"],
+            1e-12 / 755.0090524738858,
+            rtol=1e-12,
+            atol=0,
+        )
     for channel, expected in expected_baselines.items():
         supplied = [
             call.args[5] for call in fit.call_args_list if call.args[3] == channel
@@ -154,6 +175,9 @@ def test_l2a_fits_only_unsaturated_waveforms(saturation):
         },
         coords={"epoch": np.arange(n_events, dtype=np.int64)},
         attrs={"Logical_source": "imap_idex_l1b_sci-10days"},
+    )
+    dataset.epoch.attrs = get_idex_attrs("l1b").get_variable_attributes(
+        "epoch", check_schema=False
     )
     for flag in ALL_FLAG_NAMES:
         dataset[flag] = xr.DataArray(np.zeros(n_events, dtype=np.uint8), dims="epoch")
@@ -222,6 +246,7 @@ def test_l2a_fits_only_unsaturated_waveforms(saturation):
             "fit_parameters",
             "fit_results",
             "impact_charge",
+            "rise_time_10_90",
             "chi_squared",
             "reduced_chi_squared",
             "velocity_estimate",
@@ -241,12 +266,53 @@ def test_l2a_fits_only_unsaturated_waveforms(saturation):
                 np.tile(low_signal, (np.count_nonzero(~saturated), 1)),
                 atol=1e-8,
             )
+            np.testing.assert_allclose(
+                result[f"{prefix}_rise_time_10_90"].values[~saturated],
+                calculate_rise_time_10_90(np.array([0.0, 1.0, 10.0, 0.371, 37.1])),
+                rtol=1e-8,
+            )
     assert fit_calls.count(fit_impact) == expected_low_fits
     assert fit_calls.count(exponnorm.pdf) == np.count_nonzero(
         dataset.tof_high_saturation_flag.values == 0
     )
     np.testing.assert_array_equal(result.epoch, dataset.epoch)
     xr.testing.assert_identical(dataset, original)
+    for event in range(n_events):
+        velocity, mass = calculate_ion_grid_velocity_and_mass(
+            result["ion_grid_impact_charge"].values[event],
+            result["target_high_impact_charge"].values[event],
+            result["target_low_impact_charge"].values[event],
+            dataset["target_high_saturation_flag"].values[event],
+            dataset["target_low_saturation_flag"].values[event],
+            dataset["ion_grid_saturation_flag"].values[event],
+            np.array([0.06, 2.8, 5.9, 4.1, 13.0, 22.7, 8.2, 0.40]),
+        )
+        np.testing.assert_allclose(
+            [
+                result["ion_grid_velocity_estimate"].values[event],
+                result["ion_grid_dust_mass_estimate"].values[event],
+            ],
+            [velocity, mass],
+            equal_nan=True,
+        )
+
+    if saturation == "mixed":
+        result.attrs["Data_version"] = "999"
+        rise_time_fields = [
+            f"{channel}_rise_time_10_90"
+            for channel in ("target_low", "target_high", "ion_grid")
+        ]
+        path = write_cdf(result[rise_time_fields])
+        restored = load_cdf(path)
+        with cdflib.CDF(path) as cdf:
+            for channel in ("target_low", "target_high", "ion_grid"):
+                name = f"{channel}_rise_time_10_90"
+                np.testing.assert_allclose(restored[name], result[name], equal_nan=True)
+                attrs = cdf.varattsget(name)
+                assert attrs["DEPEND_0"] == "epoch"
+                assert attrs["UNITS"] == "microseconds"
+                assert attrs["VALIDMIN"] == 0.0
+                assert attrs["FILLVAL"] == -1e31
 
 
 def test_non_science_derived_estimates_are_nan() -> None:
@@ -261,19 +327,29 @@ def test_non_science_derived_estimates_are_nan() -> None:
         coords={"epoch": [0, 1]},
     )
     dataset["science_event_flag"] = xr.DataArray([1, 0], dims="epoch")
+    for channel in ("target_low", "target_high", "ion_grid"):
+        dataset[f"{channel}_rise_time_10_90"] = xr.DataArray([1.0, 2.0], dims="epoch")
 
     _mask_non_science_derived_estimates(dataset)
 
     for estimate in estimates:
         np.testing.assert_array_equal(dataset[estimate].values, [1.0, np.nan])
+    # Diagnostic rise times remain available for fitted non-science events.
+    for channel in ("target_low", "target_high", "ion_grid"):
+        np.testing.assert_array_equal(dataset[f"{channel}_rise_time_10_90"], [1.0, 2.0])
 
 
 def test_saturated_waveform_derived_values_are_nan() -> None:
-    """Saturation masks fitted charge, velocity, and mass estimates."""
+    """Saturation masks fitted charge, rise time, velocity, and mass estimates."""
     data = {
         f"{waveform}_{estimate}": xr.DataArray([1.0, 2.0], dims="epoch")
         for waveform in ("target_low", "target_high", "ion_grid")
-        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate")
+        for estimate in (
+            "impact_charge",
+            "rise_time_10_90",
+            "velocity_estimate",
+            "dust_mass_estimate",
+        )
     }
     dataset = xr.Dataset(data, coords={"epoch": [0, 1]})
     for waveform in ("target_low", "target_high", "ion_grid"):
@@ -282,7 +358,12 @@ def test_saturated_waveform_derived_values_are_nan() -> None:
     _mask_saturated_derived_estimates(dataset)
 
     for waveform in ("target_low", "target_high", "ion_grid"):
-        for estimate in ("impact_charge", "velocity_estimate", "dust_mass_estimate"):
+        for estimate in (
+            "impact_charge",
+            "rise_time_10_90",
+            "velocity_estimate",
+            "dust_mass_estimate",
+        ):
             np.testing.assert_array_equal(
                 dataset[f"{waveform}_{estimate}"].values, [1.0, np.nan]
             )
@@ -293,6 +374,7 @@ def test_saturated_derived_values_require_all_saturation_flags() -> None:
     dataset = xr.Dataset(
         {
             "target_low_impact_charge": xr.DataArray([1.0], dims="epoch"),
+            "target_low_rise_time_10_90": xr.DataArray([1.0], dims="epoch"),
             "target_low_velocity_estimate": xr.DataArray([1.0], dims="epoch"),
             "target_low_dust_mass_estimate": xr.DataArray([1.0], dims="epoch"),
             "target_low_saturation_flag": xr.DataArray([0], dims="epoch"),

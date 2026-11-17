@@ -222,7 +222,15 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             output_dtypes=[np.float64] * 6,
             keep_attrs=True,
         )
-        # Calculate mass and velocity estimates
+        rise_time_10_90 = xr.apply_ufunc(
+            calculate_rise_time_10_90,
+            fit_results[0],
+            input_core_dims=[["target_fit_parameter_index"]],
+            output_core_dims=[[]],
+            vectorize=True,
+            output_dtypes=[np.float64],
+        )
+        # Targets use the fitted 10-90% interval; Ion Grid retains charge ratios.
         if waveform == "Ion_Grid":
             velocity_mass_results = xr.apply_ufunc(
                 calculate_ion_grid_velocity_and_mass,
@@ -242,7 +250,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
             velocity_mass_results = xr.apply_ufunc(
                 calculate_velocity_and_mass,
                 fit_results[1],  # signal amplitude
-                fit_results[0].data[:, 3],  # fit params
+                rise_time_10_90,
                 output_core_dims=[[], []],
                 vectorize=True,
                 output_dtypes=[np.float64, np.float64],
@@ -254,6 +262,7 @@ def idex_l2a(l1b_dataset: xr.Dataset, ancillary_files: dict) -> xr.Dataset:
         output_vars = {
             f"{waveform_name}_fit_parameters": fit_results[0],
             f"{waveform_name}_impact_charge": fit_results[1],
+            f"{waveform_name}_rise_time_10_90": rise_time_10_90,
             f"{waveform_name}_velocity_estimate": velocity_mass_results[0],
             f"{waveform_name}_dust_mass_estimate": velocity_mass_results[1],
             # Same as impact_charge for now
@@ -400,9 +409,9 @@ def _mask_non_science_derived_estimates(l2a_dataset: xr.Dataset) -> None:
 def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
     """Mask fitted charges and derived estimates for saturated waveforms.
 
-    Saturated waveforms are skipped during fitting. Impact charge, velocity,
-    and mass estimates are not scientifically valid when their source waveform
-    is saturated.
+    Saturated waveforms are skipped during fitting. Impact charge, 10-90% rise
+    time, velocity, and mass estimates are not scientifically valid when their
+    source waveform is saturated.
 
     Parameters
     ----------
@@ -418,10 +427,61 @@ def _mask_saturated_derived_estimates(l2a_dataset: xr.Dataset) -> None:
         invalid = l2a_dataset[saturation_flag] == 1
         for estimate_name in (
             f"{waveform_name}_impact_charge",
+            f"{waveform_name}_rise_time_10_90",
             f"{waveform_name}_velocity_estimate",
             f"{waveform_name}_dust_mass_estimate",
         ):
             l2a_dataset[estimate_name] = l2a_dataset[estimate_name].where(~invalid)
+
+
+def calculate_rise_time_10_90(fit_parameters: NDArray) -> float:
+    """Calculate the fitted leading-edge 10-90 percent rise time.
+
+    The thresholds are fractions of the pulse excursion from its fitted baseline
+    to its analytic extremum. Normalizing the pulse removes its offset, amplitude,
+    and polarity, so negative Ion Grid pulses use the same definition. Crossings
+    are solved on the continuous leading edge, not on the waveform sample grid.
+
+    Parameters
+    ----------
+    fit_parameters : numpy.ndarray
+        Parameters [time_of_impact, constant_offset, amplitude, rise_time,
+        discharge_time]. Times are in microseconds and charges are in pC.
+
+    Returns
+    -------
+    float
+        Time from the 10 percent crossing to the 90 percent crossing, in
+        microseconds. NaN for an unavailable, flat, or invalid fit.
+    """
+    if (
+        not np.all(np.isfinite(fit_parameters))
+        or fit_parameters[2] == 0
+        or np.any(fit_parameters[3:] <= 0)
+    ):
+        return np.nan
+
+    rise, decay = fit_parameters[3:]
+    peak_delay = rise * np.log1p(decay / rise)
+    peak_rise = -np.expm1(-peak_delay / rise)
+
+    # Solve in units of peak_delay to keep tolerances independent of units
+    # and avoid subtracting nearly equal absolute crossing times.
+    t10, t90 = (
+        root_scalar(
+            lambda fraction, level: (
+                -np.expm1(-fraction * peak_delay / rise)
+                / peak_rise
+                * np.exp((1 - fraction) * peak_delay / decay)
+                - level
+            ),
+            args=(level,),
+            bracket=[0.0, 1.0],
+            method="brentq",
+        ).root
+        for level in (0.1, 0.9)
+    )
+    return float((t90 - t10) * peak_delay)
 
 
 def calculate_velocity_and_mass(
@@ -440,7 +500,7 @@ def calculate_velocity_and_mass(
     sig_amp : float
         Signal amplitude (pC).
     t_rise : float
-        T_rise fit parameter from the target fit (us).
+        Leading-edge 10-90 percent rise time from the target fit (us).
     t_rise_params : np.ndarray
         Calibration parameters for rise time (us).
     yield_params : np.ndarray
@@ -569,7 +629,7 @@ def invert_rise_time_to_velocity(t_rise: float, t_rise_params: np.ndarray) -> fl
     Parameters
     ----------
     t_rise : float
-        Fitted target rise time in microseconds.
+        Fitted target 10-90 percent rise time in microseconds.
     t_rise_params : np.ndarray
         Calibration parameters for the forward rise-time curve
         [A, a1, a2, a3, vb, vc, k, m].
