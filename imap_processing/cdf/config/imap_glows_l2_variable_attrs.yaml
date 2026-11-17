@@ -11,6 +11,7 @@ epoch:
 
 epoch_delta:
   CATDESC: Half-width of the observational day, from start_time to epoch (and epoch to end_time)
+  VALIDMAX: 129600000000000 # 3 days * 86400 s * 1e9 ns / 2
 
 bins_label:
   CATDESC: Label names for histogram bin numbers
