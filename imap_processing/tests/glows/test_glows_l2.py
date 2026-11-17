@@ -174,6 +174,7 @@ def test_generate_l2(
         cdf_attrs.add_instrument_variable_attrs("glows", "l2")
         output = create_l2_dataset(l2, cdf_attrs, l1b_hist_dataset.attrs)
         assert output["epoch"].data[0] == (l2.start_time + l2.end_time) / 2
+        assert output["epoch_delta"].data[0] == (l2.end_time - l2.start_time) // 2
         for var in ["photon_flux", "ecliptic_lon"]:
             assert np.issubdtype(output[var].dtype, np.floating)
 
@@ -234,6 +235,7 @@ def test_glows_l2_cdf_metadata(
         photon_flux_attrs = cdf_file.varattsget("photon_flux")
         start_time_attrs = cdf_file.varattsget("start_time")
         end_time_attrs = cdf_file.varattsget("end_time")
+        epoch_attrs = cdf_file.varattsget("epoch")
         global_attrs = cdf_file.globalattsget()
 
         assert bins_label_info.Data_Type_Description == "CDF_CHAR"
@@ -272,6 +274,9 @@ def test_glows_l2_cdf_metadata(
             assert time_attrs["TIME_SCALE"] == "Terrestrial Time"
             assert time_attrs["REFERENCE_POSITION"] == "Rotating Earth Geoid"
             assert time_attrs["RESOLUTION"] == "ISO8601"
+
+        assert epoch_attrs["DELTA_MINUS_VAR"] == "epoch_delta"
+        assert epoch_attrs["DELTA_PLUS_VAR"] == "epoch_delta"
 
         assert global_attrs["flight_software_version"] == ["131329"]
         assert (
