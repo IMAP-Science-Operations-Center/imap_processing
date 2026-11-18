@@ -274,8 +274,9 @@ def process_swapi_ialirt(
         raw_coin_count = process_sweep_data(grouped_subset, "swapi_coin_cnt")
         # I-ALiRT packets have counts compressed by a factor of 16.
         # Add 8 to avoid having counts truncated to 0 and to avoid
-        # counts being systematically too low
-        raw_coin_count = raw_coin_count * 16 + 8
+        # counts being systematically too low. Cast to float first so counts
+        # above 4095 don't overflow the packet's uint16 type.
+        raw_coin_count = raw_coin_count.astype(np.float64) * 16 + 8
         # Subset to only the relevant I-ALiRT energy steps
         raw_coin_count = raw_coin_count[:, :NUM_IALIRT_ENERGY_STEPS]
         raw_coin_rate = raw_coin_count / SWAPI_LIVETIME
