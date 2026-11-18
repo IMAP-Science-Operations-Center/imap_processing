@@ -163,46 +163,16 @@ def process_l1a(  # noqa: PLR0912
             l1b_ds.attrs.update(cdf_attrs.get_global_attributes("imap_codice_l1b_hskp"))
             datasets.append(l1b_ds)
 
-    cdf_attrs = ImapCdfAttributes()
-    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    # Add quality flags to each science dataset.
     if hk_l1a_ds is not None:
-        # Get quality flags for each science epoch.
         flags = calculate_quality_flags(hk_l1a_ds.macro_status.values)
-        for dataset in datasets:
-            # Don't add quality flags to hskp products
-            if "hskp" in dataset.attrs["Logical_source"]:
-                continue
-
-            # Get the quality flags for this dataset. We must
-            # Do this for each dataset because the epochs
-            # will not all be the same for every science product.
-
-            # Assumes that the flag is in effect until the next one.
-            idx = (
-                np.searchsorted(hk_l1a_ds.epoch.values, dataset.epoch.values, "right")
-                - 1
-            )
-            dataset["quality_flags"] = xr.DataArray(
-                data=flags[idx],
-                name="quality_flags",
-                dims="epoch",
-                attrs=cdf_attrs.get_variable_attributes("quality_flags"),
-            )
     else:
+        flags = None
         logger.warning(
             "No L1A housekeeping data. Unable to calculate quality flags"
             " for science datasets."
         )
-        for dataset in datasets:
-            dataset["quality_flags"] = xr.DataArray(
-                data=np.full(
-                    len(dataset.epoch), ImapCodiceL1aFlags.NONE, dtype=np.uint8
-                ),
-                name="quality_flags",
-                dims="epoch",
-                attrs=cdf_attrs.get_variable_attributes("quality_flags"),
-            )
-
+    add_quality_flags_to_science_datasets(flags, hk_l1a_ds.epoch.values, datasets)
     return datasets
 
 
@@ -243,3 +213,69 @@ def calculate_quality_flags(macro_status: np.ndarray) -> np.ndarray:
     )
 
     return flags
+
+
+def add_quality_flags_to_science_datasets(
+    hk_quality_flags: np.ndarray | None,
+    hk_epochs: np.ndarray,
+    datasets: list[xr.Dataset],
+) -> None:
+    """
+    Add quality flags to science datasets.
+
+    Each science epoch's flag is the bitwise OR of the flags of all housekeeping
+    records that fall within that epoch's collection period.
+
+    Parameters
+    ----------
+    hk_quality_flags : numpy.ndarray or None
+        Housekeeping quality flags (uint8), one per housekeeping record. If None,
+        every science epoch is assigned the NONE flag.
+    hk_epochs : numpy.ndarray
+        Housekeeping epochs (TT-J2000 ns), one per housekeeping record.
+    datasets : list[xarray.Dataset]
+        Science datasets to update in place with a ``quality_flags`` variable.
+    """
+    cdf_attrs = ImapCdfAttributes()
+    cdf_attrs.add_instrument_variable_attrs("codice", "l1a")
+    for dataset in datasets:
+        # Start with no flags set.
+        default_qf: np.ndarray = np.full(
+            len(dataset.epoch), ImapCodiceL1aFlags.NONE, dtype=np.uint8
+        )
+        if hk_quality_flags is None:
+            sci_quality_flags = default_qf
+        else:
+            # Housekeeping products don't get quality flags.
+            if "hskp" in dataset.attrs["Logical_source"]:
+                continue
+            # HK is sent at 1 Hz and science epochs are ~4 minutes (240 s) apart.
+            # A science epoch is flagged if *any* HK record in its collection
+            # period is flagged. For science epochs at 240, 480, and 720 s, HK
+            # records from 240-479 s map to the epoch at 240s, etc.
+            sci_epochs = dataset.epoch.values
+            # Close the last collection period by appending a boundary 240 s
+            # (in ns) after the last science epoch. HK records past this
+            # boundary don't map to any science epoch.
+            sci_epochs = np.append(sci_epochs, sci_epochs[-1] + 240 * 1e9)
+            # Index of the science epoch that each HK record falls under.
+            hk_to_sci_inds = (
+                np.asarray(np.searchsorted(sci_epochs, hk_epochs, side="right")) - 1
+            )
+            # Drop HK records that fall outside every collection period.
+            valid = (hk_to_sci_inds >= 0) & (hk_to_sci_inds < len(sci_epochs) - 1)
+            # Each science flag is the bitwise OR of the flags of its HK records.
+            # Example with science epochs at 240, 480, and 720 s:
+            #   HK epochs:       230, 240, 300, 500, 800, 1000
+            #   HK flags:          1,   0,   1,   0,   0,    1
+            #   hk_to_sci_inds:   -1,   0,   0,   1,   2,    3  (-1 and 3 dropped)
+            #   Science flags:   [1, 0, 0]
+            np.bitwise_or.at(default_qf, hk_to_sci_inds[valid], hk_quality_flags[valid])
+            sci_quality_flags = default_qf
+
+        dataset["quality_flags"] = xr.DataArray(
+            data=sci_quality_flags,
+            name="quality_flags",
+            dims="epoch",
+            attrs=cdf_attrs.get_variable_attributes("quality_flags"),
+        )

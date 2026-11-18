@@ -14,11 +14,16 @@ from unittest.mock import patch
 import cdflib
 import numpy as np
 import pytest
+import xarray as xr
 from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice.codice_l1a import calculate_quality_flags, process_l1a
+from imap_processing.codice.codice_l1a import (
+    add_quality_flags_to_science_datasets,
+    calculate_quality_flags,
+    process_l1a,
+)
 from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.utils import CODICEAPID
 from imap_processing.quality_flags import ImapCodiceL1aFlags
@@ -808,3 +813,58 @@ def test_calculate_quality_flags(mock_get_file_paths, codice_lut_path):
             np.uint16,
         ),
     )
+
+
+def test_add_quality_flags_to_science_datasets():
+    """Test adding quality flags to science datasets."""
+    # Create mock epochs where the sci time is coarser than the hk time.
+    epoch = np.arange(10, 30, step=5)
+    hk_epoch = np.arange(40)  # The hk is expected to have a wider time range.
+    # Create mock list of datasets
+    datasets = [
+        xr.Dataset({"epoch": epoch}, attrs={"Logical_source": "hskp"}),
+        xr.Dataset({"epoch": epoch}, attrs={"Logical_source": "sci"}),
+        xr.Dataset({"epoch": np.append(epoch, 50)}, attrs={"Logical_source": "sci"}),
+    ]
+    hk_quality_flags = np.full(
+        hk_epoch.shape, ImapCodiceL1aFlags.GAIN_TEST.value, np.uint8
+    )
+    # Test adding quality flags to the science datasets
+    add_quality_flags_to_science_datasets(hk_quality_flags, hk_epoch, datasets)
+
+    # check that hk datasets do NOT have quality flags
+    assert "quality_flags" not in datasets[0]
+    assert "quality_flags" in datasets[1]
+    assert "quality_flags" in datasets[2]
+
+    expected_sci_qf = np.full(len(epoch), ImapCodiceL1aFlags.GAIN_TEST.value, np.uint16)
+    np.testing.assert_array_equal(expected_sci_qf, datasets[1].quality_flags.values)
+
+    # Since the last epoch value for the final array is 50 and out of range of
+    # the hk data, the quality flag should be 0.
+    expected_sci_qf2 = np.append(expected_sci_qf, 0)
+    np.testing.assert_array_equal(expected_sci_qf2, datasets[2].quality_flags.values)
+
+
+def test_add_quality_flags_to_science_datasets_flag_logic():
+    """Test the flag logic when adding quality flags to science datasets."""
+    # Create mock epochs where the sci time is coarser than the hk time.
+    epoch = np.array([240, 480, 720]) * 1e9
+    hk_epoch = np.array([230, 240, 241, 480, 721, 1000]) * 1e9
+    quality_flags = np.array([1, 0, 1, 0, 0, 1])
+    expected_flags = np.array([1, 0, 0])
+    # Create mock list of datasets
+    datasets = [xr.Dataset({"epoch": epoch}, attrs={"Logical_source": "sci"})]
+    # Test case #1: Quality flags provided, some epochs map and some do not
+    add_quality_flags_to_science_datasets(quality_flags, hk_epoch, datasets)
+    np.testing.assert_array_equal(expected_flags, datasets[0].quality_flags.values)
+
+    # Test case #2: No quality flags provided (hk_quality_flags is None)
+    add_quality_flags_to_science_datasets(None, hk_epoch, datasets)
+    expected_flags_null = np.full(epoch.shape, ImapCodiceL1aFlags.NONE.value, np.uint16)
+    np.testing.assert_array_equal(expected_flags_null, datasets[0].quality_flags.values)
+
+    # Test case #3: No epoch times fall within the hk range.
+    hk_epoch += 1000 * 1e9  # Shift hk epoch values out of range
+    add_quality_flags_to_science_datasets(quality_flags, hk_epoch, datasets)
+    np.testing.assert_array_equal(expected_flags_null, datasets[0].quality_flags.values)
