@@ -13,6 +13,7 @@ from imap_processing.ialirt.l0.process_swapi import (
     optimize_pseudo_parameters,
     process_swapi_ialirt,
 )
+from imap_processing.swapi.l2.swapi_l2 import SWAPI_LIVETIME
 from imap_processing.swapi.swapi_utils import read_swapi_lut_table
 from imap_processing.utils import packet_file_to_datasets
 
@@ -168,6 +169,35 @@ def test_process_swapi_ialirt(
     assert swapi_result[0]["swapi_pseudo_proton_speed"] is None
     assert swapi_result[0]["swapi_pseudo_proton_density"] is None
     assert swapi_result[0]["swapi_pseudo_proton_temperature"] is None
+
+
+@pytest.mark.external_test_data
+@mock.patch("imap_processing.ialirt.l0.process_swapi.optimize_pseudo_parameters")
+@mock.patch("imap_processing.ialirt.l0.process_swapi.process_sweep_data")
+def test_process_swapi_ialirt_large_counts(
+    mock_process_sweep_data,
+    mock_optimize,
+    xarray_data,
+    sc_xarray_data,
+    esa_unit_conversion_table,
+):
+    """Test that uint16 counts above 4095 don't overflow when decompressed."""
+    mock_process_sweep_data.return_value = np.full((1, 72), 4370, dtype=np.uint16)
+    mock_optimize.return_value = np.array([400.0, 5.0, 60000.0])
+
+    xarray_data = xarray_data.assign(sc_sclk_sec=sc_xarray_data["sc_sclk_sec"])
+    xarray_data["sc_sclk_sec"].data = sc_xarray_data["sc_sclk_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
+    xarray_data = xarray_data.assign(sc_sclk_sub_sec=sc_xarray_data["sc_sclk_sub_sec"])
+    xarray_data["sc_sclk_sub_sec"].data = sc_xarray_data["sc_sclk_sub_sec"][
+        0 : xarray_data["swapi_flag"].shape[0]
+    ].data
+
+    process_swapi_ialirt(xarray_data, esa_unit_conversion_table)
+
+    count_rates = mock_optimize.call_args[0][0]
+    np.testing.assert_allclose(count_rates, (4370 * 16 + 8) / SWAPI_LIVETIME)
 
 
 def test_count_rate():
