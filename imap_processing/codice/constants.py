@@ -803,7 +803,6 @@ LOSSY_B_TABLE = {
 # ------L1B Constants------
 HI_ACQUISITION_TIME = 0.59916
 
-# TODO: in the future, read from sci-lut
 LO_SW_ANGULAR_VARIABLE_NAMES = ["hplus", "heplusplus", "oplus6", "fe_loq", "heplus"]
 LO_NSW_ANGULAR_VARIABLE_NAMES = ["heplusplus", "heplus"]
 LO_SW_PRIORITY_VARIABLE_NAMES = [
@@ -824,7 +823,6 @@ LO_SW_SPECIES_VARIABLE_NAMES = [
     "oplus6",
     "oplus7",
     "oplus8",
-    "ne",
     "mg",
     "si",
     "fe_loq",
@@ -910,7 +908,6 @@ LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES = [
     "oplus6",
     "oplus7",
     "oplus8",
-    "ne",
     "mg",
     "si",
     "fe_hiq",

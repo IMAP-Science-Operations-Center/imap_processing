@@ -163,6 +163,10 @@ position 1, so use the geometric factor for **one** sector:
 Species: H+, He++, O5+, O6+, O7+, O8+, C4+, C5+, C6+, Ne, Mg, Si, Fe(low Q),
 Fe(high Q).
 
+**[CODE]** ``LO_SW_SOLAR_WIND_SPECIES_VARIABLE_NAMES`` omits Ne, so the code
+produces 13 solar-wind species. See
+:ref:`codice-implementation-status`.
+
 **Sunward pickup ions** - isotropic over the sunward range, which is **5**
 azimuthal bins:
 

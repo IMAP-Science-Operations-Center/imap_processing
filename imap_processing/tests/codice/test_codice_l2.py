@@ -479,6 +479,9 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
     l2_val_data = load_cdf(l2_val_data)
 
     for variable in l2_val_data.data_vars:
+        # Ne is no longer being processed.
+        if variable in ["ne", "unc_ne"]:
+            continue
         np.testing.assert_allclose(
             processed_2_ds[variable].values,
             l2_val_data[variable].values,
@@ -517,9 +520,6 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         assert "DEPEND_1" not in energy_per_charge_attrs
 
 
-@pytest.mark.xfail(
-    reason="SPDF ISTP validation API is down. Remove this xfail marker when fixed."
-)
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [
@@ -618,9 +618,6 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     load_cdf(file)
 
 
-@pytest.mark.xfail(
-    reason="SPDF ISTP validation API is down. Remove this xfail marker when fixed."
-)
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
 def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     mock_get_file_paths.side_effect = [

@@ -104,6 +104,9 @@ imap_codice_l1a_lo-sw-species:
     Data_type: L1A_lo-sw-species>Level-1A Lo Sunward Species Counts Data
     Logical_source: imap_codice_l1a_lo-sw-species
     Logical_source_description: IMAP Mission CoDICE Lo Level-1A Sunward Species Counts Data
+    MODS:
+      - >-
+        Major version 2, Nov. 18, 2026 - Remove species data for "ne" and "unc_ne".
 
 imap_codice_l1a_lo-nsw-species:
     <<: *instrument_base
@@ -208,6 +211,9 @@ imap_codice_l1b_lo-sw-species:
     Data_type: L1B_lo-sw-species>Level-1B Lo Sunward Species Rates Data
     Logical_source: imap_codice_l1b_lo-sw-species
     Logical_source_description: IMAP Mission CoDICE Lo Level-1B Sunward Species Rates Data
+    MODS:
+      - >-
+        Major version 2, Nov. 18, 2026 - Remove species data for "ne" and "unc_ne".
 
 imap_codice_l1b_lo-nsw-species:
     <<: *instrument_base
@@ -240,6 +246,9 @@ imap_codice_l2_lo-sw-species:
   Data_type: L2_lo-sw-species>Level-2 Lo Sunward Species Intensities Data
   Logical_source: imap_codice_l2_lo-sw-species
   Logical_source_description: IMAP Mission CoDICE Lo Level-2 Sunward Species Intensity Data
+  MODS:
+    - >-
+      Major version 2, Nov. 18, 2026 - Remove species data for "ne" and "unc_ne".
 
 imap_codice_l2_lo-nsw-species:
   <<: *instrument_base

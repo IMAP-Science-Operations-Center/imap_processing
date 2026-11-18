@@ -77,23 +77,16 @@ def l1a_lo_species(
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["species"][
             "sw"
         ]["species_names"]
-        desired_species_names = set(
-            sci_lut_data["data_product_lo_tab"]["0"]["species"]["sw"][
-                "desired_species_names"
-            ]
-            + LO_SW_SPECIES_VARIABLE_NAMES
-        )
+        # The "desired_species" from the sci lut is no longer used.
+        # All codice lo sw CDFs should contain all the species in
+        # LO_SW_SPECIES_VARIABLE_NAMES regardless of what sci lut is used.
+        desired_species_names = LO_SW_SPECIES_VARIABLE_NAMES
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     elif view_tab_obj.apid == CODICEAPID.COD_LO_IAL:
         actual_species_names = sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
             "species_names"
         ]
-        desired_species_names = set(
-            sci_lut_data["data_product_lo_tab"]["0"]["ialirt"]["sw"][
-                "desired_species_names"
-            ]
-            + LO_IALIRT_VARIABLE_NAMES
-        )
+        desired_species_names = LO_IALIRT_VARIABLE_NAMES
         # Note: ialirt does not produce a cdf for l1a so this is arbitrary.
         logical_source_id = "imap_codice_l1a_lo-sw-species"
     else:
