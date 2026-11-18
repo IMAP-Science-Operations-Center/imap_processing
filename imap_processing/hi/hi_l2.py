@@ -251,11 +251,20 @@ def create_sky_map_from_psets(
             f"gain_config_id in the cal-prod config: "
             f"{[str(path) for path in unmatched_psets]}"
         )
+    if len(unmatched_psets) == len(psets):
+        raise ValueError(
+            "No PSETs could be projected into the map: every PSET's pointing "
+            "matched no gain_config_id in the cal-prod config."
+        )
 
     for map in rect_maps.values():
-        map.data_1d = finish_exposure_time_averages(
-            map.data_1d, vars_to_exposure_time_average
-        )
+        # Finish the exposure time weighted averages using the total exposure
+        # time summed over gain configurations. Pixels with zero exposure time
+        # become NaN.
+        total_exposure = map.data_1d["exposure_factor"].sum(dim="gain_config_id")
+        with np.errstate(divide="ignore", invalid="ignore"):
+            for var in vars_to_exposure_time_average:
+                map.data_1d[var] = map.data_1d[var] / total_exposure
 
         # Add ESA energy data to the map dataset for use in rate/intensity calculations
         energy_delta = esa_ds["bandpass_fwhm"] / 2
@@ -340,35 +349,6 @@ def process_single_pset(
     pset_processed = add_gain_config_dim(pset_processed, gain_config_id)
 
     return pset_processed
-
-
-def finish_exposure_time_averages(
-    map_ds: xr.Dataset, vars_to_exposure_time_average: set[str]
-) -> xr.Dataset:
-    """
-    Divide exposure-time weighted map sums by the total exposure time.
-
-    The total exposure time is exposure_factor summed over gain
-    configurations. Pixels with zero exposure time become NaN.
-
-    Parameters
-    ----------
-    map_ds : xarray.Dataset
-        Map dataset with all PSETs projected. Must contain exposure_factor
-        with a gain_config_id dim.
-    vars_to_exposure_time_average : set of str
-        Variables that were multiplied by exposure time before projection.
-
-    Returns
-    -------
-    xarray.Dataset
-        Map dataset with exposure-time averaged variables.
-    """
-    total_exposure = map_ds["exposure_factor"].sum(dim="gain_config_id")
-    with np.errstate(divide="ignore", invalid="ignore"):
-        for var in vars_to_exposure_time_average:
-            map_ds[var] = map_ds[var] / total_exposure
-    return map_ds
 
 
 def get_pset_gain_config_id(
@@ -784,11 +764,19 @@ def combine_calibration_products(
         1 / (1 / (stat_uncert**2)).sum(dim=product_dims, skipna=True, min_count=1)
     )
 
-    # For systematic error, just do quadrature sum over the systematic error for
-    # each calibration product.
+    # The background systematic error is independent of gain configuration, so
+    # combine it over gain configurations the same way PSET backgrounds are
+    # projected into the map: an exposure time weighted average. Then do a
+    # quadrature sum over the calibration products.
     sys_err = map_ds["bg_intensity_sys_err"].where(valid, np.nan)
+    exposure = map_ds["exposure_factor"]
+    sys_err_exposure = exposure.where(sys_err.notnull(), 0.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        sys_err_by_cal_prod = (sys_err * exposure).sum(
+            dim="gain_config_id", skipna=True, min_count=1
+        ) / sys_err_exposure.sum(dim="gain_config_id")
     map_ds["bg_intensity_sys_err"] = np.sqrt(
-        (sys_err**2).sum(dim=product_dims, skipna=True, min_count=1)
+        (sys_err_by_cal_prod**2).sum(dim="calibration_prod", skipna=True, min_count=1)
     )
 
     # ena_count is a diagnostic tally of binned direct events, so it is simply

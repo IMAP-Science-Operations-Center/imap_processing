@@ -1837,6 +1837,7 @@ class TestMarkOverflowPackets:
         # ABC1C2 = 15, ABC1 = 14, AB = 12
         data = {
             "coincidence_type_list": [("ABC1C2", "ABC1"), ("AB",)],
+            "geometric_factor": [0.00055, 0.00055],
             "tof_ab_low": [0, 0],
             "tof_ab_high": [100, 100],
             "tof_ac1_low": [0, 0],

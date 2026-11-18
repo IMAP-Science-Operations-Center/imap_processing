@@ -578,12 +578,12 @@ def test_combine_calibration_products(sample_map_dataset):
         assert "calibration_prod" not in result_ds[var_name].dims
         assert "gain_config_id" not in result_ds[var_name].dims
         # Check that other dimensions are preserved
-        expected_dims = {
+        expected_dims = [
             d
             for d in test_ds["ena_intensity"].dims
             if d not in ("calibration_prod", "gain_config_id")
-        }
-        assert set(result_ds[var_name].dims) == expected_dims
+        ]
+        assert list(result_ds[var_name].dims) == expected_dims
 
     # Check that combined flux is finite where input data is valid
     combined_flux = result_ds["ena_intensity"]
@@ -604,7 +604,9 @@ def test_combine_calibration_products(sample_map_dataset):
     )
     combined_sys_err = result_ds["bg_intensity_sys_err"]
 
-    xr.testing.assert_allclose(combined_sys_err, expected_sys_err)
+    np.testing.assert_array_almost_equal(
+        combined_sys_err.values, expected_sys_err.values, decimal=10
+    )
 
 
 def test_calculate_improved_variance(sample_map_dataset):
@@ -2417,6 +2419,52 @@ def test_create_sky_map_logs_unmatched_psets(
         make_synthetic_map([psets[0]], anc)
     assert "Projected 1 of 1 PSETs into the map." in caplog.text
     assert not [r for r in caplog.records if r.levelname == "WARNING"]
+
+
+def test_create_sky_map_raises_when_all_psets_unmatched(
+    two_gain_config_anc_path_dict, make_synthetic_map
+):
+    """A map whose PSETs all matched no gain config raises a clear error."""
+    anc = two_gain_config_anc_path_dict
+    psets = [make_synthetic_pset(np.nan, [255], anc) for _ in range(2)]
+    with pytest.raises(ValueError, match="No PSETs could be projected"):
+        make_synthetic_map(psets, anc)
+
+
+def test_bg_intensity_sys_err_exposure_weighted_over_gain_configs():
+    """bg_intensity_sys_err is an exposure-weighted average over gain configs,
+    then a quadrature sum over calibration products."""
+    dims = ["gain_config_id", "calibration_prod", "pixel"]
+    coords = {"gain_config_id": [0, 1], "calibration_prod": [0, 1], "pixel": [0, 1]}
+    # Pixel 0: both gain configs observed. Pixel 1: only gc0 observed.
+    exposure = xr.DataArray([[2.0, 2.0], [1.0, 0.0]], dims=["gain_config_id", "pixel"])
+    ones = xr.DataArray(np.ones((2, 2, 2)), dims=dims, coords=coords)
+    # gc0 products have sys err 1, gc1 products have sys err 4
+    sys_err = ones * xr.DataArray([1.0, 4.0], dims=["gain_config_id"])
+    map_ds = xr.Dataset(
+        {
+            "ena_intensity": ones,
+            "ena_intensity_stat_uncert": ones,
+            "ena_signal_rates": ones,
+            "ena_count": ones,
+            "bg_intensity_sys_err": sys_err,
+            "bg_rate": xr.DataArray([1.0, 1.0], dims=["calibration_prod"]),
+            "bg_rate_sys_err": xr.DataArray([0.1, 0.1], dims=["calibration_prod"]),
+            "exposure_factor": exposure,
+        },
+        coords=coords,
+    )
+    gf = xr.DataArray(
+        [[1.0, 1.0], [2.5, 2.5]], dims=["gain_config_id", "calibration_prod"]
+    )
+
+    result = combine_calibration_products(map_ds, gf, xr.DataArray(1.0))
+
+    # Pixel 0: each cal prod gets (2 * 1 + 1 * 4) / 3 = 2, so sqrt(2**2 + 2**2).
+    # Pixel 1: gc1 has zero exposure, so each cal prod gets gc0's 1: sqrt(2).
+    np.testing.assert_allclose(
+        result["bg_intensity_sys_err"].values, [np.sqrt(8), np.sqrt(2)]
+    )
 
 
 def test_improved_variance_two_gain_configs():
