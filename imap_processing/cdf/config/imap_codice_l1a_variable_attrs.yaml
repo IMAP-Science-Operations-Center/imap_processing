@@ -227,9 +227,7 @@ quality_flags:
     VALIDMIN: 0
     VAR_NOTES: >
       Stored as a bitwise flag. Bit 0 (GAIN_TEST, value 1): a gain test was in
-      progress (any of macro_status bits 7-13 set). Bit 1 (MCP_CURRENT, value 2):
-      MCP current mitigation was active (macro_status bits 28 and 29 set). All
-      other bits are reserved.
+      progress (any of macro_status bits 7-13 set).
     VAR_TYPE: support_data
 
 packet_version:

@@ -790,7 +790,7 @@ def test_calculate_quality_flags(mock_get_file_paths, codice_lut_path):
     quality_flags = calculate_quality_flags(macro_status)
     assert np.all(quality_flags == ImapCodiceL1aFlags.NONE)
 
-    # Test case #2 - only gain test is flagged for the first 10 values
+    # Test case #2 - Gain test is flagged for the first 10 values
     macro_status = np.concat([np.full(10, 128, np.uint32), np.full(10, 126, np.uint32)])
     quality_flags = calculate_quality_flags(macro_status)
     expected_status = np.concat(
@@ -800,19 +800,6 @@ def test_calculate_quality_flags(mock_get_file_paths, codice_lut_path):
         ]
     )
     np.testing.assert_array_equal(quality_flags, expected_status)
-
-    # Test case #3 - Both Gain test and MCP current flags
-    value = (1 << 28) | (1 << 8)
-    macro_status = np.concat([np.full(10, value, np.uint32)])
-    quality_flags = calculate_quality_flags(macro_status)
-    np.testing.assert_array_equal(
-        quality_flags,
-        np.full(
-            10,
-            ImapCodiceL1aFlags.GAIN_TEST.value | ImapCodiceL1aFlags.MCP_CURRENT.value,
-            np.uint16,
-        ),
-    )
 
 
 def test_add_quality_flags_to_science_datasets():

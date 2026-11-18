@@ -166,13 +166,15 @@ def process_l1a(  # noqa: PLR0912
     # Add quality flags to each science dataset.
     if hk_l1a_ds is not None:
         flags = calculate_quality_flags(hk_l1a_ds.macro_status.values)
+        hk_epochs = hk_l1a_ds.epoch.values
     else:
         flags = None
+        hk_epochs = None
         logger.warning(
             "No L1A housekeeping data. Unable to calculate quality flags"
             " for science datasets."
         )
-    add_quality_flags_to_science_datasets(flags, hk_l1a_ds.epoch.values, datasets)
+    add_quality_flags_to_science_datasets(flags, hk_epochs, datasets)
     return datasets
 
 
@@ -199,25 +201,17 @@ def calculate_quality_flags(macro_status: np.ndarray) -> np.ndarray:
     gain_test_active = (macro_status & gain_test_mask) != 0
     flags[gain_test_active] |= np.uint8(ImapCodiceL1aFlags.GAIN_TEST)
 
-    # If either bits 28 or 29 are set, this means there was active
-    # mcp current mitigation.
-    # TODO: Wait for Joeys instructions on bit 29. Macro status is defined as 28 bits.
-    mcp_mask = sum(1 << bit for bit in range(28, 30))
-    mcp_active = (macro_status & mcp_mask) != 0
-    flags[mcp_active] |= np.uint8(ImapCodiceL1aFlags.MCP_CURRENT)
+    # TODO: Add MCP current mitigation flagging when we start
+    #  decomming RTS packets.
 
-    logger.info(
-        f"Flagged {np.sum(gain_test_active)} epochs for active gain "
-        f"testing and {np.sum(mcp_active)} for active MCP current"
-        f" mitigation."
-    )
+    logger.info(f"Flagged {np.sum(gain_test_active)} epochs for active gain testing.")
 
     return flags
 
 
 def add_quality_flags_to_science_datasets(
     hk_quality_flags: np.ndarray | None,
-    hk_epochs: np.ndarray,
+    hk_epochs: np.ndarray | None,
     datasets: list[xr.Dataset],
 ) -> None:
     """
