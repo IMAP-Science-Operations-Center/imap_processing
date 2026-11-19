@@ -14,13 +14,19 @@ from unittest.mock import patch
 import cdflib
 import numpy as np
 import pytest
+import xarray as xr
 from imap_data_access import ProcessingInputCollection
 
 from imap_processing import imap_module_directory
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.codice.codice_l1a import process_l1a
+from imap_processing.codice.codice_l1a import (
+    add_quality_flags_to_science_datasets,
+    calculate_quality_flags,
+    process_l1a,
+)
 from imap_processing.codice.codice_l1a_de import l1a_direct_event
 from imap_processing.codice.utils import CODICEAPID
+from imap_processing.quality_flags import ImapCodiceL1aFlags
 from imap_processing.tests.codice.conftest import (
     VALIDATION_FILE_DATE,
     VALIDATION_FILE_VERSION,
@@ -160,6 +166,7 @@ def test_lo_counters_aggregated(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -197,6 +204,7 @@ def test_lo_counters_singles(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -250,6 +258,7 @@ def test_lo_sw_priority(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-sw-priority_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -303,6 +312,7 @@ def test_lo_nsw_priority(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-nsw-priority_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -363,6 +373,7 @@ def test_lo_sw_species(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_lo-sw-species_{VALIDATION_FILE_DATE}_v002.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -399,6 +410,7 @@ def test_hi_counters_aggregated(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_hi-counters-aggregated_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -437,6 +449,7 @@ def test_hi_counters_singles(mock_get_file_paths, codice_lut_path):
         cdf_file.name
         == f"imap_codice_l1a_hi-counters-singles_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -480,6 +493,7 @@ def test_hi_omni(mock_get_file_paths, codice_lut_path):
     cdf_file = write_cdf(processed_data, terminate_on_warning=True)
     assert cdf_file.name == f"imap_codice_l1a_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
     assert_epoch_delta_cdf_metadata(cdf_file)
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -531,6 +545,7 @@ def test_hi_sectored(mock_get_file_paths, codice_lut_path):
     assert (
         cdf_file.name == f"imap_codice_l1a_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -583,6 +598,8 @@ def test_hi_priority(mock_get_file_paths, codice_lut_path):
     assert (
         cdf_file.name == f"imap_codice_l1a_hi-priority_{VALIDATION_FILE_DATE}_v001.cdf"
     )
+
+    assert "quality_flags" in processed_data
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -646,6 +663,7 @@ def test_lo_direct_events(mock_get_file_paths, codice_lut_path):
         for variable in LO_MODE_SUPPORT_VARIABLES:
             attrs = cdf.varattsget(variable)
             assert attrs["VAR_TYPE"] == "support_data"
+    assert "quality_flags" in processed_data
 
 
 def test_direct_events_incomplete_groups(codice_lut_path, caplog):
@@ -760,3 +778,107 @@ def test_hi_direct_events(mock_get_file_paths, codice_lut_path):
         == f"imap_codice_l1a_hi-direct-events_{VALIDATION_FILE_DATE}_v002.cdf"
     )
     assert_epoch_delta_cdf_metadata(cdf_file)
+    assert "quality_flags" in processed_data
+
+
+@patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
+def test_calculate_quality_flags(mock_get_file_paths, codice_lut_path):
+    """Tests the calculate_quality_flags function."""
+
+    # test case #1 - no flags
+    macro_status = np.full(100, 10, dtype=np.uint32)
+    quality_flags = calculate_quality_flags(macro_status)
+    assert np.all(quality_flags == ImapCodiceL1aFlags.NONE)
+
+    # Test case #2 - Gain test is flagged for the first 10 values
+    macro_status = np.concat([np.full(10, 128, np.uint32), np.full(10, 126, np.uint32)])
+    quality_flags = calculate_quality_flags(macro_status)
+    expected_status = np.concat(
+        [
+            np.full(10, ImapCodiceL1aFlags.GAIN_TEST.value, np.uint16),
+            np.full(10, ImapCodiceL1aFlags.NONE.value, np.uint16),
+        ]
+    )
+    np.testing.assert_array_equal(quality_flags, expected_status)
+
+
+def test_add_quality_flags_to_science_datasets():
+    """Test adding quality flags to science datasets."""
+    # Create mock epochs where the sci time is coarser than the hk time.
+    epoch = np.arange(10, 30, step=5)
+    # add_quality_flags_to_science_datasets needs the epoch deltas to calculate the
+    # true epoch start.
+    deltas = np.full(epoch.shape, 2.5)
+    hk_epoch = np.arange(40)  # The hk is expected to have a wider time range.
+    # Create mock list of datasets
+    out_of_range_epoch = np.append(epoch, 50)
+    deltas_out_of_range = np.full(out_of_range_epoch.shape, 2.5)
+    datasets = [
+        xr.Dataset(
+            {"epoch": epoch, "epoch_delta_minus": deltas, "epoch_delta_plus": deltas},
+            attrs={"Logical_source": "hskp"},
+        ),
+        xr.Dataset(
+            {"epoch": epoch, "epoch_delta_minus": deltas, "epoch_delta_plus": deltas},
+            attrs={"Logical_source": "sci"},
+        ),
+        xr.Dataset(
+            {
+                "epoch": out_of_range_epoch,
+                "epoch_delta_minus": deltas_out_of_range,
+                "epoch_delta_plus": deltas_out_of_range,
+            },
+            attrs={"Logical_source": "sci"},
+        ),
+    ]
+    hk_quality_flags = np.full(
+        hk_epoch.shape, ImapCodiceL1aFlags.GAIN_TEST.value, np.uint8
+    )
+    # Test adding quality flags to the science datasets
+    add_quality_flags_to_science_datasets(hk_quality_flags, hk_epoch, datasets)
+
+    # check that hk datasets do NOT have quality flags
+    assert "quality_flags" not in datasets[0]
+    assert "quality_flags" in datasets[1]
+    assert "quality_flags" in datasets[2]
+
+    expected_sci_qf = np.full(len(epoch), ImapCodiceL1aFlags.GAIN_TEST.value, np.uint16)
+    np.testing.assert_array_equal(expected_sci_qf, datasets[1].quality_flags.values)
+
+    # Since the last epoch value for the final array is 50 and out of range of
+    # the hk data, the quality flag should be 0.
+    expected_sci_qf2 = np.append(expected_sci_qf, 0)
+    np.testing.assert_array_equal(expected_sci_qf2, datasets[2].quality_flags.values)
+
+
+def test_add_quality_flags_to_science_datasets_flag_logic():
+    """Test the flag logic when adding quality flags to science datasets."""
+    # Create mock epochs where the sci time is coarser than the hk time.
+    # Epoch times are the center of the collection period.
+    # add_quality_flags_to_science_datasets needs the epoch_deltas to calculate the
+    # true epoch start.
+    epoch = (np.array([240, 480, 720]) * 1e9) + 120 * 1e9
+    deltas = np.full(epoch.shape, 120 * 1e9)
+    hk_epoch = np.array([230, 240, 241, 480, 721, 1000]) * 1e9
+    quality_flags = np.array([1, 0, 1, 0, 0, 1])
+    expected_flags = np.array([1, 0, 0])
+    # Create mock list of datasets
+    datasets = [
+        xr.Dataset(
+            {"epoch": epoch, "epoch_delta_minus": deltas, "epoch_delta_plus": deltas},
+            attrs={"Logical_source": "sci"},
+        )
+    ]
+    # Test case #1: Quality flags provided, some epochs map and some do not
+    add_quality_flags_to_science_datasets(quality_flags, hk_epoch, datasets)
+    np.testing.assert_array_equal(expected_flags, datasets[0].quality_flags.values)
+
+    # Test case #2: No quality flags provided (hk_quality_flags is None)
+    add_quality_flags_to_science_datasets(None, hk_epoch, datasets)
+    expected_flags_null = np.full(epoch.shape, ImapCodiceL1aFlags.NONE.value, np.uint16)
+    np.testing.assert_array_equal(expected_flags_null, datasets[0].quality_flags.values)
+
+    # Test case #3: No epoch times fall within the hk range.
+    hk_epoch += 1000 * 1e9  # Shift hk epoch values out of range
+    add_quality_flags_to_science_datasets(quality_flags, hk_epoch, datasets)
+    np.testing.assert_array_equal(expected_flags_null, datasets[0].quality_flags.values)
