@@ -111,11 +111,11 @@ data_quality:
 quality_flags:
     CATDESC: Bitwise quality flags derived from housekeeping macro status
     DEPEND_0: epoch
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
     DISPLAY_TYPE: time_series
     FIELDNAM: Quality Flags
     FILLVAL: 255
     FORMAT: I3
-    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
     LABLAXIS: Quality Flags
     SCALETYP: linear
     UNITS: " "
