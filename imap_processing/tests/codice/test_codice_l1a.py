@@ -806,12 +806,30 @@ def test_add_quality_flags_to_science_datasets():
     """Test adding quality flags to science datasets."""
     # Create mock epochs where the sci time is coarser than the hk time.
     epoch = np.arange(10, 30, step=5)
+    # add_quality_flags_to_science_datasets needs the epoch deltas to calculate the
+    # true epoch start.
+    deltas = np.full(epoch.shape, 2.5)
     hk_epoch = np.arange(40)  # The hk is expected to have a wider time range.
     # Create mock list of datasets
+    out_of_range_epoch = np.append(epoch, 50)
+    deltas_out_of_range = np.full(out_of_range_epoch.shape, 2.5)
     datasets = [
-        xr.Dataset({"epoch": epoch}, attrs={"Logical_source": "hskp"}),
-        xr.Dataset({"epoch": epoch}, attrs={"Logical_source": "sci"}),
-        xr.Dataset({"epoch": np.append(epoch, 50)}, attrs={"Logical_source": "sci"}),
+        xr.Dataset(
+            {"epoch": epoch, "epoch_delta_minus": deltas, "epoch_delta_plus": deltas},
+            attrs={"Logical_source": "hskp"},
+        ),
+        xr.Dataset(
+            {"epoch": epoch, "epoch_delta_minus": deltas, "epoch_delta_plus": deltas},
+            attrs={"Logical_source": "sci"},
+        ),
+        xr.Dataset(
+            {
+                "epoch": out_of_range_epoch,
+                "epoch_delta_minus": deltas_out_of_range,
+                "epoch_delta_plus": deltas_out_of_range,
+            },
+            attrs={"Logical_source": "sci"},
+        ),
     ]
     hk_quality_flags = np.full(
         hk_epoch.shape, ImapCodiceL1aFlags.GAIN_TEST.value, np.uint8
@@ -836,12 +854,21 @@ def test_add_quality_flags_to_science_datasets():
 def test_add_quality_flags_to_science_datasets_flag_logic():
     """Test the flag logic when adding quality flags to science datasets."""
     # Create mock epochs where the sci time is coarser than the hk time.
-    epoch = np.array([240, 480, 720]) * 1e9
+    # Epoch times are the center of the collection period.
+    # add_quality_flags_to_science_datasets needs the epoch_deltas to calculate the
+    # true epoch start.
+    epoch = (np.array([240, 480, 720]) * 1e9) + 120 * 1e9
+    deltas = np.full(epoch.shape, 120 * 1e9)
     hk_epoch = np.array([230, 240, 241, 480, 721, 1000]) * 1e9
     quality_flags = np.array([1, 0, 1, 0, 0, 1])
     expected_flags = np.array([1, 0, 0])
     # Create mock list of datasets
-    datasets = [xr.Dataset({"epoch": epoch}, attrs={"Logical_source": "sci"})]
+    datasets = [
+        xr.Dataset(
+            {"epoch": epoch, "epoch_delta_minus": deltas, "epoch_delta_plus": deltas},
+            attrs={"Logical_source": "sci"},
+        )
+    ]
     # Test case #1: Quality flags provided, some epochs map and some do not
     add_quality_flags_to_science_datasets(quality_flags, hk_epoch, datasets)
     np.testing.assert_array_equal(expected_flags, datasets[0].quality_flags.values)

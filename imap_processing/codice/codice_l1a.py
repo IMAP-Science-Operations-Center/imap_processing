@@ -243,27 +243,31 @@ def add_quality_flags_to_science_datasets(
             # Housekeeping products don't get quality flags.
             if "hskp" in dataset.attrs["Logical_source"]:
                 continue
-            # HK is sent at 1 Hz and science epochs are ~4 minutes (240 s) apart.
-            # A science epoch is flagged if *any* HK record in its collection
-            # period is flagged. For science epochs at 240, 480, and 720 s, HK
-            # records from 240-479 s map to the epoch at 240s, etc.
-            sci_epochs = dataset.epoch.values
-            # Close the last collection period by appending a boundary 240 s
-            # (in ns) after the last science epoch. HK records past this
-            # boundary don't map to any science epoch.
-            sci_epochs = np.append(sci_epochs, sci_epochs[-1] + 240 * 1e9)
-            # Index of the science epoch that each HK record falls under.
-            hk_to_sci_inds = (
-                np.asarray(np.searchsorted(sci_epochs, hk_epochs, side="right")) - 1
+            # Hk data is sent at 1 Hz and science epochs are ~4 minutes (240 s) apart.
+            # A science epoch is flagged if *any* hk record in its collection
+            # period is flagged. Science epochs are the center of the
+            # collection period, so subtract epoch_delta_minus to get the start of the
+            # collection period.
+            period_starts = dataset.epoch.values - dataset.epoch_delta_minus.values
+            # Close the last collection period at epoch + epoch_delta_plus.
+            # Hk records past this boundary don't map to any science epoch.
+            period_bounds = np.append(
+                period_starts,
+                dataset.epoch.values[-1] + dataset.epoch_delta_plus.values[-1],
             )
-            # Drop HK records that fall outside every collection period.
-            valid = (hk_to_sci_inds >= 0) & (hk_to_sci_inds < len(sci_epochs) - 1)
-            # Each science flag is the bitwise OR of the flags of its HK records.
-            # Example with science epochs at 240, 480, and 720 s:
-            #   HK epochs:       230, 240, 300, 500, 800, 1000
-            #   HK flags:          1,   0,   1,   0,   0,    1
-            #   hk_to_sci_inds:   -1,   0,   0,   1,   2,    3  (-1 and 3 dropped)
-            #   Science flags:   [1, 0, 0]
+            # Index of the science epoch that each hk record falls under.
+            hk_to_sci_inds = (
+                np.asarray(np.searchsorted(period_bounds, hk_epochs, side="right")) - 1
+            )
+            # Drop hk records that fall outside every collection period.
+            valid = (hk_to_sci_inds >= 0) & (hk_to_sci_inds < len(period_bounds) - 1)
+            # Each science flag is the bitwise OR of the flags of its hk records.
+            # Example with science epochs at 240, 480, and 720 s and deltas of
+            # 120 s (periods 120-360, 360-600, 600-840 s):
+            #   hk epochs:       100, 130, 359, 400, 700, 850
+            #   hk flags:          1,   0,   0,   1,   0,   1
+            #   hk_to_sci_inds:   -1,   0,   0,   1,   2,   3  (-1 and 3 dropped)
+            #   Science flags:   [0, 1, 0]
             np.bitwise_or.at(default_qf, hk_to_sci_inds[valid], hk_quality_flags[valid])
             sci_quality_flags = default_qf
 
