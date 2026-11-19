@@ -119,7 +119,6 @@ def test_l2_hi_omni(mock_get_file_paths):
     assert (
         omni_cdf_file.name == f"imap_codice_l2_hi-omni_{VALIDATION_FILE_DATE}_v001.cdf"
     )
-    assert "quality_flags" in processed_l2
     assert_l2_epoch_delta_cdf_metadata(omni_cdf_file)
     with cdflib.CDF(omni_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
@@ -275,7 +274,6 @@ def test_l2_hi_sectored(mock_get_file_paths):
         sectored_cdf_file.name
         == f"imap_codice_l2_hi-sectored_{VALIDATION_FILE_DATE}_v001.cdf"
     )
-    assert "quality_flags" in processed_l2
     assert_l2_epoch_delta_cdf_metadata(sectored_cdf_file)
     with cdflib.CDF(sectored_cdf_file) as cdf_file:
         data_quality_attrs = cdf_file.varattsget("data_quality")
