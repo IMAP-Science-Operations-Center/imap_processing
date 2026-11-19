@@ -731,17 +731,11 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi-omni")
     l1b_dataset.attrs = cdf_attrs.get_global_attributes("imap_codice_l2_hi-omni")
 
-    # TODO: ask Joey to add attrs for epoch_delta_plus and epoch_delta_minus
-    # and update dimension to be 'epoch' in L1B data
+    # Update variable attributes
     for variable in l1b_dataset.data_vars:
-        if variable in ["epoch_delta_plus", "epoch_delta_minus", "data_quality"]:
-            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
-                variable, check_schema=False
-            )
-        else:
-            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
-                variable, check_schema=False
-            )
+        l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
+            variable, check_schema=False
+        )
 
     # Add these new coordinates
     new_coords = {
@@ -982,6 +976,7 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
             "epoch": l1b_dataset["epoch"],
             "epoch_delta_plus": l1b_dataset["epoch_delta_plus"],
             "epoch_delta_minus": l1b_dataset["epoch_delta_minus"],
+            "quality_flags": l1b_dataset["quality_flags"],
             "elevation_angle": xr.DataArray(
                 HI_L2_ELEVATION_ANGLE,
                 dims=("elevation_angle",),
