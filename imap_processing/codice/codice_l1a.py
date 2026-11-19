@@ -204,7 +204,9 @@ def calculate_quality_flags(macro_status: np.ndarray) -> np.ndarray:
     # TODO: Add MCP current mitigation flagging when we start
     #  decomming RTS packets.
 
-    logger.info(f"Flagged {np.sum(gain_test_active)} epochs for active gain testing.")
+    logger.info(
+        f"Flagged {np.sum(gain_test_active)} hk epochs for active gain testing."
+    )
 
     return flags
 
