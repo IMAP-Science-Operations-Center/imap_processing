@@ -343,20 +343,29 @@ def add_cdf_attributes(
     return dataset
 
 
-def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
+def find_complete_mod10_sets(
+    mod_vals: np.ndarray, epoch_vals: np.ndarray
+) -> np.ndarray:
     """
     Find start indices where mod values match [0,1,2,3,4,5,6,7,8,9] pattern.
+
+    To be a valid set, the previous set needs to be complete as well. Since the
+    first set will only be used for its livetime values, it is valid if it
+    matches the pattern.
 
     Parameters
     ----------
     mod_vals : np.ndarray
         1D array of mod 10 values from the hdr_minute_cnt field in the L1A counts data.
+    epoch_vals : np.ndarray
+        1D array of epoch values corresponding to the mod_vals.
 
     Returns
     -------
     np.ndarray
         Indices in mod_vals where the complete pattern [0, 1, ..., 9] starts.
     """
+    # First ensure that each set is
     # The pattern to match is an array from 0-9
     window_size = 10
 
@@ -369,7 +378,32 @@ def find_complete_mod10_sets(mod_vals: np.ndarray) -> np.ndarray:
     # Use sliding windows to find pattern matches
     sw_view = np.lib.stride_tricks.sliding_window_view(mod_vals, window_size)
     matches = np.all(sw_view == np.arange(window_size), axis=1)
-    return np.where(matches)[0]
+    starts = np.flatnonzero(matches)
+    # If no matches, return an empty array
+    if len(starts) == 0:
+        return np.array([], dtype=int)
+    # Find where the previous set is complete as well.
+    valid = np.isin(starts - window_size, starts)
+
+    # For each of those valid starts, make sure the set before it is actually 10
+    # minutes before. If a full set is missing, raise an error.
+    starts_to_check = starts[valid]
+    gap_ns = epoch_vals[starts_to_check] - epoch_vals[starts_to_check - window_size]
+    expected_ns = 10 * 60 * 1e9  # 10 minutes in ns
+    tolerance_ns = 120 * 1e9  # 2 minutes in ns
+    invalid_times = np.abs(gap_ns - expected_ns) > tolerance_ns
+    if np.any(invalid_times):
+        raise ValueError(
+            "Valid sets are expected to have a previous 10 minutes before. "
+            "This indicates there were full sets missing from the dataset. "
+            "This needs further investigation."
+        )
+
+    # If the first complete set is the first set,
+    # that set is considered complete since it's only used for livetime
+    # values.
+    valid[0] = starts[0] == 0
+    return starts[valid]
 
 
 def subset_sectored_counts(
@@ -411,7 +445,9 @@ def subset_sectored_counts(
     # provided in l0/constants.py for reference.
     bin_size = 10
     mod_10: np.ndarray = sectored_counts_dataset.hdr_minute_cnt.values % 10
-    start_indices = find_complete_mod10_sets(mod_10)
+    start_indices = find_complete_mod10_sets(
+        mod_10, sectored_counts_dataset.epoch.values
+    )
 
     # Filter out start indices that are less than or equal to the bin size
     # since the previous 10 minutes are needed for calculating rates
@@ -422,6 +458,14 @@ def subset_sectored_counts(
         )
     else:
         start_indices = start_indices[start_indices >= bin_size]
+
+    # Sets can also be dropped when the previous set is incomplete (e.g.
+    # due to a dropped frame), so check again after filtering.
+    if start_indices.size == 0:
+        raise ValueError(
+            "No data to process - no complete sets of sectored counts with "
+            "a complete set of livetime values from the previous 10 minutes."
+        )
 
     # Subset data for complete sets of sectored counts.
     # Each set of sectored counts is 10 minutes long, so we take the indices
@@ -519,21 +563,30 @@ def subset_livetime(dataset: xr.Dataset) -> xr.Dataset:
             "Epoch values are empty. Cannot proceed with livetime subsetting."
         )
 
-    # Get index positions of epoch[0] and epoch[-1] in epoch_livetime
-    start_idx = np.where(epoch_livetime_vals == epoch_vals[0])[0][0]
-    end_idx = np.where(epoch_livetime_vals == epoch_vals[-1])[0][0]
+    # Get the inds of the epoch_livetime where it matches the filtered epoch vals.
+    match_inds = np.where(np.isin(epoch_livetime_vals, epoch_vals))[0]
 
-    if start_idx < 10:
+    # Each epoch must match exactly one epoch_livetime value, otherwise
+    # livetime will be misaligned with the sectored counts.
+    if match_inds.size != epoch_vals.size:
         raise ValueError(
-            "Start index for livetime is less than 10. This indicates that the "
+            f"Found {match_inds.size} epoch_livetime matches for "
+            f"{epoch_vals.size} epoch values. Livetime cannot be aligned with "
+            "sectored counts."
+        )
+
+    # Shift 10 frames (10 minutes) earlier to get the livetime indices
+    livetime_inds = match_inds - 10
+
+    if np.any(livetime_inds < 0):
+        raise ValueError(
+            "Livetime indices are negative. This indicates that the "
             "dataset is too small to shift livetime correctly."
         )
 
-    # Compute shifted indices by 10 minutes
-    start_trimmed = max(start_idx - 10, 0)
-    end_trimmed = max(end_idx - 10, 0)
-
-    return dataset.isel(epoch_livetime=slice(start_trimmed, end_trimmed + 1))
+    # Then return the dataset where there are only complete sets of
+    # livetime values corresponding to the sectored counts.
+    return dataset.isel(epoch_livetime=livetime_inds)
 
 
 def filter_dataset_to_processing_day(
