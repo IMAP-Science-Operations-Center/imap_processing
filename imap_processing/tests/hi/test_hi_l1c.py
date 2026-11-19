@@ -252,6 +252,8 @@ gain_config_id,calibration_prod,esa_energy_step,geometric_factor,coincidence_typ
 0,1,2,0.00085,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
 1,0,1,0.00066,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,500.0,50.0,1000.0,100.0,1000.0,100.0,-4000.0,50.0
 1,0,2,0.00099,ABC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+1,1,1,0.00066,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
+1,1,2,0.00099,BC1C2,0,1023,-1023,1023,-1023,1023,0,1023,,,,,,,,
 """
 
 
@@ -267,7 +269,7 @@ gain_config_id,calibration_prod,esa_energy_step,geometric_factor,coincidence_typ
                 "tof_v": -4000.0,
             },
             1,
-            [0],
+            [0, 1],
         ),
         (
             {
@@ -303,7 +305,7 @@ def test_generate_pset_dataset_gain_config(
 ):
     """Test generate_pset_dataset records the matched gain_config_id and
     builds the calibration_prod coordinate from that gain configuration's
-    products only (a single FILLVAL entry if the pointing matched no gain
+    products (a single FILLVAL entry if the pointing matched no gain
     config)."""
     cal_prod_path = tmp_path / "imap_hi_90sensor-cal-prod_20240101_v001.csv"
     cal_prod_path.write_text(_TWO_GAIN_CONFIG_CSV)
