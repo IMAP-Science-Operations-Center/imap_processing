@@ -66,10 +66,9 @@ REQUIRED_L1C_VARIABLES_PULL = [
     "background_rates",
     "obs_date",
 ]
-# These variables are expected but not strictly required. In certain test scenarios,
-# they may be missing, in which case we will raise a warning and continue.
-# All psets must be consistent and either have these variables or not.
-EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL = [
+
+# Pointing independent variables required in every L1C Pset.
+L1C_POINTING_INDEPENDENT_VARIABLES_PULL = [
     "geometric_function",
     "scatter_theta",
     "scatter_phi",
@@ -433,38 +432,32 @@ def generate_ultra_skymap(
             f"PUSH Variables: {output_map_structure.values_to_push_project} \n"
             f"PULL Variables: {output_map_structure.values_to_pull_project}"
         )
-    # TODO remove this in the future once all test data includes these variables
-    # Add expected but not required variables to the pull projection list
-    # Log a warning if they are missing from any PSET but continue processing.
-    expected_present_vars_pointing_ind = []
+
     first_pset = (
         load_cdf(ultra_l1c_psets[0])
         if isinstance(ultra_l1c_psets[0], (str, Path))
         else ultra_l1c_psets[0]
     )
-
-    for var in EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
+    # Store a reference epoch for obs_date_range calculation.
+    ref_epoch = first_pset["epoch"].values[0]
+    for var in L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
         if var not in first_pset.variables:
-            logger.warning(
-                f"Expected variable {var} not found in the first L1C PSET. "
-                "This variable will not be projected to the map."
+            raise ValueError(
+                f"Required variable {var} not found in the first L1C PSET."
             )
-        else:
-            expected_present_vars_pointing_ind.append(var)
 
-    # Get existing variables that should be weighted by exposure and solid angle
-    existing_vars_to_weight = []
+    # Variables to weight by pointing set exposure times solid angle
+    vars_to_weight = VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE
     pointing_indep_vars = []
-    for var in VARIABLES_TO_WEIGHT_BY_POINTING_SET_EXPOSURE_TIMES_SOLID_ANGLE:
+    for var in vars_to_weight:
         if var in first_pset:
-            existing_vars_to_weight.append(var)
             if "epoch" not in first_pset[var].dims:
                 pointing_indep_vars.append(var)
 
     output_map_structure.values_to_pull_project = list(
         set(
             output_map_structure.values_to_pull_project
-            + expected_present_vars_pointing_ind
+            + L1C_POINTING_INDEPENDENT_VARIABLES_PULL
         )
     )
 
@@ -505,12 +498,13 @@ def generate_ultra_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
-        pointing_set.data["obs_date_range"] = pointing_set.data["obs_date"].astype(
-            np.float64
-        )
-        pointing_set.data["obs_date_squared_for_std"] = (
-            pointing_set.data["obs_date_range"] ** 2
-        )
+        # Accumulate offsets from a reference epoch rather than raw J2000 ns
+        # (~1e18) so the E[x²] - E[x]² variance below doesn't lose precision.
+        # Subtracting a constant from every obs_date doesn't change the standard
+        # deviation, so the offset never needs to be added back.
+        obs_date_offset = pointing_set.data["obs_date"].astype(np.float64) - ref_epoch
+        pointing_set.data["obs_date_range"] = obs_date_offset
+        pointing_set.data["obs_date_squared_for_std"] = obs_date_offset**2
 
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
@@ -526,8 +520,8 @@ def generate_ultra_skymap(
         # Initial processing for weighted quantities at PSET level
         # Weight the values by exposure and solid angle
         # Ensure only valid pointing set pixels contribute to the weighted mean.
-        pointing_set.data[existing_vars_to_weight] = (
-            pointing_set.data[existing_vars_to_weight]
+        pointing_set.data[vars_to_weight] = (
+            pointing_set.data[vars_to_weight]
             * pointing_set.data["pointing_set_exposure_times_solid_angle"]
         ).where(good_pixel_mask)
 
@@ -548,7 +542,7 @@ def generate_ultra_skymap(
         )
 
     # Subsequent processing for weighted quantities at SkyMap level
-    skymap.data_1d[existing_vars_to_weight] /= skymap.data_1d[
+    skymap.data_1d[vars_to_weight] /= skymap.data_1d[
         "pointing_set_exposure_times_solid_angle"
     ]
     # Revert any pointing independent variables back to their original dims
@@ -601,22 +595,21 @@ def generate_ultra_skymap(
         # sqrt((sum(obs_date^2) / N) - (sum(obs_date) / N)^2)
         # where sum here refers to the projection process
         # summing over N pset pixels across different psets
-        skymap.data_1d["obs_date_range"] = (
+        # Leave as float here so nans stay until the final
+        # cast to int64 below where they get replaced with fillvals.
+        obs_date_variance = (
+            skymap.data_1d["obs_date_range"]
+            / (skymap.data_1d["num_pointing_set_pixel_members"])
+        ) - (
             (
-                (
-                    skymap.data_1d["obs_date_squared_for_std"]
-                    / (skymap.data_1d["num_pointing_set_pixel_members"])
-                )
-                - (
-                    (
-                        skymap.data_1d["obs_date_range"]
-                        / (skymap.data_1d["num_pointing_set_pixel_members"])
-                    )
-                    ** 2
-                )
+                skymap.data_1d["obs_date_squared_for_std"]
+                / (skymap.data_1d["num_pointing_set_pixel_members"])
             )
-            ** 0.5
-        ).astype(np.int64)
+            ** 2
+        )
+        # Clip tiny negative values from floating point rounding to 0.
+        # Nans stay nans and becomes fill below.
+        skymap.data_1d["obs_date_range"] = np.sqrt(obs_date_variance.clip(min=0))
 
     # Drop the variables that are no longer needed
     vars_to_drop = set(VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION).intersection(
@@ -721,7 +714,6 @@ def ultra_l2(
         inertial_frame = map_descriptor.frame_descriptor
         descriptor_duration = str(map_descriptor.duration)
     inertial_frame_long_name = INERTIAL_FRAME_LONG_NAMES.get(inertial_frame, "unknown")
-
     # Object which holds CDF attributes for the map
     cdf_attrs = ImapCdfAttributes()
     cdf_attrs.add_instrument_global_attrs(instrument="ultra")
@@ -996,9 +988,16 @@ def ultra_l2(
             )
         )
 
-    # Adjust the dtype of obs dates to be int64
-    map_dataset["obs_date"] = map_dataset["obs_date"].astype(np.int64)
-    map_dataset["obs_date_range"] = map_dataset["obs_date_range"].astype(np.int64)
+    # Adjust the dtype of obs dates to be int64.
+    # Nan pixels should be replaced by fillvals.
+    for obs_var in ["obs_date", "obs_date_range"]:
+        obs_values = map_dataset[obs_var]
+        map_dataset[obs_var] = xr.where(
+            np.isfinite(obs_values),
+            obs_values,
+            UltraConstants.FILLVAL_INT64,
+            keep_attrs=True,
+        ).astype(np.int64)
 
     # Adjust CATDESC per descriptor
     if descriptor is not None:
