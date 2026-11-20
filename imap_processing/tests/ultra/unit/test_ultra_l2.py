@@ -332,6 +332,9 @@ class TestUltraL2:
             hp_skymap.data_1d["ena_intensity_stat_uncert"].values,
             rtol=rtol,
         )
+        # Check obs_range. With only a single psets worth of data, obs_date_range
+        # Should all be 0.
+        assert np.all(hp_skymap.data_1d["obs_date_range"].values == 0)
 
     @pytest.mark.parametrize("epoch_dim_for_energy_delta", [True, False])
     @pytest.mark.parametrize(

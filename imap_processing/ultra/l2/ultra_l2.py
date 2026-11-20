@@ -438,7 +438,8 @@ def generate_ultra_skymap(
         if isinstance(ultra_l1c_psets[0], (str, Path))
         else ultra_l1c_psets[0]
     )
-
+    # Store a reference epoch for obs_date_range calculation.
+    ref_epoch = first_pset["epoch"].values[0]
     for var in L1C_POINTING_INDEPENDENT_VARIABLES_PULL:
         if var not in first_pset.variables:
             raise ValueError(
@@ -497,12 +498,13 @@ def generate_ultra_skymap(
             fill_value=pointing_set.epoch,
             dtype=np.int64,
         )
-        pointing_set.data["obs_date_range"] = pointing_set.data["obs_date"].astype(
-            np.float64
-        )
-        pointing_set.data["obs_date_squared_for_std"] = (
-            pointing_set.data["obs_date_range"] ** 2
-        )
+        # Accumulate offsets from a reference epoch rather than raw J2000 ns
+        # (~1e18) so the E[x²] - E[x]² variance below doesn't lose precision.
+        # Subtracting a constant from every obs_date doesn't change the standard
+        # deviation, so the offset never needs to be added back.
+        obs_date_offset = pointing_set.data["obs_date"].astype(np.float64) - ref_epoch
+        pointing_set.data["obs_date_range"] = obs_date_offset
+        pointing_set.data["obs_date_squared_for_std"] = obs_date_offset**2
 
         # Add solid_angle * exposure of pointing set as data_var
         # so this quantity is projected to map pixels for use in weighted averaging
@@ -595,19 +597,19 @@ def generate_ultra_skymap(
         # summing over N pset pixels across different psets
         # Leave as float here so nans stay until the final
         # cast to int64 below where they get replaced with fillvals.
-        skymap.data_1d["obs_date_range"] = (
+        obs_date_variance = (
+            skymap.data_1d["obs_date_range"]
+            / (skymap.data_1d["num_pointing_set_pixel_members"])
+        ) - (
             (
                 skymap.data_1d["obs_date_squared_for_std"]
                 / (skymap.data_1d["num_pointing_set_pixel_members"])
             )
-            - (
-                (
-                    skymap.data_1d["obs_date_range"]
-                    / (skymap.data_1d["num_pointing_set_pixel_members"])
-                )
-                ** 2
-            )
-        ) ** 0.5
+            ** 2
+        )
+        # Clip tiny negative values from floating point rounding to 0.
+        # Nans stay nans and becomes fill below.
+        skymap.data_1d["obs_date_range"] = np.sqrt(obs_date_variance.clip(min=0))
 
     # Drop the variables that are no longer needed
     vars_to_drop = set(VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION).intersection(
