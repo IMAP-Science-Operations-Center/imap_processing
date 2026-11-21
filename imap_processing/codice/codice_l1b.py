@@ -59,33 +59,30 @@ def convert_to_rates(
         # Calculate energy_per_charge using voltage_table and k_factor
         # 1e3 is to convert eV to keV
         energy_per_charge = (
-            dataset["voltage_table"].values * dataset["k_factor"].values * 1e-3
+            dataset["voltage_table"] * dataset["k_factor"].squeeze(drop=True) * 1e-3
         )
-        dataset["energy_per_charge"] = xr.DataArray(
-            energy_per_charge,
-            dims=[
-                "esa_step",
-            ],
-            attrs=cdf_attrs.get_variable_attributes(
-                "energy_per_charge", check_schema=False
-            )
+        energy_attrs = (
+            cdf_attrs.get_variable_attributes("energy_per_charge", check_schema=False)
             if cdf_attrs is not None
-            else {},  # the codice ialirt pipeline calls this function but
-            # energy_per_charge is an intermediate variable so
-            # it doesn't need attributes
+            else {}
         )
-        dataset["energy_per_charge_label"] = xr.DataArray(
-            np.array([f"{value:.3f}" for value in energy_per_charge]),
-            dims=[
-                "esa_step",
-            ],
-            attrs=cdf_attrs.get_variable_attributes(
+        label_attrs = (
+            cdf_attrs.get_variable_attributes(
                 "energy_per_charge_label", check_schema=False
             )
             if cdf_attrs is not None
-            else {},  # the codice ialirt pipeline calls this function but
-            # energy_per_charge_label is an intermediate variable so
-            # it does not need attributes
+            else {}
+        )
+        if "epoch" in energy_per_charge.dims:
+            for attrs in (energy_attrs, label_attrs):
+                attrs.update(DEPEND_0="epoch", DEPEND_1="esa_step")
+        dataset["energy_per_charge"] = xr.DataArray(
+            energy_per_charge.data, dims=energy_per_charge.dims, attrs=energy_attrs
+        )
+        dataset["energy_per_charge_label"] = xr.DataArray(
+            np.char.mod("%.3f", energy_per_charge.data),
+            dims=energy_per_charge.dims,
+            attrs=label_attrs,
         )
 
     if descriptor in [

@@ -71,6 +71,19 @@ Summary
 The SCI-LUT
 -----------
 
+Transition days can contain packets with more than one ``Table_ID``. L1A indexes
+all supplied ``l1a-sci-lut`` dependencies by table ID and routes each packet group
+to its matching source file. Identical entries repeated in cumulative files are
+accepted; conflicting definitions of one ID are rejected. Missing IDs fail before
+processing that APID. Both files remain in the CLI's dependency provenance.
+Dependency generation must supply the preceding delivery as well as a delivery
+that becomes effective during the day; selecting a single file by date cannot
+represent an intraday onboard change. When a voltage table differs between groups,
+L1A retains it as an epoch-dependent support variable; L1B preserves that shape
+when computing energy per charge. L2 retains the ESA-step dimension for a
+time-dependent energy grid rather than swapping it to a two-dimensional axis.
+
+
 **[DOC]** Sections 5.1, 7 and 8. Originates as ``26850.03-SCI-LUT-01.xls`` with
 tabs ``Plan``, ``ESA Sweep``, ``Lo Stepping``, ``Views``, ``Collapse_Lo``,
 ``Collapse_Hi``, ``Data Products - Lo`` and ``Data Products - Hi``. The
