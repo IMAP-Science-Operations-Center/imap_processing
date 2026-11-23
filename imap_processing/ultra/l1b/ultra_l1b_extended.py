@@ -1230,7 +1230,10 @@ def get_efficiency_interpolator(
     # Find the min and max values for theta and phi
     theta_min_max = (theta_vals.min(), theta_vals.max())
     phi_min_max = (phi_vals.min(), phi_vals.max())
-    energy_min_max = (np.asarray(energy_vals).min(), np.asarray(energy_vals).max())
+    energy_min_max: tuple[np.float64, np.float64] = (
+        np.asarray(energy_vals).min(),
+        np.asarray(energy_vals).max(),
+    )
 
     interpolator = RegularGridInterpolator(
         (theta_vals, phi_vals, energy_vals),

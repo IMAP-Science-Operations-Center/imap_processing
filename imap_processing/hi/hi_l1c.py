@@ -951,7 +951,7 @@ def find_last_de_packet_data(l1b_dataset: xr.Dataset) -> xr.Dataset:
     # indices of those changes to identify the last packet in each set. We
     # also need to add the final packet index and assume an energy step change
     # occurs after the final packet.
-    last_esa_packet_idx = np.append(
+    last_esa_packet_idx: np.ndarray = np.append(
         np.flatnonzero((np.diff(esa_step) != 0) | (np.diff(esa_energy_step) != 0)),
         len(esa_step) - 1,
     )
@@ -1008,7 +1008,7 @@ def get_de_clock_ticks_for_esa_step(
     # greater than the spin start time it ended on. Theotretically, adding
     # one second should be sufficeint, but in practice, with flight data, adding
     # two seconds was found to be necessary.
-    end_time_ind = np.flatnonzero(ccsds_met + 2 >= spin_start_mets).max()
+    end_time_ind: int = np.flatnonzero(ccsds_met + 2 >= spin_start_mets).max()
 
     # If the minimum absolute difference is greater than 1/2 the spin-phase
     # we have a problem.

@@ -484,8 +484,11 @@ def unpack_hist_counter(counter_bytes: bytes) -> NDArray[np.uint16]:
         packets in the input dataset.
     """
     # Interpret bytes for all epochs of current counter as uint8 array
-    counter_uint8 = np.frombuffer(counter_bytes, dtype=np.uint8)
+    counter_uint8: np.ndarray = np.frombuffer(counter_bytes, dtype=np.uint8)
     # Split into triplets of upper-byte, split-byte and lower-byte arrays
+    upper_uint8: np.ndarray
+    split_unit8: np.ndarray
+    lower_uint8: np.ndarray
     upper_uint8, split_unit8, lower_uint8 = np.reshape(
         counter_uint8, (3, -1), order="F"
     ).astype(np.uint16)
@@ -556,7 +559,9 @@ def finish_memdmp_dataset(input_ds: xr.Dataset) -> xr.Dataset:
     new_vars = dict()
     # Concatenate the dump_data from all packets into a single bytes string and
     # interpret that bytes string as an array of uint32 values.
-    full_uint32_data = np.frombuffer(dataset["dump_data"].data.sum(), dtype=">u4")
+    full_uint32_data: np.ndarray = np.frombuffer(
+        dataset["dump_data"].data.sum(), dtype=">u4"
+    )
     # index_stride is the stride to traverse from packet to packet for a given
     # item in the binary dump data.
     index_stride = int(dataset["num_bytes"].data[0] // 4)

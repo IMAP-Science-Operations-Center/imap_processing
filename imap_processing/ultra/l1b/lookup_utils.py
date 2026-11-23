@@ -571,7 +571,9 @@ def get_ebins(
         all_lines = f.readlines()
         pixel_text = "".join(all_lines[4:])
 
-    lut_array = np.fromstring(pixel_text, sep=" ", dtype=int).reshape((2048, 4096))
+    lut_array: np.ndarray = np.fromstring(pixel_text, sep=" ", dtype=int).reshape(
+        (2048, 4096)
+    )
     # Note that the LUT is indexed [energy, ctof] for l1b-tofxph
     # and [ctof, energy] for everything else.
     if lut == "l1b-tofxph":
@@ -721,7 +723,7 @@ class ExtendedSpinConfig:
         df = pd.read_csv(config_file_path)
         # Each row applies from its pointing number up to (but not including) the
         # next row's pointing number. The last row applies to all later pointings.
-        pointings = np.append(df["pointing"].values, np.inf)
+        pointings: np.ndarray = np.append(df["pointing"].values, np.inf)
         filtered_df = df[
             ((repoint_int < pointings[1:]) & (repoint_int >= pointings[:-1]))
         ]

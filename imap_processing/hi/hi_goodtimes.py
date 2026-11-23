@@ -2545,7 +2545,9 @@ def _find_event_clusters(
     # The contiguous diff adds two padding elements and np.diff shortens by 1.
     # The result is that we need to add min_events and subtract 2 to get the
     # correct end index.
-    ends = np.flatnonzero(diff == -1) + min_events - 2  # Adjust for window size
+    ends: np.ndarray = (
+        np.flatnonzero(diff == -1) + min_events - 2
+    )  # Adjust for window size
 
     return list(zip(starts.tolist(), ends.tolist(), strict=False))
 

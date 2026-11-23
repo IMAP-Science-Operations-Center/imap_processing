@@ -206,6 +206,8 @@ class AzElSkyGrid:
         # Deriving our az/el grids with indexing "ij" allows for ravel_multi_index
         # to work correctly with 1D digitized indices in each az and el,
         # using the same ravel order ('C' or 'F') as the grid points were unwrapped.
+        self.az_grid: np.ndarray
+        self.el_grid: np.ndarray
         self.az_grid, self.el_grid = np.meshgrid(
             self.az_bin_midpoints, self.el_bin_midpoints, indexing="ij"
         )
