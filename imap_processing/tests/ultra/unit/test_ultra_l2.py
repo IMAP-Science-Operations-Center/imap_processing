@@ -14,6 +14,10 @@ from imap_processing.cdf.utils import write_cdf
 from imap_processing.ena_maps import ena_maps
 from imap_processing.ena_maps.utils.coordinates import CoordNames
 from imap_processing.quality_flags import ImapPSETUltraFlags
+from imap_processing.spice.time import (
+    et_to_ttj2000ns,
+    str_to_et,
+)
 from imap_processing.tests.ultra.mock_data import mock_l1c_pset_product_healpix
 from imap_processing.ultra.l1c.ultra_l1c_pset_bins import get_energy_delta_minus_plus
 from imap_processing.ultra.l2 import ultra_l2
@@ -58,7 +62,7 @@ class TestUltraL2:
     @pytest.fixture
     def _mock_multiple_psets(self, _setup_spice_kernels_list, furnish_kernels):
         # Set the timestrs to be 6 months apart from the 0th to final pset
-        manual_timestrs = [
+        self.manual_timestrs = [
             "2025-05-15T12:00:00",
             "2025-07-15T12:00:00",
             "2025-09-15T12:00:00",
@@ -74,7 +78,7 @@ class TestUltraL2:
                     width_scale=5,
                     counts_scaling_params=(50, 0.5),
                     peak_exposure=1000,
-                    timestr=manual_timestrs[i],
+                    timestr=self.manual_timestrs[i],
                     head=("90"),
                     energy_dependent_exposure=True,
                 )
@@ -328,6 +332,9 @@ class TestUltraL2:
             hp_skymap.data_1d["ena_intensity_stat_uncert"].values,
             rtol=rtol,
         )
+        # Check obs_range. With only a single psets worth of data, obs_date_range
+        # Should all be 0.
+        assert np.all(hp_skymap.data_1d["obs_date_range"].values == 0)
 
     @pytest.mark.parametrize("epoch_dim_for_energy_delta", [True, False])
     @pytest.mark.parametrize(
@@ -419,6 +426,11 @@ class TestUltraL2:
             n_counts,
         )
 
+        # Check obs_date
+        obs_date = hp_skymap.data_1d["obs_date"].values
+        utc = "2025-05-15T12:00:00"
+        assert np.all(obs_date == et_to_ttj2000ns(str_to_et(utc)))
+
     @pytest.mark.usefixtures("_mock_multiple_psets", "_setup_spice_kernels_list")
     def test_generate_ultra_healpix_skymap_multiple_psets(self, furnish_kernels):
         with patch(
@@ -466,7 +478,7 @@ class TestUltraL2:
             ultra_l2.REQUIRED_L1C_VARIABLES_PUSH
             + ultra_l2.REQUIRED_L1C_VARIABLES_PULL
             + ultra_l2.VARIABLES_TO_DROP_AFTER_INTENSITY_CALCULATION
-            + ultra_l2.EXPECTED_L1C_POINTING_INDEPENDENT_VARIABLES_PULL
+            + ultra_l2.L1C_POINTING_INDEPENDENT_VARIABLES_PULL
             + ["ena_intensity", "ena_intensity_stat_uncert"]
         )
         for var in expected_vars:
@@ -493,6 +505,13 @@ class TestUltraL2:
         assert hp_skymap.data_1d["geometric_function"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["scatter_theta"].dims == pointing_independent_dims
         assert hp_skymap.data_1d["scatter_phi"].dims == pointing_independent_dims
+
+        # Check obs_date
+        obs_date = hp_skymap.data_1d["obs_date"].values
+        # Get min and max time (with a second tolerance)
+        min_time = et_to_ttj2000ns(str_to_et(self.manual_timestrs[0]) - 1)
+        max_time = et_to_ttj2000ns(str_to_et(self.manual_timestrs[-1]) + 1)
+        assert np.all((min_time <= obs_date) & (obs_date < max_time))
 
     @pytest.mark.external_test_data
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
@@ -844,6 +863,19 @@ class TestUltraL2:
             " 6 deg, 6 Mon"
         )
         write_cdf(output_map)
+
+    def test_ultra_l2_missing_var(self, mock_data_dict, furnish_kernels):
+        with furnish_kernels(self.required_kernel_names):
+            key = next(iter(mock_data_dict.keys()))
+            mock_data_dict[key] = mock_data_dict[key].drop_vars("sensitivity")
+            with pytest.raises(
+                ValueError,
+                match="Required variable sensitivity not found in the first L1C PSET.",
+            ):
+                ultra_l2.ultra_l2(
+                    data_dict=mock_data_dict,
+                    descriptor="u90-ena-h-hf-nsp-full-hae-6deg-6mo",
+                )[0]
 
     @pytest.mark.usefixtures("_setup_spice_kernels_list")
     def test_ultra_l2_descriptor_hpmap(self, mock_data_dict, furnish_kernels):
