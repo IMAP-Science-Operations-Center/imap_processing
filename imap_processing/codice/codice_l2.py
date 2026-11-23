@@ -976,7 +976,6 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
             "epoch": l1b_dataset["epoch"],
             "epoch_delta_plus": l1b_dataset["epoch_delta_plus"],
             "epoch_delta_minus": l1b_dataset["epoch_delta_minus"],
-            "quality_flags": l1b_dataset["quality_flags"],
             "elevation_angle": xr.DataArray(
                 HI_L2_ELEVATION_ANGLE,
                 dims=("elevation_angle",),
@@ -994,6 +993,8 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
         },
         attrs=cdf_attrs.get_global_attributes("imap_codice_l2_hi-sectored"),
     )
+    if "quality_flags" in l1b_dataset:
+        l2_dataset["quality_flags"] = l1b_dataset["quality_flags"]
 
     efficiencies_file = dependencies.get_file_paths(
         descriptor="l2-hi-sectored-efficiency"
