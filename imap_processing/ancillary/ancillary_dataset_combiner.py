@@ -14,6 +14,8 @@ from imap_data_access.processing_input import (
     ProcessingInput,
 )
 
+from imap_processing.utils import validate_strs
+
 TimestampedData = namedtuple(
     "TimestampedData", ["start_time", "end_time", "dataset", "version"]
 )
@@ -269,7 +271,7 @@ class AncillaryCombiner:
                 data_input.start_time, data_input.end_time, freq="D"
             ):
                 np_date = np.datetime64(date, "D")
-                for data_var in output_dataset.data_vars.keys():
+                for data_var in validate_strs(output_dataset.data_vars.keys()):
                     # find the index in output_dataset where date is equal to epoch
                     index = output_dataset.get_index(self.time_variable).get_loc(
                         np_date

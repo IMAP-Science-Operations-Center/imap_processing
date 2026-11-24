@@ -2,9 +2,10 @@
 
 import collections
 import logging
-from collections.abc import Generator
+from collections.abc import Generator, Iterable, Iterator
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -25,6 +26,41 @@ logger = logging.getLogger(__name__)
 # The time key is the secondary header, right after the primary header
 # in the data dictionary on IMAP (8th key overall)
 TIME_KEY_INDEX = 7
+
+
+def validate_str(x: Any) -> str:
+    """Ensure the argument is a string; otherwise raise a TypeError.
+
+    Parameters
+    ----------
+    x : Any
+        The value to ensure is a str.
+
+    Returns
+    -------
+    s: str
+        The validated str.
+    """
+    if not isinstance(x, str):
+        raise TypeError(f"Expected str, not {type(x).__name__}")
+    return x
+
+
+def validate_strs(x: Iterable[Any]) -> Iterator[str]:
+    """Iterate over the argument and ensure each value is a str.
+
+    Parameters
+    ----------
+    x : Iterable[Any]
+        The values to ensure are strs.
+
+    Returns
+    -------
+    s: Iterable[str]
+        The validated strs.
+    """
+    for value in x:
+        yield validate_str(value)
 
 
 def convert_raw_to_eu(
@@ -86,7 +122,7 @@ def convert_raw_to_eu(
 
     # Iterate through every variable in the dataset and check if there is an entry for
     # That variable in the conversion table.
-    for var in dataset.variables:
+    for var in validate_strs(dataset.variables):
         packet_df = eu_conversion_df.loc[
             (eu_conversion_df["packetName"] == packet_name)
             &
@@ -351,7 +387,7 @@ def packet_file_to_datasets(
                 # if there was no ".", the second part is an empty string, so we use
                 # the original key in that case
                 key: key.partition(".")[2] or key
-                for key in ds.variables
+                for key in validate_strs(ds.variables)
             }
         )
 
