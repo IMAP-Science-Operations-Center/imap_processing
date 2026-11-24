@@ -122,7 +122,7 @@ def convert_raw_to_eu(
 
     # Iterate through every variable in the dataset and check if there is an entry for
     # That variable in the conversion table.
-    for var in dataset.variables:
+    for var in validate_strs(dataset.variables):
         packet_df = eu_conversion_df.loc[
             (eu_conversion_df["packetName"] == packet_name)
             &
@@ -387,7 +387,7 @@ def packet_file_to_datasets(
                 # if there was no ".", the second part is an empty string, so we use
                 # the original key in that case
                 key: key.partition(".")[2] or key
-                for key in ds.variables
+                for key in validate_strs(ds.variables)
             }
         )
 
