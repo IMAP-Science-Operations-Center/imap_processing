@@ -65,7 +65,7 @@ def vectorized_bincount(
         weights_flat = None
 
     # Get the shape for reshaping output
-    non_spatial_shape = indices_bc.shape[:-1]
+    non_spatial_shape: tuple[int, ...] = indices_bc.shape[:-1]
     n_binsets = np.prod(non_spatial_shape)
 
     # Determine actual minlength if not specified
