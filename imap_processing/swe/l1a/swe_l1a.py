@@ -15,7 +15,7 @@ from imap_processing.utils import packet_file_to_datasets
 logger = logging.getLogger(__name__)
 
 
-def swe_l1a(packet_file: str) -> xr.Dataset:
+def swe_l1a(packet_file: str) -> list[xr.Dataset]:
     """
     Will process SWE l0 data into l1a data.
 

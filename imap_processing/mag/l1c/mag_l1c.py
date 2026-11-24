@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 def mag_l1c(
     first_input_dataset: xr.Dataset,
     day_to_process: np.datetime64,
-    second_input_dataset: xr.Dataset = None,
-    previous_day_dataset: xr.Dataset = None,
+    second_input_dataset: xr.Dataset | None = None,
+    previous_day_dataset: xr.Dataset | None = None,
 ) -> xr.Dataset:
     """
     Will process MAG L1C data from L1A data.

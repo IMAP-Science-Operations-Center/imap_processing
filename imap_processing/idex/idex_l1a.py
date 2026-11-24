@@ -45,9 +45,7 @@ from imap_processing.utils import convert_to_binary_string
 logger = logging.getLogger(__name__)
 
 
-def idex_l1a(
-    packet_files: list[Path], window_start_date: str
-) -> list[xr.Dataset | None]:
+def idex_l1a(packet_files: list[Path], window_start_date: str) -> list[xr.Dataset]:
     """
     Process a list of IDEX L0 packet files into a list of xarray Datasets.
 
@@ -62,9 +60,9 @@ def idex_l1a(
 
     Returns
     -------
-    list[xarray.Dataset|None]
+    list[xarray.Dataset]
         A list of xarray Datasets containing the processed IDEX L1a data products. If
-        There is no Data found for the 10-day window, None is returned.
+        There is no Data found for the 10-day window, an empty list is returned.
     """
     # Sort packet files so latest version comes last
     # This ensures when we drop duplicate events (if any), the latest file's data is
