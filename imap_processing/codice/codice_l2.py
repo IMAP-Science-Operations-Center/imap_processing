@@ -731,17 +731,11 @@ def process_hi_omni(dependencies: ProcessingInputCollection) -> xr.Dataset:
     cdf_attrs.add_instrument_variable_attrs("codice", "l2-hi-omni")
     l1b_dataset.attrs = cdf_attrs.get_global_attributes("imap_codice_l2_hi-omni")
 
-    # TODO: ask Joey to add attrs for epoch_delta_plus and epoch_delta_minus
-    # and update dimension to be 'epoch' in L1B data
+    # Update variable attributes
     for variable in l1b_dataset.data_vars:
-        if variable in ["epoch_delta_plus", "epoch_delta_minus", "data_quality"]:
-            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
-                variable, check_schema=False
-            )
-        else:
-            l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
-                variable, check_schema=False
-            )
+        l1b_dataset[variable].attrs = cdf_attrs.get_variable_attributes(
+            variable, check_schema=False
+        )
 
     # Add these new coordinates
     new_coords = {
@@ -999,6 +993,8 @@ def process_hi_sectored(dependencies: ProcessingInputCollection) -> xr.Dataset:
         },
         attrs=cdf_attrs.get_global_attributes("imap_codice_l2_hi-sectored"),
     )
+    if "quality_flags" in l1b_dataset:
+        l2_dataset["quality_flags"] = l1b_dataset["quality_flags"]
 
     efficiencies_file = dependencies.get_file_paths(
         descriptor="l2-hi-sectored-efficiency"

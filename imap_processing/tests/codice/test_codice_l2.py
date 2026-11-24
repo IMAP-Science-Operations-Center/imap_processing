@@ -464,7 +464,7 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         codice_lut_path(descriptor="l2-lo-gfactor"),
         codice_lut_path(descriptor="l2-lo-efficiency"),
     ]
-    processed_2_ds = process_codice_l2("lo-sw-species", ProcessingInputCollection())
+    processed_l2_ds = process_codice_l2("lo-sw-species", ProcessingInputCollection())
     l2_val_data = (
         imap_module_directory
         / "tests"
@@ -483,14 +483,14 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         if variable in ["ne", "unc_ne"]:
             continue
         np.testing.assert_allclose(
-            processed_2_ds[variable].values,
+            processed_l2_ds[variable].values,
             l2_val_data[variable].values,
             rtol=1e-5,
             err_msg=f"Mismatch in variable '{variable}'",
         )
-    processed_2_ds.attrs["Data_version"] = "001"
-    assert processed_2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-species"
-    cdf_path = write_cdf(processed_2_ds)
+    processed_l2_ds.attrs["Data_version"] = "001"
+    assert processed_l2_ds.attrs["Logical_source"] == "imap_codice_l2_lo-sw-species"
+    cdf_path = write_cdf(processed_l2_ds)
     assert_l2_epoch_delta_cdf_metadata(cdf_path)
     # Make sure the written file can actually be reloaded
     load_cdf(cdf_path)
@@ -518,6 +518,7 @@ def test_codice_l2_sw_species_intensity(mock_get_file_paths, codice_lut_path):
         assert hplus_attrs["DEPEND_1"] == "energy_per_charge"
         energy_per_charge_attrs = cdf_file.varattsget("energy_per_charge")
         assert "DEPEND_1" not in energy_per_charge_attrs
+    assert "quality_flags" in processed_l2_ds
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -616,6 +617,7 @@ def test_codice_l2_lo_de(mock_get_file_paths, codice_lut_path):
     assert data_quality_info.Data_Type_Description == "CDF_UINT2"
     assert data_quality_attrs["FILLVAL"] == np.uint16(65535)
     load_cdf(file)
+    assert "quality_flags" in processed_l2_ds
 
 
 @patch("imap_data_access.processing_input.ProcessingInputCollection.get_file_paths")
@@ -693,6 +695,7 @@ def test_codice_l2_hi_de(mock_get_file_paths, codice_lut_path):
     assert data_quality_info.Data_Type_Description == "CDF_UINT2"
     assert data_quality_attrs["FILLVAL"] == np.uint16(65535)
     load_cdf(file)
+    assert "quality_flags" in processed_l2_ds
 
 
 @pytest.mark.parametrize("descriptor", ["lo-direct-events", "hi-direct-events"])

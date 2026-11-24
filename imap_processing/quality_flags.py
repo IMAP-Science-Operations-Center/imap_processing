@@ -176,3 +176,11 @@ class ImapHiL1bDeFlags(FlagNameMixin):
     BAD_DETECTOR_VOLTAGE = (
         2**3
     )  # bit 3, detector HV deviated from the pointing's reference voltages
+
+
+class ImapCodiceL1aFlags(FlagNameMixin):
+    """IMAP CoDICE quality flags for gain test and MCP operation."""
+
+    NONE = CommonFlags.NONE
+    GAIN_TEST = 2**0  # bit 0, Gain test in progress
+    MCP_CURRENT = 2**1  # bit 1, MCP current mitigation was active.

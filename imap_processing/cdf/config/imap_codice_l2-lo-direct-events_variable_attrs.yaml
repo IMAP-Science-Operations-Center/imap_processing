@@ -106,6 +106,24 @@ data_quality:
     bin.
   VAR_TYPE: data
 
+quality_flags:
+    CATDESC: Bitwise quality flags derived from housekeeping macro status
+    DEPEND_0: epoch
+    DICT_KEY: SPASE>Support>SupportQuantity:DataQuality
+    DISPLAY_TYPE: time_series
+    FIELDNAM: Quality Flags
+    FILLVAL: 255
+    FORMAT: I3
+    LABLAXIS: Quality Flags
+    SCALETYP: linear
+    UNITS: " "
+    VALIDMAX: 254
+    VALIDMIN: 0
+    VAR_NOTES: >
+      Stored as a bitwise flag. Bit 0 (GAIN_TEST, value 1): a gain test was in
+      progress (any of macro_status bits 7-13 set).
+    VAR_TYPE: support_data
+
 energy_step:
   CATDESC: Energy Step Index
   DEPEND_0: epoch
