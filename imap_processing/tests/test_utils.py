@@ -11,7 +11,29 @@ import xarray as xr
 from imap_processing import imap_module_directory, utils
 from imap_processing.spice.time import str_yyyymmdd_to_ttj2000ns
 from imap_processing.ultra.utils.ultra_l1_utils import extract_data_dict
-from imap_processing.utils import check_epochs_within_day_offsets
+from imap_processing.utils import (
+    check_epochs_within_day_offsets,
+    validate_str,
+    validate_strs,
+)
+
+
+def test_validate_str():
+    assert validate_str("") == ""
+    assert validate_str("Abc 123") == "Abc 123"
+    with pytest.raises(TypeError):
+        validate_str(123)
+    with pytest.raises(TypeError):
+        validate_str(["abc", "123"])
+
+
+def test_validate_strs():
+    assert list(validate_strs("abc 123 456".split())) == "abc 123 456".split()
+    assert list(validate_strs([])) == []
+    with pytest.raises(TypeError):
+        list(validate_strs([123, "abc"]))
+    with pytest.raises(TypeError):
+        list(validate_strs(["abc", 123]))
 
 
 def test_convert_raw_to_eu(tmp_path):
