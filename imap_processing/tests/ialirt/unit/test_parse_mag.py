@@ -671,3 +671,23 @@ def test_process_packet(
         "mag_theta_B_GSE",
     }
     assert expected_keys.issubset(mag_data[0].keys())
+
+    # Remove 10 packets before the start of a group. The vector of that group
+    # falls inside the gap and is skipped, so every vector that is returned
+    # matches the result without the gap.
+    pkt_counter = get_pkt_counter(postlaunch_xarray_data["mag_status"]).values
+    half = postlaunch_xarray_data.sizes["epoch"] // 2
+    mid = half + np.argmax(pkt_counter[half:] == 0)
+    keep = np.ones(postlaunch_xarray_data.sizes["epoch"], dtype=bool)
+    keep[mid - 10 : mid] = False
+    with furnish_kernels(kernels):
+        gap_data = process_packet(
+            postlaunch_xarray_data.isel(epoch=keep),
+            calibration_dataset,
+            ialirt_mag_test_l1d_data_postlaunch,
+        )
+
+    expected = {row["mag_epoch"]: row["mag_B_GSM"] for row in mag_data}
+    assert len(gap_data) < len(mag_data)
+    for row in gap_data:
+        assert row["mag_B_GSM"] == expected[row["mag_epoch"]]

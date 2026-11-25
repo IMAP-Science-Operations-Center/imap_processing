@@ -38,6 +38,10 @@ from imap_processing.spice.time import met_to_ttj2000ns, ttj2000ns_to_et
 
 logger = logging.getLogger(__name__)
 
+# The spin phase can't be unwrapped across a gap longer than half a spin
+# so vectors in wider gaps are skipped.
+MAX_ATTITUDE_GAP_NS = 5 * 10**9
+
 
 def get_pkt_counter(status_values: xr.DataArray) -> xr.DataArray:
     """
@@ -646,6 +650,7 @@ def process_packet(
     magi_vectors_all = []
     magi_times_all = []
     incomplete_groups = []
+    sorted_attitude_time = np.sort(attitude_time)
 
     for group in unique_groups:
         # Get status values for each group.
@@ -699,6 +704,19 @@ def process_packet(
         magi_out = calibrate_and_offset_vectors(
             updated_vector_magi, magi_calibration, offsets, is_magi=True
         )
+
+        # Find the first packet time that comes after the vector's time.
+        idx = np.searchsorted(sorted_attitude_time, time_data["primary_epoch"])
+        #   - sorted_attitude_time[idx] is the time of the first packet after
+        #   the vector.
+        #   - sorted_attitude_time[idx - 1] is the time of the last packet before
+        #   the vector.
+        #   - MAX_ATTITUDE_GAP_NS asks whether that spacing is more than 5 s.
+        if 0 < idx < len(sorted_attitude_time) and (
+            sorted_attitude_time[idx] - sorted_attitude_time[idx - 1]
+            > MAX_ATTITUDE_GAP_NS
+        ):
+            continue
 
         # Convert to IMAP_ECLIPMOD frame.
         mago_inertial_vector = transform_to_inertial(
