@@ -129,7 +129,8 @@ def generate_pset_dataset(
     else:
         logger.info(f"Pointing gain state matches gain_config_id={gain_config_id}")
         # The calibration_prod coordinate holds the matched gain_config_id's
-        # calibration products only.
+        # calibration products. CalibrationProductConfig validation requires
+        # every gain_config_id to define the same calibration products.
         gain_config_df = config_df.loc[gain_config_id]
         cal_prod_numbers = np.sort(
             gain_config_df.index.unique(level="calibration_prod").values
@@ -745,10 +746,9 @@ def pset_backgrounds(
     # Config now has dims: (calibration_prod, background_index, esa_energy_step)
     config_ds = background_config_df.to_xarray()
 
-    # Backgrounds are independent of gain configuration, so the background
-    # config may define more calibration products than this PSET (which holds
-    # only its matched gain configuration's products). Require every PSET
-    # calibration product to be present, then select just those.
+    # Backgrounds are independent of gain configuration and are keyed only by
+    # calibration_prod. Require every PSET calibration product to be present
+    # in the background config, then select just those.
     pset_cal_prods = pset_coords["calibration_prod"].values
     missing_cal_prods = np.setdiff1d(pset_cal_prods, config_ds["calibration_prod"])
     if missing_cal_prods.size > 0:

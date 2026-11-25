@@ -689,6 +689,7 @@ class CalibrationProductConfig(_BaseConfigAccessor):
     )
     required_columns = (
         "coincidence_type_list",
+        "geometric_factor",
         *[
             f"tof_{det_pair}_{limit}"
             for det_pair in _BaseConfigAccessor.tof_detector_pairs
@@ -701,9 +702,16 @@ class CalibrationProductConfig(_BaseConfigAccessor):
         """
         Validate the calibration product configuration.
 
-        Extends base validation to verify the gain match columns are
-        non-null and consistent across (calibration_prod, esa_energy_step)
-        for each gain_config_id.
+        Extends base validation to verify that:
+
+        - the gain match columns are non-null and consistent across
+          (calibration_prod, esa_energy_step) for each gain_config_id,
+        - every gain_config_id defines the same (calibration_prod,
+          esa_energy_step) pairs. Gain configurations may differ in TOF
+          windows and geometric factors, but the gain-independent backgrounds
+          are keyed only by calibration_prod, so they must apply to every
+          gain configuration,
+        - every geometric factor is finite and positive.
 
         Parameters
         ----------
@@ -716,9 +724,31 @@ class CalibrationProductConfig(_BaseConfigAccessor):
             If required columns or index levels are missing.
         ValueError
             If gain match values are missing or inconsistent within a
-            gain_config_id group.
+            gain_config_id group, if the gain_config_ids don't all define
+            the same (calibration_prod, esa_energy_step) pairs, or if a
+            geometric factor is not finite and positive.
         """
         super()._validate(df)
+
+        products_by_gain_config = {
+            int(gain_config_id): sorted(group.index.droplevel("gain_config_id"))
+            for gain_config_id, group in df.groupby(level="gain_config_id")
+        }
+        if len({tuple(v) for v in products_by_gain_config.values()}) > 1:
+            raise ValueError(
+                "Every gain_config_id must define the same (calibration_prod, "
+                f"esa_energy_step) pairs. Got: {products_by_gain_config}"
+            )
+
+        geometric_factor = df["geometric_factor"].to_numpy(dtype=float)
+        valid_geometric_factor = np.isfinite(geometric_factor) & (geometric_factor > 0)
+        if not np.all(valid_geometric_factor):
+            bad_rows = df.index[~valid_geometric_factor]
+            raise ValueError(
+                "Every geometric_factor must be finite and positive. Invalid "
+                f"values at (gain_config_id, calibration_prod, esa_energy_step): "
+                f"{bad_rows.tolist()}"
+            )
 
         for gain_config_id, group in df.groupby(level="gain_config_id"):
             for col in self.gain_match_columns:
@@ -781,6 +811,61 @@ class CalibrationProductConfig(_BaseConfigAccessor):
             calibration product definitions.
         """
         return len(self._obj.index.unique(level="calibration_prod"))
+
+    @property
+    def gain_config_ids(self) -> npt.NDArray[np.int_]:
+        """
+        Get the gain configuration IDs from the current configuration.
+
+        Returns
+        -------
+        gain_config_ids : numpy.ndarray
+            Array of gain_config_id values, sorted in ascending order.
+        """
+        return (
+            self._obj.index.get_level_values("gain_config_id")
+            .unique()
+            .sort_values()
+            .values
+        )
+
+    @property
+    def esa_energy_steps(self) -> npt.NDArray[np.int_]:
+        """
+        Get the ESA energy steps from the current configuration.
+
+        Returns
+        -------
+        esa_energy_steps : numpy.ndarray
+            Array of esa_energy_step values, sorted in ascending order.
+        """
+        return (
+            self._obj.index.get_level_values("esa_energy_step")
+            .unique()
+            .sort_values()
+            .values
+        )
+
+    def map_coords(self) -> dict[str, npt.NDArray[np.int_]]:
+        """
+        Get the calibration product coordinates of an L2 map.
+
+        Validation guarantees that every gain configuration defines the same
+        (calibration_prod, esa_energy_step) pairs, so the map has a
+        calibration product for every (gain_config_id, calibration_prod) pair
+        at every esa_energy_step in the configuration.
+
+        Returns
+        -------
+        dict[str, numpy.ndarray]
+            The gain_config_id, calibration_prod, and esa_energy_step
+            coordinate values, each sorted ascending.
+        """
+        return {
+            "gain_config_id": self.gain_config_ids,
+            "calibration_prod": self.calibration_product_numbers,
+            "esa_energy_step": self.esa_energy_steps,
+        }
 
     @classmethod
     def compute_gain_match_values(

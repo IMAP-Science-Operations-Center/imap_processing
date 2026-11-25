@@ -546,6 +546,75 @@ class TestCalibrationProductConfig:
         with pytest.raises(ValueError, match="Inconsistent mcp_delta_v"):
             CalibrationProductConfig.from_csv(io.StringIO(csv_content))
 
+    @pytest.mark.parametrize(
+        "gc1_products",
+        [
+            pytest.param([(0, 1)], id="missing_cal_prod"),
+            pytest.param([(0, 1), (1, 1), (1, 2)], id="extra_esa_step"),
+        ],
+    )
+    def test_validate_gain_configs_define_same_products(self, gc1_products):
+        """Test that gain_config_ids defining different (calibration_prod,
+        esa_energy_step) pairs raise."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(0, 1, 1),
+            _cal_prod_csv_row(1, *gc1_products[0], gain_match_values=GAIN_MATCH_1),
+            *[_cal_prod_csv_row(1, *product) for product in gc1_products[1:]],
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+
+        with pytest.raises(
+            ValueError,
+            match=r"must define the same \(calibration_prod, esa_energy_step\)",
+        ):
+            CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+    @pytest.mark.parametrize("geometric_factor", [0, -0.00055, "nan"])
+    def test_validate_geometric_factor(self, geometric_factor):
+        """Test that non-finite or non-positive geometric factors raise."""
+        rows = [
+            _cal_prod_csv_row(0, 0, 1, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(0, 0, 2, geometric_factor=geometric_factor),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+
+        with pytest.raises(ValueError, match=r"finite and positive.*\(0, 0, 2\)"):
+            CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+    def test_map_coords(self):
+        """Test the map coords span every gain config, product and ESA step."""
+        rows = [
+            _cal_prod_csv_row(1, 1, 2, gain_match_values=GAIN_MATCH_1),
+            _cal_prod_csv_row(1, 0, 2),
+            _cal_prod_csv_row(0, 1, 2, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(0, 0, 2),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        coords = df.cal_prod_config.map_coords()
+
+        assert list(coords) == ["gain_config_id", "calibration_prod", "esa_energy_step"]
+        np.testing.assert_array_equal(coords["gain_config_id"], [0, 1])
+        np.testing.assert_array_equal(coords["calibration_prod"], [0, 1])
+        np.testing.assert_array_equal(coords["esa_energy_step"], [2])
+
+    def test_gain_config_ids_and_esa_energy_steps(self):
+        """Test the gain_config_ids and esa_energy_steps accessors return
+        sorted unique values."""
+        rows = [
+            _cal_prod_csv_row(3, 0, 2, gain_match_values=GAIN_MATCH_0),
+            _cal_prod_csv_row(3, 0, 1),
+            _cal_prod_csv_row(1, 0, 2, gain_match_values=GAIN_MATCH_1),
+            _cal_prod_csv_row(1, 0, 1),
+        ]
+        csv_content = _CAL_PROD_CSV_HEADER + "\n" + "\n".join(rows) + "\n"
+        df = CalibrationProductConfig.from_csv(io.StringIO(csv_content))
+
+        np.testing.assert_array_equal(df.cal_prod_config.gain_config_ids, [1, 3])
+        np.testing.assert_array_equal(df.cal_prod_config.esa_energy_steps, [1, 2])
+
     def test_match_gain_config_id_exact_match(self):
         """Test that a pointing's HV deltas match the correct gain_config_id."""
         rows = [
@@ -1246,6 +1315,7 @@ class TestComputeQualifiedEventMask:
                 ("AB",),  # cal_prod=2, esa_energy=1
                 ("AB",),  # cal_prod=2, esa_energy=2
             ],
+            "geometric_factor": [0.00055] * 4,
             "tof_ab_low": [10, 10, 10, 10],
             "tof_ab_high": [100, 100, 100, 100],
             "tof_ac1_low": [5, 5, 5, 5],
@@ -1446,6 +1516,7 @@ class TestIterQualifiedEventsByConfig:
                 ("AB",),  # cal_prod=2, esa_energy=1
                 ("AB",),  # cal_prod=2, esa_energy=2
             ],
+            "geometric_factor": [0.00055] * 4,
             "tof_ab_low": [10, 10, 10, 10],
             "tof_ab_high": [100, 100, 100, 100],
             "tof_ac1_low": [5, 5, 5, 5],

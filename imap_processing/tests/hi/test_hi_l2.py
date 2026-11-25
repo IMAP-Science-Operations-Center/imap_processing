@@ -4,15 +4,21 @@ from unittest import mock
 from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
 from imap_processing.cdf.utils import load_cdf, write_cdf
-from imap_processing.ena_maps.ena_maps import HealpixSkyMap, RectangularSkyMap
+from imap_processing.ena_maps.ena_maps import (
+    HealpixSkyMap,
+    HiPointingSet,
+    RectangularSkyMap,
+)
 from imap_processing.ena_maps.utils.naming import MapDescriptor
 from imap_processing.hi.hi_l2 import (
     CALIBRATION_UNCERTAINTY_FRACTION,
     _calculate_improved_stat_variance,
+    add_gain_config_dim,
     calculate_all_rates_and_intensities,
     calculate_ena_intensity,
     calculate_ena_signal_rates,
@@ -21,10 +27,37 @@ from imap_processing.hi.hi_l2 import (
     combine_maps,
     create_sky_map_from_psets,
     esa_energy_df,
+    get_pset_gain_config_id,
     hi_l2,
     process_single_pset,
+    validate_pset_products,
 )
+from imap_processing.hi.utils import CalibrationProductConfig
 from imap_processing.spice.geometry import SpiceFrame
+
+# Map variables that have a gain_config_id dim in a real L2 map
+GAIN_CONFIG_VARS = (
+    "ena_count",
+    "exposure_factor",
+    "ena_signal_rates",
+    "ena_signal_rate_stat_unc",
+    "ena_intensity",
+    "ena_intensity_stat_uncert",
+    "bg_intensity_sys_err",
+)
+
+
+def with_gain_config_dim(ds, gain_config_id=0):
+    """Give the per-product map variables a length-1 gain_config_id dim."""
+    ds = ds.copy()
+    for var in GAIN_CONFIG_VARS:
+        if var in ds:
+            ds[var] = (
+                ds[var]
+                .expand_dims(gain_config_id=[gain_config_id])
+                .transpose("epoch", "gain_config_id", ..., missing_dims="ignore")
+            )
+    return ds
 
 
 @pytest.fixture(scope="module")
@@ -147,7 +180,7 @@ def sample_map_dataset():
         coords=coords,
     )
 
-    return test_ds, geometric_factors, esa_energies
+    return with_gain_config_dim(test_ds), geometric_factors, esa_energies
 
 
 @pytest.mark.parametrize(
@@ -426,7 +459,7 @@ def ena_intensity_map_ds(empty_rectangular_map_dataset):
             ),
         }
     )
-    return map_ds
+    return with_gain_config_dim(map_ds)
 
 
 def test_calculate_ena_intensity(ena_intensity_map_ds, anc_path_dict):
@@ -541,11 +574,14 @@ def test_combine_calibration_products(sample_map_dataset):
     ]
     for var_name in expected_vars:
         assert var_name in result_ds
-        # Check that calibration_prod dimension has been removed
+        # Check that the product dimensions have been removed
         assert "calibration_prod" not in result_ds[var_name].dims
+        assert "gain_config_id" not in result_ds[var_name].dims
         # Check that other dimensions are preserved
         expected_dims = [
-            d for d in test_ds["ena_intensity"].dims if d != "calibration_prod"
+            d
+            for d in test_ds["ena_intensity"].dims
+            if d not in ("calibration_prod", "gain_config_id")
         ]
         assert list(result_ds[var_name].dims) == expected_dims
 
@@ -563,7 +599,9 @@ def test_combine_calibration_products(sample_map_dataset):
 
     # Check systematic error combination (root sum of squares)
     input_sys_err = test_ds["bg_intensity_sys_err"]
-    expected_sys_err = np.sqrt((input_sys_err**2).sum(dim="calibration_prod"))
+    expected_sys_err = np.sqrt(
+        (input_sys_err**2).sum(dim=["gain_config_id", "calibration_prod"])
+    )
     combined_sys_err = result_ds["bg_intensity_sys_err"]
 
     np.testing.assert_array_almost_equal(
@@ -581,7 +619,7 @@ def test_calculate_improved_variance(sample_map_dataset):
 
     # Check that result has same shape as input statistical uncertainties
     original_unc = test_ds["ena_intensity_stat_uncert"]
-    assert improved_unc.shape == original_unc.shape
+    assert improved_unc.sizes == original_unc.sizes
 
     # Check that improved uncertainties are finite and non-negative
     assert np.all(improved_unc.values >= 0)
@@ -615,6 +653,7 @@ def test_calculate_improved_variance_single_product():
         }
     )
 
+    test_ds = with_gain_config_dim(test_ds)
     improved_var = _calculate_improved_stat_variance(
         test_ds, geom_factors, esa_energies
     )
@@ -687,7 +726,9 @@ def test_weighted_average_mathematical_correctness():
 
     esa_energies = xr.DataArray(np.array([1.0]), dims=["esa_energy_step"])
 
-    result_ds = combine_calibration_products(test_ds, geom_factors, esa_energies)
+    result_ds = combine_calibration_products(
+        with_gain_config_dim(test_ds), geom_factors, esa_energies
+    )
 
     # Check that results are finite and reasonable
     assert np.isfinite(result_ds["ena_intensity"].values[0, 0, 0, 0])
@@ -750,12 +791,18 @@ def test_statistical_uncertainty_combination_correctness():
 
     esa_energies = xr.DataArray(np.array([1.0]), dims=["esa_energy_step"])
 
-    result_ds = combine_calibration_products(test_ds, geom_factors, esa_energies)
+    result_ds = combine_calibration_products(
+        with_gain_config_dim(test_ds), geom_factors, esa_energies
+    )
 
     # Manual calculation of expected statistical uncertainty combination
     # combined_stat_unc = sqrt(1/sum(1 / stat_unc**2))
     expected_combined_stat_unc = np.sqrt(1 / np.sum(1 / stat_unc_values**2))
-    flux_weights = 1.0 / np.array([101, 101])
+    # Improved variance (Algorithm Doc 3.1.2): pooled signal rate per unit
+    # geometric factor = (90 + 210) / (1 + 2) = 100, so the estimated signal
+    # rates are [100, 200]. Variance = (bg + rate) / (t * (gf * E)**2)
+    # = [101 / 1, 202 / 4].
+    flux_weights = 1.0 / np.array([101, 50.5])
     expected_flux = np.sum(flux_values.squeeze() * flux_weights) / np.sum(flux_weights)
 
     np.testing.assert_almost_equal(
@@ -800,6 +847,9 @@ def test_combine_calibration_products_edge_cases():
             "ena_count": xr.DataArray(
                 np.array([100.0]).reshape(1, 1, 1, 1, 1), dims=list(coords.keys())
             ),
+            "exposure_factor": xr.DataArray(
+                np.array([1.0]).reshape(1, 1, 1, 1, 1), dims=list(coords.keys())
+            ),
         }
     )
 
@@ -809,7 +859,9 @@ def test_combine_calibration_products_edge_cases():
 
     esa_energies = xr.DataArray(np.array([1.0]), dims=["esa_energy_step"])
 
-    result_ds = combine_calibration_products(test_ds, geom_factors, esa_energies)
+    result_ds = combine_calibration_products(
+        with_gain_config_dim(test_ds), geom_factors, esa_energies
+    )
 
     # With single calibration product, should return dataset unchanged
     # (but without calib_prod dim). The intensity value should be the same.
@@ -892,7 +944,9 @@ def test_combine_calibration_products_nan_handling():
 
     esa_energies = xr.DataArray(np.array([1.0, 2.0]), dims=["esa_energy_step"])
 
-    result_ds = combine_calibration_products(test_ds, geom_factors, esa_energies)
+    result_ds = combine_calibration_products(
+        with_gain_config_dim(test_ds), geom_factors, esa_energies
+    )
 
     # Test 1: When one product has NaN stat_uncert, result should be finite
     # (skipna=True uses the valid value from the other product)
@@ -936,6 +990,9 @@ def mock_pset_dataset():
 
     pset = xr.Dataset(
         {
+            "esa_energy_step_label": xr.DataArray(
+                np.array(["1", "2", "3"]), dims=["esa_energy_step"]
+            ),
             # Variables that get renamed by l1c_to_l2_var_mapping
             "exposure_times": xr.DataArray(
                 np.ones(exposure_shape) * 100.0,
@@ -984,6 +1041,7 @@ def test_process_single_pset_renames_variables(
 
     result = process_single_pset(
         mock_pset_dataset,
+        0,
         energy_kev,
         descriptor,
         vars_to_exposure_time_average=set(),
@@ -994,6 +1052,13 @@ def test_process_single_pset_renames_variables(
     assert "bg_rate" in result
     assert "bg_rate_sys_err" in result
     assert "ena_count" in result
+    # esa_energy_step_label isn't used in L2
+    assert "esa_energy_step_label" not in result
+    # Counts and exposure are labeled with the PSET's gain_config_id;
+    # gain-independent backgrounds are not
+    for var in ["ena_count", "exposure_factor"]:
+        np.testing.assert_array_equal(result[var]["gain_config_id"], [0])
+    assert "gain_config_id" not in result["bg_rate"].dims
     # Original names should not exist
     assert "exposure_times" not in result
     assert "background_rates" not in result
@@ -1017,6 +1082,7 @@ def test_process_single_pset_adds_obs_date(
 
     result = process_single_pset(
         mock_pset_dataset,
+        0,
         energy_kev,
         descriptor,
         vars_to_exposure_time_average=set(),
@@ -1047,6 +1113,7 @@ def test_process_single_pset_exposure_time_weighting(
     # bg_rate should be multiplied by exposure_factor
     result = process_single_pset(
         mock_pset_dataset,
+        0,
         energy_kev,
         descriptor,
         vars_to_exposure_time_average={"bg_rate"},
@@ -1074,6 +1141,7 @@ def test_process_single_pset_calls_velocity_and_ram_mask(
 
     result = process_single_pset(
         mock_pset_dataset,
+        0,
         energy_kev,
         descriptor,
         vars_to_exposure_time_average=set(),
@@ -1108,6 +1176,7 @@ def test_process_single_pset_applies_cg_for_hf_frame(
 
     result = process_single_pset(
         mock_pset_dataset,
+        0,
         energy_kev,
         descriptor,
         vars_to_exposure_time_average=set(),
@@ -1136,6 +1205,7 @@ def test_process_single_pset_no_cg_for_sf_frame(
 
     _ = process_single_pset(
         mock_pset_dataset,
+        0,
         energy_kev,
         descriptor,
         vars_to_exposure_time_average=set(),
@@ -1200,7 +1270,7 @@ def mock_map_dataset_for_rates():
         },
         coords=coords,
     )
-    return map_ds
+    return with_gain_config_dim(map_ds)
 
 
 def test_calculate_all_rates_and_intensities_basic(
@@ -1944,3 +2014,492 @@ def test_calculate_all_rates_adds_calibration_systematic(
             sys_err.values[valid_mask],
             err_msg="Sys err should include calibration systematic (22% of intensity)",
         )
+
+
+# =============================================================================
+# GAIN CONFIGURATION COMBINATION TESTS
+# =============================================================================
+
+# Geometric factor of gain config 1 relative to gain config 0 in the
+# two_gain_config_anc_path_dict fixture.
+GC1_GF_SCALE = 2.5
+
+
+@pytest.fixture
+def two_gain_config_anc_path_dict(anc_path_dict, tmp_path):
+    """Ancillary paths with a cal-prod file defining two gain configurations.
+
+    Both gain configs define calibration products 0 and 1. Gain config 0 is
+    the test cal-prod file, and gain config 1 has geometric factors
+    GC1_GF_SCALE times larger.
+    """
+    df = CalibrationProductConfig.from_csv(anc_path_dict["cal-prod"])
+    df = df.drop(columns="coincidence_type_values")
+    gc1 = df.rename(index={0: 1}, level="gain_config_id")
+    gc1["geometric_factor"] *= GC1_GF_SCALE
+    gc1["mcp_delta_v"] += 500
+    df = pd.concat([df, gc1])
+    df["coincidence_type_list"] = df["coincidence_type_list"].map("|".join)
+    path = tmp_path / "imap_hi_90sensor-cal-prod_20240101_v002.csv"
+    df.to_csv(path)
+    return {**anc_path_dict, "cal-prod": path}
+
+
+def make_synthetic_pset(
+    gain_config_id,
+    cal_prods,
+    anc_path_dict,
+    intensity=100.0,
+    lon_range=(0, 360),
+    exposure=50.0,
+    bg_rate=0.05,
+    seed=None,
+    esa_steps=None,
+):
+    """Make an L1C-like PSET observing a uniform ENA intensity.
+
+    Counts are (intensity * gf * E + bg_rate) * exposure, with Poisson noise
+    if seed is given. Spin angle bins outside lon_range get zero exposure.
+    ESA energy steps outside the cal-prod config get a geometric factor of 1.
+    """
+    n_spin_bins = 360
+    esa_steps = np.arange(1, 10) if esa_steps is None else np.asarray(esa_steps)
+    cal_prods = np.asarray(cal_prods)
+    lon = np.arange(n_spin_bins) + 0.5
+    in_range = (lon >= lon_range[0]) & (lon < lon_range[1])
+    exposure_times = np.broadcast_to(
+        np.where(in_range, exposure, 0.0), (1, len(esa_steps), n_spin_bins)
+    ).copy()
+
+    unmatched = np.isnan(gain_config_id)
+    if unmatched:
+        rate = np.zeros((1, len(esa_steps), len(cal_prods), 1))
+    else:
+        gf = (
+            CalibrationProductConfig.from_csv(anc_path_dict["cal-prod"])
+            .loc[gain_config_id]["geometric_factor"]
+            .to_xarray()
+            .reindex(calibration_prod=cal_prods, esa_energy_step=esa_steps)
+            .fillna(1.0)
+            .transpose("esa_energy_step", "calibration_prod")
+            .values
+        )
+        energy = (
+            esa_energy_df(anc_path_dict["esa-energies"])["nominal_central_energy"]
+            .reindex(esa_steps, fill_value=1.0)
+            .values
+        )
+        rate = (intensity * gf * energy[:, np.newaxis] + bg_rate)[
+            np.newaxis, :, :, np.newaxis
+        ]
+    counts = rate * exposure_times[:, :, np.newaxis, :]
+    if seed is not None:
+        counts = np.random.default_rng(seed).poisson(counts).astype(float)
+
+    full_dims = ["epoch", "esa_energy_step", "calibration_prod", "spin_angle_bin"]
+    bg_shape = (1, len(esa_steps), len(cal_prods), n_spin_bins)
+    pset = xr.Dataset(
+        {
+            "exposure_times": (
+                ["epoch", "esa_energy_step", "spin_angle_bin"],
+                exposure_times,
+            ),
+            "counts": (full_dims, counts),
+            "background_rates": (
+                full_dims,
+                np.full(bg_shape, np.nan if unmatched else bg_rate),
+            ),
+            "background_rates_uncertainty": (
+                full_dims,
+                np.full(bg_shape, np.nan if unmatched else bg_rate / 10),
+            ),
+            "epoch_delta": (["epoch"], [86400 * 10**9]),
+            "hae_longitude": (["epoch", "spin_angle_bin"], lon[np.newaxis, :]),
+            "hae_latitude": (
+                ["epoch", "spin_angle_bin"],
+                np.zeros((1, n_spin_bins)),
+            ),
+        },
+        coords={
+            "epoch": [0],
+            "esa_energy_step": esa_steps,
+            "calibration_prod": cal_prods,
+            "spin_angle_bin": np.arange(n_spin_bins),
+        },
+        attrs={"gain_config_id": gain_config_id},
+    )
+    return pset
+
+
+@pytest.fixture
+def make_synthetic_map():
+    """Run synthetic PSETs through L2 map creation and intensity calculation.
+
+    SPICE-dependent steps are mocked: pointing set and map coordinates are
+    both treated as HAE without a frame transform.
+    """
+
+    def _make_map(psets, anc_paths):
+        descriptor = MapDescriptor.from_string("h90-enaraw-h-sf-nsp-full-hae-6deg-3mo")
+        pset_lookup = {f"pset_{i}.cdf": pset for i, pset in enumerate(psets)}
+        with (
+            mock.patch(
+                "imap_processing.hi.hi_l2.load_cdf",
+                side_effect=lambda path: pset_lookup[path].copy(deep=True),
+            ),
+            mock.patch(
+                "imap_processing.hi.hi_l2.add_spacecraft_position_and_velocity_to_pset",
+                side_effect=lambda ds: ds,
+            ),
+            mock.patch(
+                "imap_processing.hi.hi_l2.calculate_ram_mask",
+                side_effect=lambda ds: ds.assign(
+                    ram_mask=xr.ones_like(ds["hae_longitude"], dtype=bool)
+                ),
+            ),
+            mock.patch(
+                "imap_processing.ena_maps.ena_maps.geometry.frame_transform_az_el",
+                side_effect=lambda et, az_el, **kwargs: az_el,
+            ),
+            mock.patch(
+                "imap_processing.ena_maps.ena_maps.HiPointingSet.midpoint_j2000_et",
+                new_callable=mock.PropertyMock,
+                return_value=0.0,
+            ),
+        ):
+            sky_maps = create_sky_map_from_psets(
+                list(pset_lookup.keys()), anc_paths, descriptor
+            )
+        sky_map = sky_maps["full"]
+        map_ds = calculate_all_rates_and_intensities(
+            sky_map.data_1d, anc_paths, descriptor
+        )
+        # Pixel center longitudes, to select pixels by which PSETs observed them
+        return map_ds.assign_coords(
+            pixel_lon=("pixel", np.asarray(sky_map.az_el_points)[:, 0])
+        )
+
+    return _make_map
+
+
+def test_get_pset_gain_config_id():
+    """gain_config_id from the PSET attrs, NaN, or legacy PSETs without it."""
+    two_gc = np.array([0, 1])
+    one_gc = np.array([0])
+    pset = xr.Dataset(attrs={"gain_config_id": 1})
+    assert get_pset_gain_config_id(pset, two_gc) == 1
+    pset.attrs["gain_config_id"] = np.nan
+    assert get_pset_gain_config_id(pset, two_gc) is None
+    pset.attrs["gain_config_id"] = 7
+    with pytest.raises(ValueError, match="not in the cal-prod config"):
+        get_pset_gain_config_id(pset, two_gc)
+
+    # PSETs written before L1C recorded gain_config_id
+    legacy_pset = xr.Dataset()
+    assert get_pset_gain_config_id(legacy_pset, one_gc) == 0
+    with pytest.raises(ValueError, match="no gain_config_id global attribute"):
+        get_pset_gain_config_id(legacy_pset, two_gc)
+
+
+def test_validate_pset_products(two_gain_config_anc_path_dict):
+    """PSETs may hold a subset of the ESA steps, with calibration products in
+    any order, but not products or steps the cal-prod config doesn't define."""
+    anc = two_gain_config_anc_path_dict
+    config = CalibrationProductConfig.from_csv(anc["cal-prod"]).cal_prod_config
+    # Missing ESA step 3, calibration products out of order
+    pset = make_synthetic_pset(1, [1, 0], anc, esa_steps=[1, 2, 4, 5, 6, 7, 8, 9])
+    validate_pset_products(pset, config)
+
+    with pytest.raises(ValueError, match="do not match the cal-prod config"):
+        validate_pset_products(pset.sel(calibration_prod=[0]), config)
+
+    # ESA step 12 isn't in the cal-prod config
+    pset = make_synthetic_pset(1, [0, 1], anc, esa_steps=[*range(1, 10), 12])
+    with pytest.raises(ValueError, match=r"esa_energy_step values \[12\]"):
+        validate_pset_products(pset, config)
+
+
+def test_add_gain_config_dim(two_gain_config_anc_path_dict):
+    """Counts and exposure get a length-1 gain_config_id dim after epoch;
+    backgrounds don't."""
+    pset = make_synthetic_pset(1, [0, 1], two_gain_config_anc_path_dict)
+    pset = pset.rename(HiPointingSet.l1c_to_l2_var_mapping)
+
+    result = add_gain_config_dim(pset, 1)
+
+    assert result["ena_count"].dims == (
+        "epoch",
+        "gain_config_id",
+        "esa_energy_step",
+        "calibration_prod",
+        "spin_angle_bin",
+    )
+    assert result["exposure_factor"].dims == (
+        "epoch",
+        "gain_config_id",
+        "esa_energy_step",
+        "spin_angle_bin",
+    )
+    for var in ["ena_count", "exposure_factor"]:
+        np.testing.assert_array_equal(result[var]["gain_config_id"], [1])
+        xr.testing.assert_equal(
+            result[var].sel(gain_config_id=1, drop=True).transpose(*pset[var].dims),
+            pset[var],
+        )
+        # The input PSET is not modified
+        assert "gain_config_id" not in pset[var].dims
+    assert "gain_config_id" not in result["bg_rate"].dims
+
+
+def test_map_spans_all_products_when_first_pset_is_a_subset(
+    two_gain_config_anc_path_dict, make_synthetic_map
+):
+    """A map made from one gc1 PSET missing ESA steps still has every gain
+    config and ESA step; unobserved products have zero exposure."""
+    anc = two_gain_config_anc_path_dict
+    pset = make_synthetic_pset(1, [1, 0], anc, esa_steps=[2, 3, 4])
+    map_ds = make_synthetic_map([pset], anc)
+
+    assert map_ds["energy"].size == 9
+    observed, unobserved = [1, 2, 3], [0, 4, 5, 6, 7, 8]
+    assert np.all(map_ds["exposure_factor"].isel(energy=unobserved) == 0)
+    assert np.all(np.isnan(map_ds["ena_intensity"].isel(energy=unobserved)))
+    observed_ds = map_ds.isel(energy=observed)
+    seen_pixels = (observed_ds["exposure_factor"] > 0).values
+    assert seen_pixels.any()
+    np.testing.assert_allclose(
+        observed_ds["ena_intensity"].values[seen_pixels], 100.0, rtol=1e-10
+    )
+
+
+def test_psets_with_different_esa_steps(
+    two_gain_config_anc_path_dict, make_synthetic_map
+):
+    """PSETs missing ESA steps combine in any order, and a step only one PSET
+    observed gets that PSET's data alone."""
+    anc = two_gain_config_anc_path_dict
+    true_intensity = 100.0
+    all_steps = make_synthetic_pset(
+        0, [0, 1], anc, true_intensity, exposure=50.0, seed=5
+    )
+    missing_steps = make_synthetic_pset(
+        1,
+        [0, 1],
+        anc,
+        true_intensity,
+        exposure=20.0,
+        seed=6,
+        esa_steps=[2, 3, 4, 5, 6, 7, 8],
+    )
+
+    result = make_synthetic_map([missing_steps, all_steps], anc)
+    reversed_order = make_synthetic_map([all_steps, missing_steps], anc)
+    all_steps_only = make_synthetic_map([all_steps], anc)
+
+    for var in result.data_vars:
+        np.testing.assert_allclose(
+            result[var].values, reversed_order[var].values, rtol=1e-12
+        )
+    np.testing.assert_array_equal(result["energy"].size, 9)
+    # Steps 1 and 9 come only from the all-steps PSET
+    edge_steps = result.isel(energy=[0, 8])
+    expected = all_steps_only.isel(energy=[0, 8])
+    for var in ["ena_intensity", "ena_intensity_stat_uncert", "exposure_factor"]:
+        np.testing.assert_allclose(edge_steps[var], expected[var], rtol=1e-12)
+    # Both PSETs contribute exposure to the other steps
+    np.testing.assert_allclose(
+        result["exposure_factor"].isel(energy=4),
+        all_steps_only["exposure_factor"].isel(energy=4) * 70 / 50,
+    )
+
+
+def test_gain_configs_combine_to_true_intensity(
+    two_gain_config_anc_path_dict, make_synthetic_map
+):
+    """PSETs with different geometric factors viewing the same flux combine
+    to the true intensity, including pixels seen by only one gain config."""
+    anc = two_gain_config_anc_path_dict
+    true_intensity = 100.0
+    psets = [
+        make_synthetic_pset(0, [0, 1], anc, true_intensity, exposure=50.0),
+        make_synthetic_pset(1, [0, 1], anc, true_intensity, (0, 180), exposure=20.0),
+    ]
+    map_ds = make_synthetic_map(psets, anc)
+
+    observed = map_ds["exposure_factor"].values > 0
+    assert observed.any()
+    np.testing.assert_allclose(
+        map_ds["ena_intensity"].values[observed], true_intensity, rtol=1e-10
+    )
+    assert np.all(np.isnan(map_ds["ena_intensity"].values[~observed]))
+    # Output has no product dims, and exposure is summed over gain configs
+    for dim in ["gain_config_id", "calibration_prod"]:
+        assert dim not in map_ds["ena_intensity"].dims
+        assert dim not in map_ds["exposure_factor"].dims
+    # bg_rate is averaged over all pointings (backgrounds are gain-independent)
+    np.testing.assert_allclose(map_ds["bg_rate"].values[observed], 0.05)
+
+
+def test_single_gain_config_pixels_match_single_config_map(
+    two_gain_config_anc_path_dict, make_synthetic_map
+):
+    """Pixels only gc0 observed match a map made from gc0 PSETs alone."""
+    anc = two_gain_config_anc_path_dict
+    gc0_pset = make_synthetic_pset(0, [0, 1], anc, seed=1)
+    gc1_pset = make_synthetic_pset(1, [0, 1], anc, lon_range=(0, 180), seed=2)
+
+    combined = make_synthetic_map([gc0_pset, gc1_pset], anc)
+    gc0_only = make_synthetic_map([gc0_pset], anc)
+
+    lon = combined["pixel_lon"]
+    gc0_only_pixels = combined.where(lon > 186, drop=True)
+    expected = gc0_only.where(lon > 186, drop=True)
+    for var in [
+        "ena_intensity",
+        "ena_intensity_stat_uncert",
+        "bg_intensity_sys_err",
+        "exposure_factor",
+        "ena_count",
+    ]:
+        np.testing.assert_allclose(gc0_only_pixels[var], expected[var], rtol=1e-12)
+
+    # Where both gain configs observed, adding gc1 changes the result
+    both = combined.where(lon < 174, drop=True)
+    assert not np.allclose(
+        both["ena_intensity_stat_uncert"],
+        gc0_only.where(lon < 174, drop=True)["ena_intensity_stat_uncert"],
+        equal_nan=True,
+    )
+
+
+def test_gain_config_map_independent_of_pset_order(
+    two_gain_config_anc_path_dict, make_synthetic_map
+):
+    """PSET order doesn't matter, and an unmatched PSET is skipped."""
+    anc = two_gain_config_anc_path_dict
+    gc0_pset = make_synthetic_pset(0, [0, 1], anc, seed=3)
+    # Calibration products in a different order than the gc0 PSET's
+    gc1_pset = make_synthetic_pset(1, [1, 0], anc, lon_range=(0, 180), seed=4)
+    unmatched_pset = make_synthetic_pset(np.nan, [255], anc)
+
+    reference = make_synthetic_map([gc0_pset, gc1_pset], anc)
+    for psets in [
+        [gc1_pset, gc0_pset],
+        [unmatched_pset, gc1_pset, gc0_pset],
+        [gc0_pset, unmatched_pset, gc1_pset],
+    ]:
+        result = make_synthetic_map(psets, anc)
+        for var in reference.data_vars:
+            np.testing.assert_allclose(
+                result[var].values, reference[var].values, rtol=1e-12
+            )
+
+
+def test_create_sky_map_logs_unmatched_psets(
+    two_gain_config_anc_path_dict, make_synthetic_map, caplog
+):
+    """The number of projected PSETs is logged, and skipped PSETs whose
+    pointing matched no gain config are reported in one warning."""
+    anc = two_gain_config_anc_path_dict
+    psets = [
+        make_synthetic_pset(0, [0, 1], anc),
+        make_synthetic_pset(np.nan, [255], anc),
+        make_synthetic_pset(1, [0, 1], anc),
+    ]
+    with caplog.at_level("INFO", logger="imap_processing.hi.hi_l2"):
+        make_synthetic_map(psets, anc)
+    assert "Projected 2 of 3 PSETs into the map." in caplog.text
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert len(warnings) == 1
+    assert "Skipped 1 PSETs" in warnings[0].message
+    assert "pset_1.cdf" in warnings[0].message
+
+    caplog.clear()
+    with caplog.at_level("INFO", logger="imap_processing.hi.hi_l2"):
+        make_synthetic_map([psets[0]], anc)
+    assert "Projected 1 of 1 PSETs into the map." in caplog.text
+    assert not [r for r in caplog.records if r.levelname == "WARNING"]
+
+
+def test_create_sky_map_raises_when_all_psets_unmatched(
+    two_gain_config_anc_path_dict, make_synthetic_map
+):
+    """A map whose PSETs all matched no gain config raises a clear error."""
+    anc = two_gain_config_anc_path_dict
+    psets = [make_synthetic_pset(np.nan, [255], anc) for _ in range(2)]
+    with pytest.raises(ValueError, match="No PSETs could be projected"):
+        make_synthetic_map(psets, anc)
+
+
+def test_bg_intensity_sys_err_exposure_weighted_over_gain_configs():
+    """bg_intensity_sys_err is an exposure-weighted average over gain configs,
+    then a quadrature sum over calibration products."""
+    dims = ["gain_config_id", "calibration_prod", "pixel"]
+    coords = {"gain_config_id": [0, 1], "calibration_prod": [0, 1], "pixel": [0, 1]}
+    # Pixel 0: both gain configs observed. Pixel 1: only gc0 observed.
+    exposure = xr.DataArray([[2.0, 2.0], [1.0, 0.0]], dims=["gain_config_id", "pixel"])
+    ones = xr.DataArray(np.ones((2, 2, 2)), dims=dims, coords=coords)
+    # gc0 products have sys err 1, gc1 products have sys err 4
+    sys_err = ones * xr.DataArray([1.0, 4.0], dims=["gain_config_id"])
+    map_ds = xr.Dataset(
+        {
+            "ena_intensity": ones,
+            "ena_intensity_stat_uncert": ones,
+            "ena_signal_rates": ones,
+            "ena_count": ones,
+            "bg_intensity_sys_err": sys_err,
+            "bg_rate": xr.DataArray([1.0, 1.0], dims=["calibration_prod"]),
+            "bg_rate_sys_err": xr.DataArray([0.1, 0.1], dims=["calibration_prod"]),
+            "exposure_factor": exposure,
+        },
+        coords=coords,
+    )
+    gf = xr.DataArray(
+        [[1.0, 1.0], [2.5, 2.5]], dims=["gain_config_id", "calibration_prod"]
+    )
+
+    result = combine_calibration_products(map_ds, gf, xr.DataArray(1.0))
+
+    # Pixel 0: each cal prod gets (2 * 1 + 1 * 4) / 3 = 2, so sqrt(2**2 + 2**2).
+    # Pixel 1: gc1 has zero exposure, so each cal prod gets gc0's 1: sqrt(2).
+    np.testing.assert_allclose(
+        result["bg_intensity_sys_err"].values, [np.sqrt(8), np.sqrt(2)]
+    )
+
+
+def test_improved_variance_two_gain_configs():
+    """Hand-computed improved variance with unequal exposure per product."""
+    dims = ["gain_config_id", "calibration_prod", "pixel"]
+    coords = {"gain_config_id": [0, 1], "calibration_prod": [0], "pixel": [0, 1]}
+    # Pixel 0: both gain configs observed. Pixel 1: only gc0 observed.
+    exposure = xr.DataArray([[2.0, 2.0], [1.0, 0.0]], dims=["gain_config_id", "pixel"])
+    signal_rates = xr.DataArray(
+        np.array([[10.0, 10.0], [33.0, np.nan]])[:, np.newaxis, :],
+        dims=dims,
+        coords=coords,
+    )
+    map_ds = xr.Dataset(
+        {
+            "ena_signal_rates": signal_rates,
+            "ena_intensity": signal_rates,
+            "ena_intensity_stat_uncert": xr.ones_like(signal_rates),
+            "bg_rate": xr.DataArray([1.0], dims=["calibration_prod"]),
+            "exposure_factor": exposure,
+        },
+        coords=coords,
+    )
+    gf = xr.DataArray([[1.0], [3.0]], dims=["gain_config_id", "calibration_prod"])
+    energy = xr.DataArray(1.0)
+
+    variance = _calculate_improved_stat_variance(map_ds, gf, energy)
+
+    # Pixel 0: pooled rate per unit gf = (10 * 2 + 33 * 1) / (1 * 2 + 3 * 1)
+    # = 10.6, so estimated rates are [10.6, 31.8] and
+    # variance = (bg + rate) / (t * (gf * E)**2) = [11.6 / 2, 32.8 / 9].
+    np.testing.assert_allclose(
+        variance.sel(pixel=0).values.ravel(), [11.6 / 2, 32.8 / 9]
+    )
+    # Pixel 1: gc1 has zero exposure so it is excluded from the pooled rate
+    # (10 * 2 / (1 * 2) = 10). Its variance falls back to stat_uncert**2;
+    # combine_calibration_products gives it zero weight.
+    np.testing.assert_allclose(variance.sel(pixel=1).values.ravel(), [11.0 / 2, 1.0])
