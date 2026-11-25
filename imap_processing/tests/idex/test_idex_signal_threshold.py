@@ -54,7 +54,7 @@ def test_low_rate_null_result_shapes_and_dtype(failure, time_dtype):
         )
 
     assert optimizer.call_count == int(failure)
-    assert len(result) == 5
+    assert len(result) == 6
     assert result[0].shape == (5,)
     assert result[4].shape == signal.shape
     for value in result:
@@ -188,8 +188,8 @@ def test_low_rate_signal_gate_is_per_event(waveform):
             time,
             xr.DataArray(signal, dims=("epoch", "sample")),
             input_core_dims=[["sample"], ["sample"]],
-            output_core_dims=[["parameter"], [], [], [], ["sample"]],
-            output_dtypes=[np.float64] * 5,
+            output_core_dims=[["parameter"], [], [], [], ["sample"], []],
+            output_dtypes=[np.float64] * 6,
             vectorize=True,
             kwargs={"waveform_name": waveform},
         )
