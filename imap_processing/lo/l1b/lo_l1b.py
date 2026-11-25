@@ -812,6 +812,12 @@ def get_spin_start_times(
     events. If two direct events occurred in the same spin, then there will be repeating
     spin start times.
 
+    Lo's DE timer starts on the spacecraft spin pulse, which fires at the original
+    (uncorrected) spin start time of the spin table, so the original spin start
+    times are used regardless of ``USE_CORRECTED_SPIN_START``. The ACS spin start
+    correction only changes the spin phase assigned to that time, which for direct
+    events comes from the attitude kernels rather than from the spin table.
+
     Parameters
     ----------
     l1a_de : xr.Dataset
@@ -825,7 +831,7 @@ def get_spin_start_times(
     # Get the actual spin start times from the spin data
     # Use the individual spin start times rather than calculating from ASC averages
     spin_start_times = interpolate_spin_data(
-        l1a_de["met"].values, use_corrected_spin_start=USE_CORRECTED_SPIN_START
+        l1a_de["met"].values, use_corrected_spin_start=False
     )["spin_start_met"].values
     spin_start_times = np.repeat(spin_start_times, l1a_de["de_count"].values)
 
